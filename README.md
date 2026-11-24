@@ -34,6 +34,12 @@ dusty shelves, lamplight, pillows and a blanket — and, after dusk, the same ro
   licences ship with the site under `/licenses/`.
 - **Daily reminder.** A notification at a fixed hour until you have read; plus a one-tap
   calendar event as the reminder that never misses (see [Reminders](#reminders)).
+- **A first visit told as a story.** The librarian greets a new reader at the door, takes
+  down their reader's card, asks what is on their nightstand, shows them round the room
+  with a lamplit spotlight on the real interface, offers a key to the room (installing the
+  app: the browser's own prompt where there is one, illustrated *Share → Add to Home Screen*
+  steps on iPhone and iPad), and hands them their first card. Skippable at any point
+  (Escape works), shown once, and replayable from the reading room.
 - **Installable and offline.** Every asset is precached by the service worker.
 
 ## Run it
@@ -124,6 +130,7 @@ flowchart LR
 | [`user-side/elements`](user-side/elements) | Port-bound custom elements and their context keys |
 | [`infra/storage-indexeddb`](infra/storage-indexeddb) | Every repository port on one IndexedDB database |
 | [`infra/reminders-browser`](infra/reminders-browser) | Notification permission, periodic sync, notifications |
+| [`infra/install-browser`](infra/install-browser) | Installing the app: Chromium's install prompt, iOS instructions, installed detection |
 | [`application/pwa`](application/pwa) | `index.html` + `main.ts` + router + service worker |
 
 The walls and what enforces them:

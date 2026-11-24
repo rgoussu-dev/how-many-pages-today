@@ -11,6 +11,11 @@ describe('card scenes', () => {
     expect(kinds).toEqual(new Set(['shelves', 'lamp', 'nook', 'armchair', 'window', 'still-life']));
   });
 
+  it('paints a chosen scene when asked', () => {
+    expect(renderScene(42, 'lamp').kind).toBe('lamp');
+    expect(renderScene(42, 'lamp')).toEqual(renderScene(42, 'lamp'));
+  });
+
   it('produces well-formed, self-contained SVG with no NaN coordinates', () => {
     for (let seed = 0; seed < 300; seed++) {
       const { svg } = renderScene(seed * 7919);

@@ -7,6 +7,7 @@ import type {
   ProfilePort,
   ReadingView,
   ReminderPort,
+  WelcomePort,
 } from '@hmpt/domain-contract';
 
 /**
@@ -20,5 +21,6 @@ export const readingContexts = {
   overview: createContext<OverviewPort>('hmpt.reading.overview'),
   range: createContext<PageRangePort>('hmpt.reading.range'),
   reminder: createContext<ReminderPort>('hmpt.reading.reminder'),
+  welcome: createContext<WelcomePort>('hmpt.reading.welcome'),
   view: createContext<ReadingView>('hmpt.reading.view'),
 } as const;

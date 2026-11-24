@@ -90,6 +90,24 @@ export type ReminderDelivery =
   /** Notifications fire only while the app is open or recently backgrounded. */
   | 'while-open';
 
+/** The first-visit walkthrough: whether it has been completed (or skipped). */
+export interface WelcomeState {
+  readonly completedOn?: DayKey;
+}
+
+/** How this app can be installed on this device. */
+export type InstallAvailability =
+  /** Already running as an installed app. */
+  | 'installed'
+  /** The browser offers an install prompt the app can trigger (Chromium). */
+  | 'prompt'
+  /** iOS / iPadOS Safari: Share → Add to Home Screen, by hand. */
+  | 'ios'
+  /** Some other browser: install from its own menu, if it can. */
+  | 'manual';
+
+export type InstallOutcome = 'accepted' | 'dismissed' | 'unavailable';
+
 export const DEFAULT_REMINDER: ReminderSettings = { enabled: false, time: '20:00' };
 
 export type AchievementId =

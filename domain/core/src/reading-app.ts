@@ -4,6 +4,7 @@ import {
   DEFAULT_REMINDER,
   EMPTY_SHELF,
   type AchievementLedger,
+  type AppInstaller,
   type Bookshelf,
   type BookshelfPort,
   type BookshelfRepository,
@@ -25,6 +26,7 @@ import {
   type ReminderPort,
   type ReminderScheduler,
   type ReminderSettings,
+  type WelcomePort,
 } from '@hmpt/domain-contract';
 import { ACHIEVEMENTS, earnedAchievements } from './achievements';
 import { dayKeyOf } from './days';
@@ -46,6 +48,7 @@ export interface ReminderCheckDeps {
 
 export interface ReadingDeps extends ReminderCheckDeps {
   readonly shelves: BookshelfRepository;
+  readonly installer: AppInstaller;
   readonly achievements: AchievementLedger;
   readonly scheduler: ReminderScheduler;
 }
@@ -58,6 +61,7 @@ export interface ReadingApp {
   readonly range: PageRangePort;
   readonly reminder: ReminderPort;
   readonly reminderCheck: ReminderCheckPort;
+  readonly welcome: WelcomePort;
   readonly view: ReadingView;
 }
 
@@ -351,6 +355,22 @@ export function createReadingApp(deps: ReadingDeps): ReadingApp {
     },
   };
 
+  const welcome: WelcomePort = {
+    async needed() {
+      const [state, profile] = await Promise.all([deps.preferences.loadWelcome(), deps.profiles.load()]);
+      return state?.completedOn === undefined && profile === undefined;
+    },
+    installAvailability: () => deps.installer.availability(),
+    install: () => deps.installer.prompt(),
+    async finish() {
+      const state = (await deps.preferences.loadWelcome()) ?? {};
+      await deps.preferences.saveWelcome({ ...state, completedOn: today() });
+    },
+    async replay() {
+      store.emit({ type: 'welcome-requested' });
+    },
+  };
+
   return {
     challenge,
     profile,
@@ -359,6 +379,7 @@ export function createReadingApp(deps: ReadingDeps): ReadingApp {
     range,
     reminder,
     reminderCheck: createReminderCheck(deps),
+    welcome,
     view: store,
   };
 }

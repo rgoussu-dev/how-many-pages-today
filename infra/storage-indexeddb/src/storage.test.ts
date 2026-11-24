@@ -43,6 +43,7 @@ describe('IndexedDB storage', () => {
     });
     await storage.preferences.saveRange({ min: 5, max: 50, step: 5 });
     await storage.preferences.saveReminder({ enabled: true, time: '21:30' });
+    await storage.preferences.saveWelcome({ completedOn: '2026-11-24' });
 
     const reopened = await open('round-trip');
     expect(await reopened.history.byDay('2026-11-24')).toMatchObject({ status: 'completed', pages: 30 });
@@ -53,6 +54,7 @@ describe('IndexedDB storage', () => {
     ]);
     expect(await reopened.preferences.loadRange()).toEqual({ min: 5, max: 50, step: 5 });
     expect(await reopened.preferences.loadReminder()).toEqual({ enabled: true, time: '21:30' });
+    expect(await reopened.preferences.loadWelcome()).toEqual({ completedOn: '2026-11-24' });
   });
 
   it('never overwrites the first unlock date of an achievement', async () => {

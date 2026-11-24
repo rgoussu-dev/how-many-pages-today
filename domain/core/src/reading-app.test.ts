@@ -283,3 +283,36 @@ describe('the overview port', () => {
     expect((await app.overview.year(2026)).months[10]?.totals.pagesRead).toBe(55);
   });
 });
+
+describe('the welcome', () => {
+  it('is needed on a first visit only, and not again once finished or skipped', async () => {
+    const deps = inMemoryDeps(at(24));
+    const app = createReadingApp(deps);
+    expect(await app.welcome.needed()).toBe(true);
+    await app.welcome.finish();
+    expect(await app.welcome.needed()).toBe(false);
+    expect(deps.preferences.welcome).toEqual({ completedOn: '2026-11-24' });
+  });
+
+  it('is not imposed on a reader who already has a card', async () => {
+    const app = createReadingApp(inMemoryDeps(at(24)));
+    await app.profile.save({ displayName: 'Ada', avatar: '🦉', favouriteGenre: '' });
+    expect(await app.welcome.needed()).toBe(false);
+  });
+
+  it('can be asked for again', async () => {
+    const app = createReadingApp(inMemoryDeps(at(24)));
+    const events: ReadingEvent[] = [];
+    app.view.onEvent((e) => events.push(e));
+    await app.welcome.replay();
+    expect(events).toEqual([{ type: 'welcome-requested' }]);
+  });
+
+  it('offers installation through the platform', async () => {
+    const deps = inMemoryDeps(at(24));
+    const app = createReadingApp(deps);
+    expect(await app.welcome.installAvailability()).toBe('prompt');
+    expect(await app.welcome.install()).toBe('accepted');
+    expect(deps.installer.prompted).toBe(1);
+  });
+});

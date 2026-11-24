@@ -11,6 +11,7 @@ import type {
   ProfileRepository,
   ReminderSettings,
   UnlockedAchievement,
+  WelcomeState,
 } from '@hmpt/domain-contract';
 
 /*
@@ -27,7 +28,7 @@ const CHALLENGES = 'challenges';
 const SETTINGS = 'settings';
 const ACHIEVEMENTS = 'achievements';
 
-type SettingKey = 'profile' | 'bookshelf' | 'range' | 'reminder';
+type SettingKey = 'profile' | 'bookshelf' | 'range' | 'reminder' | 'welcome';
 
 const promised = <T>(request: IDBRequest<T>): Promise<T> =>
   new Promise((resolve, reject) => {
@@ -103,6 +104,8 @@ class IndexedDbPreferences implements PreferencesRepository {
   saveRange = (range: PageRange) => this.settings.put('range', range);
   loadReminder = () => this.settings.get<ReminderSettings>('reminder');
   saveReminder = (reminder: ReminderSettings) => this.settings.put('reminder', reminder);
+  loadWelcome = () => this.settings.get<WelcomeState>('welcome');
+  saveWelcome = (welcome: WelcomeState) => this.settings.put('welcome', welcome);
 }
 
 class IndexedDbAchievements implements AchievementLedger {

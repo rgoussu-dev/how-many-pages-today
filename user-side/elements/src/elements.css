@@ -659,13 +659,15 @@ hmpt-bookshelf .shelf-empty {
 
 /* — forms — */
 
-hmpt-profile-form fieldset {
+hmpt-profile-form fieldset,
+hmpt-welcome fieldset {
   margin-inline: 0;
   padding: 0;
   border: 0;
 }
 
-hmpt-profile-form .field-legend {
+hmpt-profile-form .field-legend,
+hmpt-welcome .field-legend {
   padding: 0;
   margin-block-end: 0.35rem;
   font-family: var(--font-caps);
@@ -673,13 +675,13 @@ hmpt-profile-form .field-legend {
   color: var(--ink-soft);
 }
 
-hmpt-profile-form .avatar-option input {
+:is(hmpt-profile-form, hmpt-welcome) .avatar-option input {
   position: absolute;
   opacity: 0;
   pointer-events: none;
 }
 
-hmpt-profile-form .avatar-option span {
+:is(hmpt-profile-form, hmpt-welcome) .avatar-option span {
   display: grid;
   place-items: center;
   width: 2.8rem;
@@ -692,13 +694,13 @@ hmpt-profile-form .avatar-option span {
   transition: transform 120ms ease;
 }
 
-hmpt-profile-form .avatar-option input:checked + span {
+:is(hmpt-profile-form, hmpt-welcome) .avatar-option input:checked + span {
   border-color: transparent;
   box-shadow: 0 0 0 2px var(--gilt), 0 0 0 4px var(--leather);
   transform: scale(1.08);
 }
 
-hmpt-profile-form .avatar-option input:focus-visible + span {
+:is(hmpt-profile-form, hmpt-welcome) .avatar-option input:focus-visible + span {
   box-shadow: var(--focus);
 }
 
@@ -1126,4 +1128,221 @@ hmpt-reading-overview .ov-book-month {
 
 hmpt-reading-overview .ov-empty {
   font-style: italic;
+}
+
+/* — the welcome: the first visit, told as a story — */
+
+hmpt-welcome .welcome {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+}
+
+hmpt-welcome .welcome-veil {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(90% 60% at 20% 0%, rgb(255 190 100 / 0.25), transparent 70%),
+    rgb(25 12 4 / 0.62);
+  backdrop-filter: blur(3px) sepia(0.3);
+  -webkit-backdrop-filter: blur(3px) sepia(0.3);
+}
+
+hmpt-welcome .welcome[data-mode='spot'] .welcome-veil {
+  display: none; /* the spotlight does the dimming */
+}
+
+hmpt-welcome .welcome-page {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: min(30rem, calc(100vw - 2rem));
+  max-height: calc(100dvh - 2rem);
+  overflow-y: auto;
+  transform: translate(-50%, -50%);
+  padding: 0 0 var(--s0);
+}
+
+hmpt-welcome .welcome-page[data-turn] {
+  transform-origin: 0 50%;
+  animation: page-turn 650ms cubic-bezier(0.2, 0.8, 0.25, 1);
+}
+
+@keyframes page-turn {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -50%) perspective(1400px) rotateY(-80deg);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) perspective(1400px) rotateY(0);
+  }
+}
+
+hmpt-welcome .welcome-plate {
+  padding: 0.4rem 0.4rem 0;
+}
+
+/* On a short screen the register goes without its picture, so the form fits. */
+@media (max-height: 740px) {
+  hmpt-welcome .welcome-page[data-chapter='card'] .welcome-plate {
+    display: none;
+  }
+}
+
+hmpt-welcome .welcome-plate frame-pk {
+  display: block;
+  box-shadow: 0 0 0 1px var(--gilt-dark), 0 0 0 3px var(--gilt);
+}
+
+hmpt-welcome .welcome-body {
+  display: grid;
+  gap: var(--s-1);
+  padding: var(--s0) var(--s1) 0;
+}
+
+hmpt-welcome .welcome-body h2,
+hmpt-welcome .welcome-bubble h2 {
+  font-family: var(--font-display);
+  font-size: 1.75rem;
+  letter-spacing: 0;
+  outline: none;
+}
+
+hmpt-welcome .welcome-voice {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-family: var(--font-caps);
+  color: var(--ink-faint);
+}
+
+hmpt-welcome .welcome-owl {
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  font-size: 1.15rem;
+  background: var(--grain-paper), radial-gradient(circle at 40% 35%, #f8ecd2, #e2c99a);
+  box-shadow: 0 0 0 2px var(--gilt), 0 0 0 3px var(--leather-deep);
+}
+
+hmpt-welcome .welcome-speech {
+  font-size: 1.15rem;
+  font-style: italic;
+  line-height: 1.45;
+}
+
+hmpt-welcome .welcome-form {
+  display: grid;
+  gap: var(--s-1);
+}
+
+hmpt-welcome .welcome-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--s-1);
+  margin-block-start: var(--s-1);
+}
+
+hmpt-welcome .welcome-actions-end {
+  justify-content: center;
+}
+
+hmpt-welcome .welcome-steps {
+  display: grid;
+  gap: 0.5rem;
+  margin: 0;
+  padding-left: 1.4rem;
+}
+
+hmpt-welcome .welcome-steps li::marker {
+  font-family: var(--font-display);
+  color: var(--gilt-dark);
+}
+
+hmpt-welcome .welcome-icon {
+  width: 1.2em;
+  height: 1.2em;
+  vertical-align: -0.2em;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+hmpt-welcome .welcome-note {
+  font-style: italic;
+  color: var(--ink-soft);
+}
+
+hmpt-welcome .welcome-progress {
+  margin-block-start: var(--s0);
+  text-align: center;
+  letter-spacing: 0.25em;
+  color: var(--gilt-dark);
+}
+
+/* the tour: a lamplit spotlight on the real room */
+
+hmpt-welcome .welcome-spot {
+  position: fixed;
+  border-radius: 0.6rem;
+  box-shadow:
+    0 0 0 2px var(--gilt),
+    0 0 24px 6px rgb(255 200 110 / 0.45),
+    0 0 0 200vmax rgb(25 12 4 / 0.66);
+  pointer-events: none;
+  transition:
+    top 380ms cubic-bezier(0.3, 0.8, 0.3, 1),
+    left 380ms cubic-bezier(0.3, 0.8, 0.3, 1),
+    width 380ms cubic-bezier(0.3, 0.8, 0.3, 1),
+    height 380ms cubic-bezier(0.3, 0.8, 0.3, 1);
+}
+
+hmpt-welcome .welcome-bubble {
+  position: fixed;
+  left: 50%;
+  width: min(23rem, calc(100vw - 2rem));
+  transform: translateX(-50%);
+  display: grid;
+  gap: var(--s-2);
+  padding: var(--s0) var(--s0) var(--s-1);
+}
+
+hmpt-welcome .welcome-bubble[data-turn] {
+  animation: bubble-in 320ms ease-out;
+}
+
+@keyframes bubble-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 0.75rem);
+  }
+}
+
+hmpt-welcome .welcome-skip {
+  justify-self: center;
+  border: 0;
+  background: none;
+  color: var(--ink-faint);
+  font: inherit;
+  font-size: 0.95rem;
+  font-style: italic;
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+  cursor: pointer;
+}
+
+hmpt-welcome-replay {
+  display: block;
+}
+
+/* Celebrations wait while the librarian speaks; the finale mentions what was earned. */
+html[data-welcoming] hmpt-celebration {
+  visibility: hidden;
 }

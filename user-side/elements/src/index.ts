@@ -9,6 +9,7 @@ import { ReadingOverview } from './reading-overview';
 import { ReminderForm } from './reminder-form';
 import { StreakSummary } from './streak-summary';
 import { TodayCard } from './today-card';
+import { Welcome, WelcomeReplay } from './welcome';
 
 export { readingContexts } from './contexts';
 export { dailyReminderInvite } from './calendar-invite';
@@ -25,6 +26,8 @@ const ELEMENTS = {
   'hmpt-range-form': RangeForm,
   'hmpt-reminder-form': ReminderForm,
   'hmpt-celebration': Celebration,
+  'hmpt-welcome': Welcome,
+  'hmpt-welcome-replay': WelcomeReplay,
 } as const;
 
 /**

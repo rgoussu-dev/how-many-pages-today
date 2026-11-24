@@ -1,0 +1,9 @@
+{
+  "name": "@hmpt/infra-install-browser",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Driven adapter: installing the PWA — the beforeinstallprompt event on Chromium, Add to Home Screen instructions on iOS.",
+  "exports": { ".": "./src/installer.ts" },
+  "dependencies": { "@hmpt/domain-contract": "0.1.0" }
+}

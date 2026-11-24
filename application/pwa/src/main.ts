@@ -17,6 +17,7 @@ import { mathRandom, systemClock } from '@hmpt/commons';
 import { defineDesignSystem } from '@hmpt/design-system';
 import { createReadingApp, type ReadingApp } from '@hmpt/domain-core';
 import { defineReadingElements, readingContexts } from '@hmpt/elements';
+import { createBrowserInstaller } from '@hmpt/infra-install-browser';
 import { BrowserReminderScheduler } from '@hmpt/infra-reminders-browser';
 import { RegistrationNotifier } from '@hmpt/infra-reminders-browser/notifier';
 import { openReadingDatabase } from '@hmpt/infra-storage-indexeddb';
@@ -27,6 +28,9 @@ import { keepFresh } from './keep-fresh';
 
 const base = import.meta.env.BASE_URL;
 
+// Listen for the install prompt before anything else: it fires once, early.
+const installer = createBrowserInstaller();
+
 async function assemble(): Promise<ReadingApp> {
   const worker = registerServiceWorker(`${base}sw.js`);
   const storage = await openReadingDatabase();
@@ -34,6 +38,7 @@ async function assemble(): Promise<ReadingApp> {
     history: storage.history,
     profiles: storage.profiles,
     shelves: storage.shelves,
+    installer,
     preferences: storage.preferences,
     achievements: storage.achievements,
     scheduler: new BrowserReminderScheduler(worker.registration),
@@ -58,6 +63,7 @@ async function boot(): Promise<void> {
       [readingContexts.profile, app.profile],
       [readingContexts.bookshelf, app.bookshelf],
       [readingContexts.overview, app.overview],
+      [readingContexts.welcome, app.welcome],
       [readingContexts.range, app.range],
       [readingContexts.reminder, app.reminder],
       [readingContexts.view, app.view],

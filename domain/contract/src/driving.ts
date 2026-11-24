@@ -3,6 +3,8 @@ import type {
   Bookshelf,
   DailyChallenge,
   FinishedBook,
+  InstallAvailability,
+  InstallOutcome,
   PageRange,
   Profile,
   ProfileInput,
@@ -91,6 +93,18 @@ export type ReminderCheckOutcome = 'notified' | 'disabled' | 'not-yet' | 'alread
  */
 export interface ReminderCheckPort {
   run(): Promise<ReminderCheckOutcome>;
+}
+
+/** The first-visit walkthrough. */
+export interface WelcomePort {
+  /** True on a first visit: never welcomed, and no reader's card yet. */
+  needed(): Promise<boolean>;
+  installAvailability(): Promise<InstallAvailability>;
+  install(): Promise<InstallOutcome>;
+  /** Completed or skipped — either way, not shown again unasked. */
+  finish(): Promise<void>;
+  /** Asks for the walkthrough again (announced as a `welcome-requested` event). */
+  replay(): Promise<void>;
 }
 
 /** The read model. Reactivity lives here, not in the wiring. */

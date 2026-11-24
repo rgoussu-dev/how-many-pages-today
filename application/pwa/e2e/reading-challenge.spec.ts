@@ -4,9 +4,15 @@ const card = (page: Page) => page.locator('hmpt-today-card');
 const tab = (page: Page, name: string) => page.locator('.tabbar').getByRole('link', { name, exact: true });
 const pagesOnCard = async (page: Page) => Number(await card(page).locator('[data-pages]').textContent());
 
-test.beforeEach(async ({ page }) => {
+const welcome = (page: Page) => page.locator('hmpt-welcome');
+
+test.beforeEach(async ({ page }, testInfo) => {
   await page.goto('./');
   await expect(card(page).locator('[data-pages]')).not.toHaveText('…');
+  if (testInfo.title.startsWith('welcome:')) return;
+  // Every other test is a returning reader: step past the first-visit walkthrough.
+  await welcome(page).getByRole('button', { name: 'I know my way' }).click();
+  await expect(welcome(page).locator('[data-root]')).toBeHidden();
 });
 
 test('deals a card from the default range, with an illustration', async ({ page }) => {
@@ -250,4 +256,95 @@ test('the overview looks back over the month and the year', async ({ page }) => 
   await expect(overview.locator('.ov-columns li')).toHaveCount(12);
   await expect(overview.locator('[data-pages]')).toHaveText('55');
   await expect(overview.locator('.ov-book-month')).toHaveCount(1);
+});
+
+test('welcome: a first visit is a short story that fills in the reader and shows the room', async ({ page }) => {
+  const w = welcome(page);
+  await expect(w.getByRole('heading', { name: 'The reading room' })).toBeFocused();
+  await expect(page.locator('.app')).toHaveJSProperty('inert', true);
+  await w.getByRole('button', { name: 'Step inside' }).click();
+
+  await w.getByRole('button', { name: 'Sign the register' }).click(); // no name yet
+  await expect(w.locator('[data-error="displayName"]')).not.toBeEmpty();
+  await w.getByText('🦊').click();
+  await w.getByLabel('What shall I call you?').fill('Ada');
+  await w.getByRole('button', { name: 'Sign the register' }).click();
+
+  await expect(w.locator('[data-greet]')).toContainText('A pleasure, Ada.');
+  await w.getByLabel('The book you are reading').fill('The Dispossessed');
+  await w.getByRole('button', { name: 'Put it on the nightstand' }).click();
+
+  const titles = ['Your daily card', 'Keep the candle lit', 'Your library', 'Looking back', 'Your reading room'];
+  for (const [i, title] of titles.entries()) {
+    await expect(w.locator('[data-bubble-title]')).toHaveText(title);
+    await expect(w.locator('[data-bubble-count]')).toHaveText(`A tour of the room · ${i + 1} of 5`);
+    await expect(page.locator('[data-tour-lit]')).toHaveCount(1);
+    await w.getByRole('button', { name: i === titles.length - 1 ? 'Onward' : 'Next' }).click();
+  }
+
+  await expect(w.getByRole('heading', { name: 'A key to the room' })).toBeVisible();
+  await w.locator('[data-body] [data-action="next"]').last().click();
+
+  await expect(w.locator('[data-finale]')).toContainText('Ada');
+  await expect(w.locator('[data-finale]')).toContainText('your first bookplate: “Pleased to meet you”');
+  await w.getByRole('button', { name: 'Turn the first page' }).click();
+
+  await expect(w.locator('[data-root]')).toBeHidden();
+  await expect(page.locator('.app')).toHaveJSProperty('inert', false);
+  await expect(page.locator('hmpt-greeting h1')).toContainText('Ada');
+  await expect(page.locator('hmpt-greeting cite')).toHaveText('The Dispossessed');
+  await expect(page.locator('hmpt-greeting [data-avatar]')).toHaveText('🦊');
+
+  await page.reload();
+  await expect(card(page).locator('[data-pages]')).not.toHaveText('…');
+  await expect(w.locator('[data-root]')).toBeHidden();
+});
+
+test('welcome: Escape skips it for good, and it can be taken again from the reading room', async ({ page }) => {
+  const w = welcome(page);
+  await w.getByRole('button', { name: 'Step inside' }).click();
+  await w.getByLabel('What shall I call you?').fill('Ada');
+  await w.getByRole('button', { name: 'Sign the register' }).click();
+  await expect(w.getByRole('heading', { name: 'The book in hand' })).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(w.locator('[data-root]')).toBeHidden();
+
+  await page.reload();
+  await expect(card(page).locator('[data-pages]')).not.toHaveText('…');
+  await expect(w.locator('[data-root]')).toBeHidden();
+
+  await tab(page, 'You').click();
+  await page.getByRole('button', { name: /Take the tour again/ }).click();
+  await expect(w.getByRole('heading', { name: 'The reading room' })).toBeVisible();
+  await expect(page).toHaveURL(/#today$/);
+  await w.getByRole('button', { name: 'Step inside' }).click();
+  await expect(w.getByLabel('What shall I call you?')).toHaveValue('Ada'); // the card remembers
+});
+
+test('welcome: where the browser offers to install, the librarian hands over the key', async ({ page }) => {
+  await welcome(page).getByRole('button', { name: 'I know my way' }).click();
+  // Simulate Chromium's install prompt (headless browsers never fire one).
+  await page.evaluate(() => {
+    const event = Object.assign(new Event('beforeinstallprompt', { cancelable: true }), {
+      prompt: async () => {
+        (window as unknown as { prompted: boolean }).prompted = true;
+      },
+      userChoice: Promise.resolve({ outcome: 'accepted' }),
+    });
+    window.dispatchEvent(event);
+  });
+  await tab(page, 'You').click();
+  await page.getByRole('button', { name: /Take the tour again/ }).click();
+  const w = welcome(page);
+  await w.getByRole('button', { name: 'Step inside' }).click();
+  await w.getByRole('button', { name: 'Later' }).click();
+  await w.getByRole('button', { name: 'Nothing just now' }).click();
+  for (let i = 0; i < 4; i++) await w.getByRole('button', { name: 'Next' }).click();
+  await w.getByRole('button', { name: 'Onward' }).click();
+
+  await w.getByRole('button', { name: 'Add it to my home screen' }).click();
+  await expect(w.locator('[data-install-status]')).toHaveText('“Splendid. The key is on your home screen.”');
+  expect(await page.evaluate(() => (window as unknown as { prompted?: boolean }).prompted)).toBe(true);
+  await w.getByRole('button', { name: 'Onward' }).click();
+  await expect(w.getByRole('heading', { name: 'Your first card awaits' })).toBeVisible();
 });
