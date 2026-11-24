@@ -11,17 +11,18 @@ dusty shelves, lamplight, pillows and a blanket — and, after dusk, the same ro
   in steps of ten. The plate is one of six cosy library scenes (dusty shelves, a banker's
   lamp, a window seat of pillows, a wingback armchair, a rainy windowsill, a candlelit
   still life) painted from a seed, so the same day always shows the same card, online or not.
-- **The book of the day.** The day's card waits on the table as a closed book — a leather
-  cover, the date, a gilt emblem — until it is tapped. Then the camera pulls back to the
-  closed book, which falls open at the middle on the two days before (their plates and what was
-  read; a new book shows its Ex libris and "Chapter One"), recentring on its spine, and
-  pushes in again while yesterday's page turns, landing on today's page — a printed page with
-  a running head, the illustration as a captioned plate, the number in ink, a folio at its foot.
-  Once the reading is logged the camera pulls back, today's page turns to the leaf-strewn
-  endpaper inside the back board, and the book is turned over onto its back cover as the camera pushes in:
-  sealed in wax, with a warm note from the librarian (by chance, but the same all day: a goal
-  met, gone beyond, a short day, a book finished) and the streak or any bookplate earned.
-  "Open the book" turns back to the page to add pages read later. Instant with reduced motion.
+- **The book of the day.** The day's card waits on the table as a closed book — front cover
+  up: a leather board, the date, a gilt emblem — until it is tapped. Then the camera pulls back
+  as the book rises to stand on its spine, leaning; it falls open from the middle on the two
+  days before (their plates and what was read; a new book shows an Ex libris on leaf-strewn
+  endpaper, facing "Chapter One"), and a few leaves riffle over while the camera pushes in on
+  today's page — a printed page with a running head, the illustration as a captioned plate,
+  the number in ink, a folio at its foot. Once the reading is logged, the reverse: the camera
+  pulls back, the book closes up onto its spine, tips over onto its other side, and the camera
+  pushes in on its back cover — sealed in wax, with a warm note from the librarian (by chance,
+  but the same all day: a goal met, gone beyond, a short day, a book finished) and the streak
+  or any bookplate earned. "Open the book" turns back to the page to add pages read later.
+  Instant with reduced motion.
 - **Log what you actually read.** One tap logs the day's goal; or enter the real count —
   more or fewer pages. Any reading keeps the streak alive (every page counts); the goal is
   met at the goal or beyond, or by finishing a book. A day read stays read — there is no

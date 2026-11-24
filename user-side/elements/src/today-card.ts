@@ -94,8 +94,10 @@ function backCoverExtra(streak: number, achievements: ReadingSnapshot['achieveme
  * of them turns over, and lands on today's page. Logged, the camera pulls back again, today's page turns, and the
  * book is turned over onto its back cover, sealed, with a note from the librarian.
  *
- * The real page is the right-hand page of that book: the camera (a transform on `.tome`)
- * moves it, so the hand-off at either end is seamless. Reduced motion skips the camera.
+ * Each half of the book is a panel hinged at the spine (x = 0 of the card): the left half is
+ * the front board with a page on its inside; the right half is the real page, the leaves on
+ * it and, underneath, the back board. The camera is a transform on `.tome`, so the hand-off
+ * to the real page (and to the back cover) is seamless. Reduced motion skips the camera.
  */
 export class TodayCard extends PortBoundElement {
   #challenge?: DailyChallengePort;
@@ -110,7 +112,6 @@ export class TodayCard extends PortBoundElement {
     return /* html */ `
       <article class="tome" aria-labelledby="today-pages">
         <div class="tome-boards" aria-hidden="true"></div>
-        <div class="tome-left" aria-hidden="true" data-left></div>
         <div class="tome-inner">
           <p class="tome-date" data-date>Today</p>
           <div class="tome-plate">
@@ -157,9 +158,11 @@ export class TodayCard extends PortBoundElement {
           </div>
           <p class="tome-folio" aria-hidden="true" data-folio></p>
         </div>
-        <div class="tome-leaf" aria-hidden="true">
-          <div class="tome-leaf-front" data-leaf></div>
-          <div class="tome-leaf-back"></div>
+        <!-- A few leaves between the two days before and today: they riffle over as the camera pushes in. -->
+        <div class="tome-leaves" aria-hidden="true">
+          <div class="tome-leaf"><div class="tome-leaf-front" data-leaf></div><div class="tome-leaf-back"></div></div>
+          <div class="tome-leaf"><div class="tome-leaf-front tome-leaf-ruled"></div><div class="tome-leaf-back"></div></div>
+          <div class="tome-leaf"><div class="tome-leaf-front tome-leaf-ruled"></div><div class="tome-leaf-back"></div></div>
         </div>
         <div class="tome-cover" data-open-cover role="button" tabindex="0" aria-label="Open today’s card">
           <span class="tome-cover-face">
@@ -168,7 +171,7 @@ export class TodayCard extends PortBoundElement {
             <span class="tome-cover-date" data-cover-date></span>
             <span class="tome-cover-hint">Tap to open</span>
           </span>
-          <!-- The book falls open at the middle: this half carries the day before yesterday's page. -->
+          <!-- The book falls open from the middle: this half carries the day before yesterday's page. -->
           <div class="tome-cover-back" aria-hidden="true" data-cover-back></div>
         </div>
         <div class="tome-back" data-back>
@@ -180,7 +183,6 @@ export class TodayCard extends PortBoundElement {
             <p class="tome-back-extra" data-extra></p>
             <button type="button" class="tome-back-open" data-open-book>Open the book</button>
           </div>
-          <div class="tome-back-inside" aria-hidden="true"></div>
         </div>
       </article>`;
   }
@@ -304,8 +306,8 @@ export class TodayCard extends PortBoundElement {
       show(1);
       this.setAttribute('data-reveal', 'opening');
       this.#syncInert();
-      await wait(2050); // pull back, fall open at the middle, yesterday's page begins to turn
-      await countUp(show, target, 800); // …and the count runs up as the camera pushes in
+      await wait(2550); // pull back, stand on the spine, fall open from the middle, the leaves begin to riffle
+      await countUp(show, target, 950); // …and the count runs up as the camera pushes in
       this.setAttribute('data-reveal', 'landed');
       await wait(550);
     }
@@ -322,14 +324,14 @@ export class TodayCard extends PortBoundElement {
   #closeBook(): void {
     this.removeAttribute('data-peek');
     if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-    this.$('[data-left]').replaceChildren(verso()); // the back of the page before today's
+    this.$('[data-cover-back]').replaceChildren(verso()); // the left half, as the book closes
     this.removeAttribute('data-closing');
     void this.offsetWidth;
     this.setAttribute('data-closing', '');
     setTimeout(() => {
       this.removeAttribute('data-closing');
       this.#syncInert();
-    }, 3400);
+    }, 3700);
   }
 
   #render(snapshot: ReadingSnapshot): void {
