@@ -1,19 +1,20 @@
 name: Verify & deploy to GitHub Pages
 
-# Pull requests are verified, never published.
-#
 # The site has two copies, published together as one GitHub Pages site:
-# - production, at the site root: always built from `main` — published on every push to it,
-#   or by a manual run on `main` with target "production";
-# - staging, under staging/: any branch, published by a manual run on that branch with
-#   target "staging" (Actions → this workflow → Run workflow). It stays until another branch
-#   is staged, or a manual run with target "unstage" takes it down. A production deploy
-#   rebuilds the staged commit (recorded in staging/STAGING_REF on the live site), so
-#   staging survives it.
+# - production, at the site root: always built from `main`, published on every push to it;
+# - staging, under staging/: published automatically on every push to any other branch —
+#   the latest push wins. Once the staged branch is merged into main or deleted, the next
+#   deploy takes staging down.
+# Pull requests are never published: their branch's pushes already stage and check it
+# (forks, which cannot publish, are verified on the pull request itself).
+# A production deploy rebuilds the staged commit (recorded in staging/STAGING_REF on the
+# live site), so staging survives it. Run workflow does the same by hand: a branch to
+# staging, main to production, or "unstage".
 on:
   push:
-    branches: [main]
+    branches: ['**']
   pull_request:
+  delete:
   workflow_dispatch:
     inputs:
       target:
@@ -27,14 +28,21 @@ on:
 permissions:
   contents: read
 
+# A newer push to the same branch supersedes an older run (deletions never supersede each other).
 concurrency:
-  group: pages-${{ github.ref }}-${{ inputs.target || github.event_name }}
+  group: pages-${{ github.ref }}-${{ inputs.target || github.event_name }}-${{ github.event_name == 'delete' && github.run_id || 'latest' }}
   cancel-in-progress: true
 
 jobs:
   verify:
-    # Taking staging down publishes nothing new from this branch: nothing to verify.
-    if: github.event_name != 'workflow_dispatch' || inputs.target != 'unstage'
+    # Every pushed commit is verified. A pull request from this repository is already
+    # verified by its branch's push (the checks show on the pull request); a fork's is not.
+    # Taking staging down publishes nothing new: nothing to verify.
+    if: >-
+      github.event_name == 'push' ||
+      (github.event_name == 'workflow_dispatch' && inputs.target != 'unstage') ||
+      (github.event_name == 'pull_request' &&
+        github.event.pull_request.head.repo.full_name != github.repository)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -56,13 +64,33 @@ jobs:
       - name: End-to-end (real browser, production build, offline included)
         run: npm run e2e
 
+  # A branch was deleted: was it the one on staging?
+  deleted:
+    if: github.event_name == 'delete' && github.event.ref_type == 'branch'
+    runs-on: ubuntu-latest
+    outputs:
+      staged: ${{ steps.check.outputs.staged }}
+    steps:
+      - id: check
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          OWNER: ${{ github.repository_owner }}
+          DELETED: ${{ github.event.ref }}
+        run: |
+          site=$(gh api "repos/$REPO/pages" --jq .html_url 2>/dev/null || true)
+          [ -n "$site" ] || site="https://${OWNER,,}.github.io/${REPO#*/}/"
+          ref=$(curl -fsSL "${site%/}/staging/STAGING_REF?run=$GITHUB_RUN_ID" 2>/dev/null | sed -n 's/^ref=//p' || true)
+          echo "staged=$([ "$ref" = "$DELETED" ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
+
   # Builds the whole site — production from `main`, plus whatever is staged — and publishes it.
   deploy:
-    needs: verify
+    needs: [verify, deleted]
     if: >-
       always() && !cancelled() &&
       (needs.verify.result == 'success' || needs.verify.result == 'skipped') &&
-      (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+      (github.event_name == 'push' || github.event_name == 'workflow_dispatch' ||
+        (github.event_name == 'delete' && needs.deleted.outputs.staged == 'true'))
     runs-on: ubuntu-latest
     # One deploy at a time, never cancelled half-way: each reads what the last one staged.
     concurrency:
@@ -81,7 +109,8 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           EVENT: ${{ github.event_name }}
-          TARGET: ${{ inputs.target || 'production' }}
+          # A push to a branch stages it; a push to main, or a deletion, publishes production.
+          TARGET: ${{ inputs.target || (github.event_name == 'push' && github.ref != 'refs/heads/main' && 'staging') || 'production' }}
           REF: ${{ github.ref }}
           REF_NAME: ${{ github.ref_name }}
           SHA: ${{ github.sha }}
@@ -115,6 +144,21 @@ jobs:
                 stage_ref=$(printf '%s\n' "$staged" | sed -n 's/^ref=//p')
               fi ;;
           esac
+
+          # Staging follows a live branch: once it is deleted, or merged into main, it goes.
+          # (If GitHub cannot be asked, staging stays.)
+          if [ "$TARGET" = production ] && [ -n "$stage_sha" ]; then
+            code=$(curl -s -o /dev/null -w '%{http_code}' -H "Authorization: Bearer $GH_TOKEN" \
+              "$GITHUB_API_URL/repos/$REPO/git/ref/heads/$stage_ref" || true)
+            merged=$(gh api "repos/$REPO/compare/$stage_sha...$prod" --jq .status 2>/dev/null || true)
+            if [ "$code" = 404 ]; then
+              echo "::notice::Staging taken down: $stage_ref no longer exists."
+              stage_sha=; stage_ref=
+            elif [ "$merged" = ahead ] || [ "$merged" = identical ]; then
+              echo "::notice::Staging taken down: $stage_ref is merged into main."
+              stage_sha=; stage_ref=
+            fi
+          fi
 
           {
             echo "site=$site"

@@ -69,21 +69,23 @@ its Playwright version (`npx playwright install chromium`), or point
 
 ## Deploy
 
-`.github/workflows/pages.yml` verifies every pull request and every push to `main`, and
-publishes one GitHub Pages site holding two copies of the app. Pull requests are verified,
-never published. Every action is pinned to a full commit SHA, with the release tag in a comment.
+`.github/workflows/pages.yml` verifies every pushed commit and publishes one GitHub Pages
+site holding two copies of the app — automatically. Pull requests are never published (their
+branch's pushes are already verified and staged; a fork's pull request is verified only).
+Every action is pinned to a full commit SHA, with the release tag in a comment.
 
 | Copy | URL | Published |
 |---|---|---|
-| Production | `https://<owner>.github.io/how-many-pages-today/` | from `main` only: every push to it, or *Run workflow* on `main` with target **production** |
-| Staging | `https://<owner>.github.io/how-many-pages-today/staging/` | any branch: *Actions → Verify & deploy to GitHub Pages → Run workflow*, pick the branch, target **staging** |
+| Production | `https://<owner>.github.io/how-many-pages-today/` | on every push to `main` |
+| Staging | `https://<owner>.github.io/how-many-pages-today/staging/` | on every push to any other branch, once it passes the checks — the latest push wins |
 
 Every deploy rebuilds both: production from `main`, staging from the commit last staged (the
-live `staging/STAGING_REF` records it), so a push to `main` keeps staging as it was. Staging
-holds one branch at a time; staging another replaces it, and target **unstage** takes it down.
-A staging copy installs under its own name, keeps its own database and offline cache, and
-wears a "Staging" tag: it never touches the real app's data. A branch can be staged once it
-contains this workflow and staging support (merge `main` into older branches first).
+live `staging/STAGING_REF` records it), so a push to `main` keeps staging as it was — unless
+the staged branch has been merged into `main` or deleted: then staging is taken down.
+*Run workflow* does the same by hand (a branch to **staging**, `main` to **production**, or
+**unstage**). A staging copy installs under its own name, keeps its own database and offline
+cache, and wears a "Staging" tag: it never touches the real app's data. A branch is staged
+once it contains this workflow (merge `main` into older branches).
 
 One-time setup:
 
@@ -91,7 +93,7 @@ One-time setup:
 - *Settings → Environments → github-pages*: **Deployment branches and tags: No restriction**
   (staging deploys run on any branch), no required reviewers, no wait timer.
 
-Every deploy publishes the whole site, so anyone who can run the workflow on a branch can
+Every deploy publishes the whole site, so anyone who can push a branch to this repository can
 publish it — on a personal repository, that is you. (Change `BASE_PATH` for another host.)
 
 ## Reminders
