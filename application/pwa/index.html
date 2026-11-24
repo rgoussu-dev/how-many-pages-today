@@ -5,11 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <title>How Many Pages Today</title>
     <meta name="description" content="A daily reading challenge: one card, one picture, a number of pages. Works offline." />
-    <meta name="theme-color" content="#b9532f" media="(prefers-color-scheme: light)" />
-    <meta name="theme-color" content="#15110d" media="(prefers-color-scheme: dark)" />
+    <meta name="theme-color" content="#4a2d18" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#1a110a" media="(prefers-color-scheme: dark)" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="Pages Today" />
     <link rel="icon" href="/icons/favicon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
@@ -34,8 +34,9 @@
 
           <section data-route="progress" aria-label="Progress" hidden>
             <stack-pk space="var(--s1)">
-              <h1>Your progress</h1>
+              <h1>Your library</h1>
               <hmpt-streak-summary></hmpt-streak-summary>
+              <hmpt-bookshelf></hmpt-bookshelf>
               <hmpt-history-calendar></hmpt-history-calendar>
               <hmpt-achievement-list></hmpt-achievement-list>
             </stack-pk>
@@ -43,10 +44,11 @@
 
           <section data-route="profile" aria-label="Profile and settings" hidden>
             <stack-pk space="var(--s1)">
-              <h1>You &amp; your settings</h1>
+              <h1>Your reading room</h1>
               <hmpt-profile-form></hmpt-profile-form>
               <hmpt-range-form></hmpt-range-form>
               <hmpt-reminder-form></hmpt-reminder-form>
+              <p class="fleuron" aria-hidden="true">❦</p>
               <p class="muted app-footnote">Everything stays on this device. Clearing the browser's site data erases it.</p>
             </stack-pk>
           </section>

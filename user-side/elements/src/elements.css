@@ -5,13 +5,14 @@ hmpt-greeting,
 hmpt-streak-summary,
 hmpt-history-calendar,
 hmpt-achievement-list,
+hmpt-bookshelf,
 hmpt-profile-form,
 hmpt-range-form,
 hmpt-reminder-form {
   display: block;
 }
 
-/* — greeting — */
+/* — greeting: a portrait in a gilt frame — */
 
 hmpt-greeting .greeting {
   display: flex;
@@ -23,110 +24,186 @@ hmpt-greeting .greeting-avatar {
   display: grid;
   place-items: center;
   flex: none;
-  width: 3.25rem;
-  height: 3.25rem;
+  width: 3.6rem;
+  height: 3.6rem;
   border-radius: 50%;
-  background: var(--surface);
-  border: 1px solid var(--line);
-  box-shadow: var(--shadow);
-  font-size: 1.7rem;
+  font-size: 1.8rem;
+  background: var(--grain-paper), radial-gradient(circle at 40% 35%, #f8ecd2, #e2c99a);
+  box-shadow:
+    0 0 0 3px var(--gilt),
+    0 0 0 5px var(--leather-deep),
+    0 0 0 6px var(--gilt-dark),
+    var(--shadow);
 }
 
 hmpt-greeting h1 {
-  font-size: clamp(1.4rem, 5vw, 1.9rem);
+  font-size: clamp(1.6rem, 6vw, 2.1rem);
 }
 
-hmpt-greeting a {
-  color: var(--accent);
-  font-weight: 600;
+hmpt-greeting cite {
+  font-style: italic;
 }
 
-/* — today's card — */
+/* — today's card: a leather-bound book — */
 
-hmpt-today-card .today {
-  overflow: hidden;
-  box-shadow: var(--shadow-lift);
-}
-
-hmpt-today-card .today-art {
+hmpt-today-card .tome {
   position: relative;
+  display: block;
+  /* the spine on the left, a fore-edge of pages peeking out on the right */
+  border-radius: 0.3rem 0.7rem 0.7rem 0.3rem;
+  box-shadow:
+    4px 0 0 -1px #efe0bf,
+    5px 1px 0 -1px #d8c296,
+    7px 2px 0 -1px #efe0bf,
+    8px 3px 0 -1px #c7ad7c,
+    var(--shadow-lift);
+}
+
+hmpt-today-card .tome::before {
+  /* the raised bands of the spine */
+  content: '';
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 1.1rem;
+  border-radius: 0.3rem 0 0 0.3rem;
+  background:
+    repeating-linear-gradient(180deg, transparent 0 18%, rgb(0 0 0 / 0.35) 18% 19%, rgb(255 220 160 / 0.18) 19% 20%, transparent 20% 25%),
+    linear-gradient(90deg, rgb(0 0 0 / 0.45), rgb(255 255 255 / 0.08) 60%, rgb(0 0 0 / 0.3));
+  pointer-events: none;
+}
+
+hmpt-today-card .tome-inner {
+  position: relative;
+  display: grid;
+  gap: var(--s-1);
+  margin: 0 0 0 1.1rem;
+  padding: var(--s1) var(--s1) calc(var(--s1) + 0.25rem);
+}
+
+hmpt-today-card .tome-inner::before {
+  /* gilt tooling: a double rule inset from the edge of the board */
+  content: '';
+  position: absolute;
+  inset: 0.55rem;
+  border: 1px solid color-mix(in srgb, var(--gilt) 80%, transparent);
+  outline: 1px solid color-mix(in srgb, var(--gilt) 45%, transparent);
+  outline-offset: -5px;
+  border-radius: 0.2rem;
+  pointer-events: none;
+}
+
+hmpt-today-card .tome-date {
+  position: relative;
+  text-align: center;
+  font-family: var(--font-caps);
+  font-size: 1.05rem;
+  letter-spacing: 0.08em;
+  color: var(--gilt-light);
+}
+
+hmpt-today-card .tome-plate {
+  position: relative;
+  padding: 0.35rem;
+  background: linear-gradient(180deg, #f3e6c6, #e4cf9f);
+  box-shadow:
+    inset 0 0 0 1px var(--gilt-dark),
+    0 0 0 2px var(--gilt),
+    0 6px 14px -4px rgb(0 0 0 / 0.6);
 }
 
 hmpt-today-card frame-pk {
   display: block;
+  box-shadow: inset 0 0 0 1px rgb(60 30 10 / 0.4);
 }
 
-hmpt-today-card .today-art::after {
-  /* a soft fold where the picture meets the page */
-  content: '';
+/* The wax seal, pressed on once the pages are read. */
+hmpt-today-card .tome-seal {
   position: absolute;
-  inset: auto 0 0 0;
-  height: 2.5rem;
-  background: linear-gradient(to bottom, transparent, color-mix(in srgb, var(--surface) 35%, transparent));
-  pointer-events: none;
-}
-
-hmpt-today-card .today-stamp {
-  position: absolute;
-  top: 1rem;
-  right: 1rem;
-  padding: 0.35rem 0.9rem;
-  border: 3px solid #fff;
-  border-radius: 0.6rem;
-  color: #fff;
-  background: color-mix(in srgb, var(--success) 85%, transparent);
-  font-family: var(--font-serif);
-  font-size: 1.15rem;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  transform: rotate(8deg) scale(0.6);
+  right: -0.4rem;
+  bottom: -0.9rem;
+  display: grid;
+  place-items: center;
+  width: 4.6rem;
+  height: 4.6rem;
+  border-radius: 47% 53% 50% 50% / 52% 46% 54% 48%;
+  background: radial-gradient(circle at 38% 32%, #c0453a, var(--wax) 55%, #4f0d0a);
+  box-shadow:
+    0 3px 6px rgb(0 0 0 / 0.45),
+    inset 0 -3px 6px rgb(0 0 0 / 0.35),
+    inset 0 2px 3px rgb(255 160 140 / 0.35);
+  transform: rotate(-14deg) scale(1.6);
   opacity: 0;
   transition:
-    transform 260ms cubic-bezier(0.2, 1.6, 0.4, 1),
+    transform 320ms cubic-bezier(0.2, 1.4, 0.4, 1),
     opacity 160ms ease;
-  box-shadow: 0 4px 14px rgb(0 0 0 / 0.25);
 }
 
-hmpt-today-card[data-done] .today-stamp {
+hmpt-today-card .tome-seal > span {
+  display: grid;
+  place-items: center;
+  width: 3.1rem;
+  height: 3.1rem;
+  border-radius: 50%;
+  border: 2px solid rgb(60 5 3 / 0.55);
+  box-shadow: 0 1px 0 rgb(255 150 130 / 0.35);
+  color: #4f0d0a;
+  font-size: 1.7rem;
+  text-shadow: 0 1px 0 rgb(255 150 130 / 0.45);
+}
+
+hmpt-today-card[data-done] .tome-seal {
   opacity: 1;
-  transform: rotate(8deg) scale(1);
+  transform: rotate(-14deg) scale(1);
 }
 
-hmpt-today-card .today-body {
-  display: block;
-}
-
-hmpt-today-card .today-pages {
+hmpt-today-card .tome-pages {
+  position: relative;
   display: flex;
   align-items: baseline;
-  gap: 0.4rem;
-  font-family: var(--font-serif);
-  line-height: 1;
+  justify-content: center;
+  gap: 0.45rem;
+  margin-block-start: var(--s-1);
+  line-height: 0.9;
 }
 
-hmpt-today-card .today-number {
-  font-size: clamp(3.5rem, 18vw, 4.75rem);
-  font-weight: 700;
-  letter-spacing: -0.03em;
-  font-variant-numeric: lining-nums tabular-nums;
-  color: var(--accent);
+hmpt-today-card .tome-number {
+  font-family: var(--font-family);
+  font-weight: 500;
+  font-size: clamp(4.25rem, 22vw, 5.5rem);
+  font-variant-numeric: lining-nums;
+  letter-spacing: -0.02em;
+  filter: drop-shadow(0 1px 0 rgb(0 0 0 / 0.55)) drop-shadow(0 -1px 0 rgb(255 230 170 / 0.15));
 }
 
-hmpt-today-card[data-done] .today-number {
-  color: var(--success);
+hmpt-today-card .tome-unit {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 1.6rem;
+  color: var(--gilt-light);
 }
 
-hmpt-today-card .today-unit {
-  font-size: 1.4rem;
-  color: var(--ink-soft);
+hmpt-today-card .tome-hint {
+  position: relative;
+  text-align: center;
+  font-style: italic;
+  color: color-mix(in srgb, var(--gilt-light) 85%, #fff);
+  opacity: 0.9;
 }
 
-hmpt-today-card .today-actions .btn-quiet {
-  display: flex;
-  margin-inline: auto;
+hmpt-today-card .tome-done {
+  position: relative;
+  text-align: center;
+  font-family: var(--font-caps);
+  font-size: 1.15rem;
+  letter-spacing: 0.06em;
+  color: var(--gilt-light);
 }
 
-/* — streak summary — */
+hmpt-today-card .btn {
+  position: relative;
+}
+
+/* — streak & ledger — */
 
 hmpt-streak-summary .summary-streak {
   display: flex;
@@ -134,48 +211,85 @@ hmpt-streak-summary .summary-streak {
   gap: var(--s0);
 }
 
+/* A candle: lit while the streak lives. */
+hmpt-streak-summary .summary-candle {
+  position: relative;
+  flex: none;
+  width: 1.3rem;
+  height: 2.6rem;
+  margin: 1.2rem 0.6rem 0 0.4rem;
+  border-radius: 2px 2px 1px 1px;
+  background: linear-gradient(90deg, #fff6dc, #efe0bd 40%, #cdb88d);
+  box-shadow: 0 6px 0 -2px var(--gilt-dark), 0 7px 0 -1px var(--gilt);
+}
+
+hmpt-streak-summary .summary-candle::before {
+  /* the wick */
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: -0.35rem;
+  width: 2px;
+  height: 0.4rem;
+  background: #2a1a0c;
+  transform: translateX(-50%);
+}
+
 hmpt-streak-summary .summary-flame {
-  font-size: 2.6rem;
-  filter: grayscale(1);
-  opacity: 0.45;
-  transition:
-    filter 300ms ease,
-    opacity 300ms ease;
+  position: absolute;
+  left: 50%;
+  top: -1.45rem;
+  width: 0.8rem;
+  height: 1.25rem;
+  border-radius: 50% 50% 45% 45% / 65% 65% 35% 35%;
+  background: radial-gradient(ellipse at 50% 70%, #fffbe6, #ffd36b 40%, #f08c2a 75%, transparent 76%);
+  transform: translateX(-50%) scale(0);
+  transform-origin: 50% 90%;
+  transition: transform 300ms ease;
+  box-shadow: 0 0 18px 6px rgb(255 180 80 / 0.35);
 }
 
 hmpt-streak-summary[data-alive] .summary-flame {
-  filter: none;
-  opacity: 1;
-  animation: flicker 2.4s ease-in-out infinite;
+  transform: translateX(-50%) scale(1);
+  animation: flicker 2.6s ease-in-out infinite;
 }
 
 @keyframes flicker {
   0%,
   100% {
-    transform: scale(1) rotate(-2deg);
+    transform: translateX(-50%) scale(1) rotate(-2deg);
   }
-  50% {
-    transform: scale(1.08) rotate(2deg);
+  40% {
+    transform: translateX(-50%) scale(1.06, 0.96) rotate(2deg);
+  }
+  70% {
+    transform: translateX(-50%) scale(0.96, 1.05) rotate(-1deg);
   }
 }
 
 hmpt-streak-summary .summary-big {
-  font-family: var(--font-serif);
-  font-size: 1.9rem;
-  font-weight: 700;
-  line-height: 1.1;
+  font-family: var(--font-display);
+  font-size: 2.1rem;
+}
+
+hmpt-streak-summary .summary-big [data-streak] {
+  font-family: var(--font-family);
+  font-weight: 500;
+  font-variant-numeric: lining-nums;
+  line-height: 1.05;
 }
 
 hmpt-streak-summary .summary-stats > div {
-  padding: 0.6rem 0.75rem;
-  border-radius: var(--radius-sm);
-  background: var(--surface-sunk);
+  padding: 0.5rem 0.6rem;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  text-align: center;
 }
 
 hmpt-streak-summary .summary-value {
-  font-size: 1.35rem;
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
+  font-family: var(--font-family);
+  font-size: 1.65rem;
+  font-variant-numeric: lining-nums tabular-nums;
 }
 
 hmpt-streak-summary .summary-level {
@@ -184,16 +298,23 @@ hmpt-streak-summary .summary-level {
   gap: 0.5rem;
 }
 
-hmpt-streak-summary .summary-next {
-  font-size: 0.85rem;
+hmpt-streak-summary .summary-level strong {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 1.25rem;
 }
 
-/* — six-week calendar — */
+hmpt-streak-summary .summary-next {
+  font-style: italic;
+  font-size: 0.95rem;
+}
+
+/* — six-week calendar: a ledger of tooled squares — */
 
 hmpt-history-calendar .calendar-grid {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  gap: 0.35rem;
+  gap: 0.3rem;
   margin: 0;
   padding: 0;
   list-style: none;
@@ -201,8 +322,8 @@ hmpt-history-calendar .calendar-grid {
 
 hmpt-history-calendar .calendar-head span {
   text-align: center;
-  font-size: 0.7rem;
-  font-weight: 700;
+  font-family: var(--font-caps);
+  font-size: 0.9rem;
   color: var(--ink-faint);
 }
 
@@ -210,45 +331,51 @@ hmpt-history-calendar li {
   display: grid;
   place-items: center;
   aspect-ratio: 1;
-  border-radius: 0.55rem;
-  font-size: 0.75rem;
-  font-variant-numeric: tabular-nums;
+  border-radius: 2px;
+  font-size: 0.9rem;
+  font-variant-numeric: lining-nums tabular-nums;
   color: var(--ink-faint);
-  background: var(--surface-sunk);
+  border: 1px dotted var(--line);
 }
 
 hmpt-history-calendar li[data-state='completed'],
 hmpt-history-calendar .cal-swatch[data-state='completed'] {
-  background: var(--success);
-  color: #fff;
-  font-weight: 700;
+  border: 0;
+  color: var(--gilt-light);
+  background: var(--grain-leather), linear-gradient(160deg, var(--leather-light), var(--leather-deep));
+  box-shadow: inset 0 0 0 2px var(--leather), inset 0 0 0 3px color-mix(in srgb, var(--gilt) 60%, transparent);
 }
 
 hmpt-history-calendar li[data-state='missed'],
 hmpt-history-calendar .cal-swatch[data-state='missed'] {
-  background: color-mix(in srgb, var(--danger) 14%, var(--surface-sunk));
+  background: radial-gradient(circle at 60% 55%, color-mix(in srgb, var(--ink) 12%, transparent) 0 22%, transparent 24%);
 }
 
 hmpt-history-calendar li[data-today] {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--gilt);
   outline-offset: 1px;
   color: var(--ink);
   font-weight: 700;
 }
 
+hmpt-history-calendar li[data-today][data-state='completed'] {
+  color: var(--gilt-light);
+}
+
 hmpt-history-calendar .cal-swatch[data-state='today'] {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--gilt);
   outline-offset: -2px;
 }
 
 hmpt-history-calendar li[data-state='future'],
 hmpt-history-calendar li[data-state='before'] {
-  background: transparent;
-  opacity: 0.55;
+  border-color: transparent;
+  opacity: 0.45;
 }
 
 hmpt-history-calendar .calendar-legend {
-  font-size: 0.8rem;
+  font-size: 0.95rem;
+  font-style: italic;
   color: var(--ink-soft);
 }
 
@@ -260,73 +387,188 @@ hmpt-history-calendar .calendar-legend span {
 
 hmpt-history-calendar .cal-swatch {
   display: inline-block;
-  width: 0.9rem;
-  height: 0.9rem;
-  border-radius: 0.25rem;
-  background: var(--surface-sunk);
+  width: 0.95rem;
+  height: 0.95rem;
+  border-radius: 2px;
+  border: 1px dotted var(--line);
 }
 
-/* — achievements — */
+/* — achievements: bookplates, earned or still uncut — */
 
-hmpt-achievement-list .achievements-head {
+hmpt-achievement-list .achievements-head,
+hmpt-bookshelf .shelf-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: var(--s-1);
 }
 
 hmpt-achievement-list .badge {
+  position: relative;
   display: grid;
-  gap: 0.2rem;
+  gap: 0.15rem;
   align-content: start;
-  padding: 0.85rem;
-  border-radius: var(--radius-sm);
+  justify-items: center;
+  padding: 0.95rem 0.75rem 0.85rem;
+  text-align: center;
   border: 1px dashed var(--line);
+  border-radius: var(--radius-sm);
   color: var(--ink-faint);
-  background: transparent;
 }
 
 hmpt-achievement-list .badge[data-earned] {
-  border-style: solid;
+  border: 1px solid var(--gilt-dark);
   color: var(--ink);
-  background: var(--surface);
-  box-shadow: var(--shadow);
+  background: var(--grain-paper), linear-gradient(180deg, color-mix(in srgb, var(--surface) 90%, #fff), var(--surface));
+  box-shadow:
+    inset 0 0 0 3px var(--surface),
+    inset 0 0 0 4px color-mix(in srgb, var(--gilt) 70%, transparent),
+    var(--shadow);
 }
 
 hmpt-achievement-list .badge-icon {
-  font-size: 1.8rem;
-  line-height: 1.2;
+  display: grid;
+  place-items: center;
+  width: 2.9rem;
+  height: 2.9rem;
+  margin-block-end: 0.25rem;
+  border-radius: 50%;
+  font-size: 1.5rem;
+  background: var(--surface-sunk);
+}
+
+hmpt-achievement-list .badge[data-earned] .badge-icon {
+  background: var(--grain-leather), radial-gradient(circle at 40% 35%, var(--leather-light), var(--leather-deep));
+  box-shadow: 0 0 0 2px var(--gilt), 0 2px 5px rgb(0 0 0 / 0.35);
 }
 
 hmpt-achievement-list .badge:not([data-earned]) .badge-icon {
-  filter: grayscale(1);
-  opacity: 0.6;
+  filter: grayscale(1) sepia(0.4);
+  opacity: 0.55;
 }
 
 hmpt-achievement-list .badge strong {
-  font-size: 0.95rem;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 1.1rem;
+  line-height: 1.15;
 }
 
 hmpt-achievement-list .badge-text {
-  font-size: 0.8rem;
+  font-size: 0.92rem;
+  font-style: italic;
   color: var(--ink-soft);
+  line-height: 1.3;
 }
 
 hmpt-achievement-list .badge-when {
-  font-size: 0.7rem;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
+  margin-block-start: 0.25rem;
+  font-family: var(--font-caps);
+  font-size: 0.85rem;
+  letter-spacing: 0.05em;
   color: var(--ink-faint);
 }
 
 hmpt-achievement-list .badge[data-earned] .badge-when {
-  color: var(--gold);
+  color: var(--gilt-dark);
+}
+
+@media (prefers-color-scheme: dark) {
+  hmpt-achievement-list .badge[data-earned] .badge-when {
+    color: var(--gilt);
+  }
+}
+
+/* — the bookshelf — */
+
+hmpt-bookshelf .nightstand {
+  display: grid;
+  gap: 0.35rem;
+  justify-items: start;
+  padding: 0.75rem 0.9rem;
+  border-left: 3px solid var(--gilt);
+  background: color-mix(in srgb, var(--surface-sunk) 70%, transparent);
+}
+
+hmpt-bookshelf .nightstand-title {
+  font-family: var(--font-display);
+  font-size: 1.45rem;
+  line-height: 1.15;
+}
+
+hmpt-bookshelf .shelf-start {
+  display: grid;
+  gap: var(--s-1);
+  justify-items: start;
+  margin-block-start: var(--s-1);
+}
+
+hmpt-bookshelf .shelf-start .field {
+  justify-self: stretch;
+}
+
+hmpt-bookshelf .shelf-wood {
+  padding: 0.6rem 0.6rem 0;
+  border-radius: 2px;
+  background:
+    var(--grain-wood),
+    linear-gradient(180deg, #2a1a0e, #3b2414);
+  box-shadow: inset 0 6px 12px rgb(0 0 0 / 0.45);
+}
+
+hmpt-bookshelf .shelf-wood::after {
+  /* the plank */
+  content: '';
+  display: block;
+  height: 0.75rem;
+  margin: 0 -0.6rem;
+  background: var(--grain-wood), linear-gradient(180deg, var(--wood-light), var(--wood));
+  box-shadow: 0 2px 4px rgb(0 0 0 / 0.4);
+}
+
+hmpt-bookshelf .shelf {
+  min-height: 9.8rem;
+  align-items: flex-end;
+}
+
+hmpt-bookshelf .spine {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: var(--spine-width, 2.2rem);
+  height: var(--spine-height, 8rem);
+  padding: 0.6rem 0;
+  border-radius: 2px 2px 1px 1px;
+  background:
+    linear-gradient(180deg, transparent 8%, var(--gilt) 8% 9%, transparent 9% 11%, var(--gilt) 11% 12%, transparent 12% 88%, var(--gilt) 88% 89%, transparent 89%),
+    linear-gradient(90deg, rgb(255 255 255 / 0.18), transparent 30%, rgb(0 0 0 / 0.35)),
+    var(--grain-leather),
+    var(--binding, var(--leather));
+  overflow: hidden;
+}
+
+hmpt-bookshelf .spine-title {
+  max-height: 100%;
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--font-display);
+  font-size: 0.95rem;
+  color: var(--gilt-light);
+  text-shadow: 0 1px 0 rgb(0 0 0 / 0.5);
+}
+
+hmpt-bookshelf .shelf-empty {
+  font-style: italic;
+  text-align: center;
 }
 
 /* — forms — */
 
 hmpt-profile-form fieldset {
-  margin: 0;
+  margin-inline: 0;
   padding: 0;
   border: 0;
 }
@@ -334,8 +576,8 @@ hmpt-profile-form fieldset {
 hmpt-profile-form .field-legend {
   padding: 0;
   margin-block-end: 0.35rem;
-  font-size: 0.85rem;
-  font-weight: 600;
+  font-family: var(--font-caps);
+  font-size: 1rem;
   color: var(--ink-soft);
 }
 
@@ -348,21 +590,19 @@ hmpt-profile-form .avatar-option input {
 hmpt-profile-form .avatar-option span {
   display: grid;
   place-items: center;
-  width: 2.75rem;
-  height: 2.75rem;
+  width: 2.8rem;
+  height: 2.8rem;
   border-radius: 50%;
-  border: 2px solid var(--line);
-  background: var(--paper);
+  border: 1px solid var(--line);
+  background: var(--surface-sunk);
   font-size: 1.4rem;
   cursor: pointer;
-  transition:
-    transform 120ms ease,
-    border-color 120ms ease;
+  transition: transform 120ms ease;
 }
 
 hmpt-profile-form .avatar-option input:checked + span {
-  border-color: var(--accent);
-  background: color-mix(in srgb, var(--accent) 14%, var(--paper));
+  border-color: transparent;
+  box-shadow: 0 0 0 2px var(--gilt), 0 0 0 4px var(--leather);
   transform: scale(1.08);
 }
 
@@ -375,21 +615,19 @@ hmpt-range-form .range-fields > * {
 }
 
 hmpt-reminder-form .reminder-help summary {
-  cursor: pointer;
-  font-weight: 600;
-  color: var(--accent);
   margin-block-end: var(--s-1);
 }
 
 hmpt-reminder-form .switch span {
-  font-weight: 600;
+  font-family: var(--font-caps);
+  font-size: 1.1rem;
 }
 
 [aria-invalid] {
   border-color: var(--danger) !important;
 }
 
-/* — celebration — */
+/* — celebration: a flurry of autumn leaves, and a note on leather — */
 
 hmpt-celebration {
   position: fixed;
@@ -401,13 +639,13 @@ hmpt-celebration {
 hmpt-celebration .burst {
   position: absolute;
   left: 50%;
-  top: 40%;
+  top: 38%;
 }
 
 hmpt-celebration .burst span {
   position: absolute;
-  font-size: 1.4rem;
-  animation: burst 1.2s cubic-bezier(0.15, 0.7, 0.3, 1) forwards;
+  font-size: 1.5rem;
+  animation: burst 1.6s cubic-bezier(0.2, 0.6, 0.3, 1) forwards;
 }
 
 @keyframes burst {
@@ -426,17 +664,22 @@ hmpt-celebration .toast {
   left: 50%;
   bottom: calc(var(--tabbar-height) + env(safe-area-inset-bottom) + 1rem);
   max-width: min(26rem, calc(100vw - 2rem));
-  padding: 0.75rem 1.1rem;
+  padding: 0.75rem 1.15rem;
   border-radius: var(--radius-sm);
-  background: var(--ink);
-  color: var(--paper);
-  font-weight: 600;
-  box-shadow: var(--shadow-lift);
+  color: var(--gilt-light);
+  background: var(--grain-leather), linear-gradient(180deg, var(--leather-light), var(--leather-deep));
+  box-shadow:
+    inset 0 0 0 3px var(--leather),
+    inset 0 0 0 4px color-mix(in srgb, var(--gilt) 70%, transparent),
+    var(--shadow-lift);
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+  text-align: center;
   transform: translate(-50%, 1rem);
   opacity: 0;
   transition:
-    transform 220ms ease,
-    opacity 220ms ease;
+    transform 240ms ease,
+    opacity 240ms ease;
 }
 
 hmpt-celebration .toast[data-visible] {

@@ -60,7 +60,7 @@ export function levelFor(totalPages: number): ReaderLevel {
   };
 }
 
-export function computeStats(history: readonly DailyChallenge[], today: DayKey): ReadingStats {
+export function computeStats(history: readonly DailyChallenge[], today: DayKey, booksRead = 0): ReadingStats {
   const completed = completedOnly(history);
   const days = new Set(completed.map((c) => c.day));
   const totalPages = completed.reduce((sum, c) => sum + c.pages, 0);
@@ -69,6 +69,7 @@ export function computeStats(history: readonly DailyChallenge[], today: DayKey):
     bestStreak: bestStreak(days),
     totalPages,
     completedCount: completed.length,
+    booksRead,
     level: levelFor(totalPages),
   };
 }

@@ -18,7 +18,7 @@ test('deals a card from the default range, with an illustration', async ({ page 
   await expect(card(page).locator('hmpt-ds-scene')).toHaveAttribute('aria-label', /.+/);
 });
 
-test('validating the day lights the streak, earns a badge, and survives a reload', async ({ page }) => {
+test('validating the day seals the card, lights the streak, earns a badge, and survives a reload', async ({ page }) => {
   const pages = await pagesOnCard(page);
   await card(page).getByRole('button', { name: /^I read/ }).click();
 
@@ -36,9 +36,10 @@ test('validating the day lights the streak, earns a badge, and survives a reload
   await expect(page.locator('hmpt-achievement-list [data-count]')).toHaveText(/^1 \/ \d+$/);
   await expect(page.locator('hmpt-history-calendar li[data-state="completed"]')).toHaveCount(1);
 
+  // a day read stays read: no way back, no second validation
   await tab(page, 'Today').click();
-  await card(page).getByRole('button', { name: /undo/i }).click();
-  await expect(card(page)).not.toHaveAttribute('data-done', '');
+  await expect(card(page).getByRole('button')).toHaveCount(0);
+  await expect(card(page).locator('[data-done-note]')).toHaveText('Read, and sealed.');
 });
 
 test('works offline once installed', async ({ page, context }) => {
@@ -79,7 +80,6 @@ test('the profile stays on the device and greets the reader', async ({ page }) =
   const form = page.locator('hmpt-profile-form');
   await form.getByText('🦉').click();
   await form.getByLabel('Name').fill('Ada');
-  await form.getByLabel('Currently reading').fill('The Left Hand of Darkness');
   await form.getByRole('button', { name: 'Save profile' }).click();
   await expect(form.locator('[data-status]')).toHaveText('Saved ✓');
 
@@ -88,6 +88,30 @@ test('the profile stays on the device and greets the reader', async ({ page }) =
   await expect(page.locator('hmpt-greeting [data-avatar]')).toHaveText('🦉');
   await page.reload();
   await expect(page.locator('hmpt-greeting h1')).toContainText('Ada');
+});
+
+test('books go from the nightstand to the shelf, and count as books read', async ({ page }) => {
+  await tab(page, 'Progress').click();
+  const shelf = page.locator('hmpt-bookshelf');
+  await expect(shelf.locator('[data-empty]')).toBeVisible();
+  await shelf.getByLabel('What are you reading?').fill('The Left Hand of Darkness');
+  await shelf.getByRole('button', { name: 'Start reading' }).click();
+  await expect(shelf.locator('[data-current]')).toHaveText('The Left Hand of Darkness');
+
+  await tab(page, 'Today').click();
+  await expect(page.locator('hmpt-greeting cite')).toHaveText('The Left Hand of Darkness');
+
+  await tab(page, 'Progress').click();
+  await shelf.getByRole('button', { name: 'I finished it' }).click();
+  await expect(shelf.locator('.spine')).toHaveCount(1);
+  await expect(shelf.locator('.spine')).toHaveAttribute('aria-label', /^The Left Hand of Darkness, finished /);
+  await expect(shelf.locator('[data-count]')).toHaveText('1 book');
+  await expect(page.locator('section[data-route="progress"] hmpt-streak-summary [data-books]')).toHaveText('1');
+  await expect(page.locator('hmpt-celebration [data-toast]')).toContainText('joins your shelf');
+
+  await page.reload();
+  await expect(shelf.locator('.spine')).toHaveCount(1);
+  await expect(shelf.locator('[data-nightstand]')).toBeHidden();
 });
 
 test('a daily reminder fires at the chosen time while the app is open', async ({ page, context }) => {

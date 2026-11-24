@@ -23,17 +23,19 @@ export class Greeting extends PortBoundElement {
     return [view.subscribe((snapshot) => this.#render(snapshot))];
   }
 
-  #render({ profile }: ReadingSnapshot): void {
+  #render({ profile, shelf }: ReadingSnapshot): void {
     const hello = salutation(new Date().getHours());
     this.$('[data-avatar]').textContent = profile?.avatar ?? '📚';
     this.$('[data-hello]').textContent = profile ? `${hello}, ${profile.displayName}` : `${hello}!`;
     const sub = this.$('[data-sub]');
-    if (!profile) {
-      sub.innerHTML = 'New here? <a href="#profile">Set up your reader profile</a>.';
-    } else if (profile.currentBook) {
-      sub.textContent = `Currently reading ${profile.currentBook}.`;
+    if (shelf.current) {
+      const title = document.createElement('cite');
+      title.textContent = shelf.current;
+      sub.replaceChildren('On the nightstand: ', title, '.');
+    } else if (!profile) {
+      sub.innerHTML = 'New here? <a href="#profile">Fill in your reader’s card</a>.';
     } else {
-      sub.textContent = 'Here is your card for today.';
+      sub.textContent = 'Your card for today has been laid out.';
     }
   }
 }

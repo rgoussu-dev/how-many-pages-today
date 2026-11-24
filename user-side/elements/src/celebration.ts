@@ -3,12 +3,12 @@ import { readingContexts } from './contexts';
 import { plural } from './format';
 import { PortBoundElement } from './port-bound';
 
-const CONFETTI = ['📖', '✨', '📚', '⭐', '🔖', '🎉'];
+const CONFETTI = ['🍂', '🍁', '✨', '📖', '🍂', '🔖'];
 const TOAST_MS = 4200;
 
 /**
- * `<hmpt-celebration>` — listens to domain events and makes a small fuss: a burst of
- * confetti for a completed card, a toast for each achievement.
+ * `<hmpt-celebration>` — listens to domain events and makes a small fuss: a flurry of
+ * autumn leaves for a completed card or a finished book, a toast for each achievement.
  */
 export class Celebration extends PortBoundElement {
   #queue: string[] = [];
@@ -31,14 +31,16 @@ export class Celebration extends PortBoundElement {
         this.#burst();
         this.#toast(
           event.streak > 1
-            ? `🔥 ${plural(event.streak, 'day')} in a row. Splendid.`
-            : `✓ ${plural(event.challenge.pages, 'page')} read. Well done!`,
+            ? `🕯️ ${plural(event.streak, 'day')} in a row. Splendid.`
+            : `${plural(event.challenge.pages, 'page')} read. Well done.`,
         );
+        break;
+      case 'book-finished':
+        this.#burst();
+        this.#toast(`📕 “${event.book.title}” joins your shelf — book number ${event.booksRead}.`);
         break;
       case 'achievement-unlocked':
         this.#toast(`${event.achievement.icon} Achievement unlocked: ${event.achievement.title}`);
-        break;
-      case 'challenge-undone':
         break;
     }
   }
@@ -52,7 +54,7 @@ export class Celebration extends PortBoundElement {
       const angle = (i / 18) * Math.PI * 2;
       const distance = 90 + Math.random() * 90;
       piece.style.setProperty('--dx', `${Math.cos(angle) * distance}px`);
-      piece.style.setProperty('--dy', `${Math.sin(angle) * distance - 60}px`);
+      piece.style.setProperty('--dy', `${Math.sin(angle) * distance * 0.6 + 70}px`);
       piece.style.setProperty('--spin', `${Math.random() * 540 - 270}deg`);
       return piece;
     });

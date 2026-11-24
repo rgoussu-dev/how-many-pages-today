@@ -3,6 +3,8 @@
 import type { Clock, RandomSource } from '@hmpt/kernel';
 import type {
   AchievementLedger,
+  Bookshelf,
+  BookshelfRepository,
   ChallengeHistory,
   DailyChallenge,
   DayKey,
@@ -46,6 +48,16 @@ export class InMemoryProfiles implements ProfileRepository {
   }
   async save(profile: Profile) {
     this.profile = profile;
+  }
+}
+
+export class InMemoryShelves implements BookshelfRepository {
+  shelf: Bookshelf | undefined;
+  async load() {
+    return this.shelf;
+  }
+  async save(shelf: Bookshelf) {
+    this.shelf = shelf;
   }
 }
 
@@ -126,6 +138,7 @@ export class FakeScheduler implements ReminderScheduler {
 export type InMemoryDeps = ReadingDeps & {
   readonly history: InMemoryChallengeHistory;
   readonly profiles: InMemoryProfiles;
+  readonly shelves: InMemoryShelves;
   readonly preferences: InMemoryPreferences;
   readonly achievements: InMemoryAchievements;
   readonly scheduler: FakeScheduler;
@@ -138,6 +151,7 @@ export function inMemoryDeps(start: Date = new Date(2026, 10, 24, 9, 0), random:
   return {
     history: new InMemoryChallengeHistory(),
     profiles: new InMemoryProfiles(),
+    shelves: new InMemoryShelves(),
     preferences: new InMemoryPreferences(),
     achievements: new InMemoryAchievements(),
     scheduler: new FakeScheduler(),

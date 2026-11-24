@@ -8,7 +8,7 @@ describe('card scenes', () => {
 
   it('covers every kind of scene across seeds', () => {
     const kinds = new Set(Array.from({ length: 200 }, (_, seed) => renderScene(seed).kind));
-    expect(kinds).toEqual(new Set(['mountains', 'night', 'sea', 'forest', 'dunes', 'library']));
+    expect(kinds).toEqual(new Set(['shelves', 'lamp', 'nook', 'armchair', 'window', 'still-life']));
   });
 
   it('produces well-formed, self-contained SVG with no NaN coordinates', () => {

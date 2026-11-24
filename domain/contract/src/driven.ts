@@ -1,4 +1,5 @@
 import type {
+  Bookshelf,
   DailyChallenge,
   DayKey,
   PageRange,
@@ -27,6 +28,11 @@ export interface ChallengeHistory {
 export interface ProfileRepository {
   load(): Promise<Profile | undefined>;
   save(profile: Profile): Promise<void>;
+}
+
+export interface BookshelfRepository {
+  load(): Promise<Bookshelf | undefined>;
+  save(shelf: Bookshelf): Promise<void>;
 }
 
 export interface PreferencesRepository {

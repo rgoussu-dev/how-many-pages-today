@@ -20,8 +20,8 @@ export class ProfileForm extends PortBoundElement {
           <form novalidate>
             <stack-pk space="var(--s0)">
               <div>
-                <h2 id="profile-title">Your reader profile</h2>
-                <p class="muted" data-since>Stays on this device — nothing is ever sent anywhere.</p>
+                <h2 id="profile-title">Ex libris</h2>
+                <p class="muted" data-since>Your reader’s card. It stays on this device — nothing is ever sent anywhere.</p>
               </div>
               <fieldset class="avatar-picker">
                 <legend class="field-legend">Avatar</legend>
@@ -35,10 +35,6 @@ export class ProfileForm extends PortBoundElement {
               <label class="field"><span>Favourite genre</span>
                 <input name="favouriteGenre" maxlength="60" placeholder="Science fiction, poetry, crime…">
                 <p class="field-error" data-error="favouriteGenre"></p>
-              </label>
-              <label class="field"><span>Currently reading</span>
-                <input name="currentBook" maxlength="120" placeholder="Title of the book on your nightstand">
-                <p class="field-error" data-error="currentBook"></p>
               </label>
               <cluster-pk space="var(--s0)" align="center">
                 <button class="btn btn-primary" type="submit">Save profile</button>
@@ -62,7 +58,6 @@ export class ProfileForm extends PortBoundElement {
         displayName: text('displayName'),
         avatar: text('avatar'),
         favouriteGenre: text('favouriteGenre'),
-        currentBook: text('currentBook'),
       });
       const errors: readonly FieldError[] = result.ok ? [] : result.error;
       showFieldErrors(this, errors);
@@ -84,7 +79,6 @@ export class ProfileForm extends PortBoundElement {
     const form = this.$<HTMLFormElement>('form');
     (form.elements.namedItem('displayName') as HTMLInputElement).value = profile.displayName;
     (form.elements.namedItem('favouriteGenre') as HTMLInputElement).value = profile.favouriteGenre;
-    (form.elements.namedItem('currentBook') as HTMLInputElement).value = profile.currentBook;
     for (const radio of form.querySelectorAll<HTMLInputElement>('input[name="avatar"]')) {
       radio.checked = radio.value === profile.avatar;
     }

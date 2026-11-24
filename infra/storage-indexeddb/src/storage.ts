@@ -1,5 +1,7 @@
 import type {
   AchievementLedger,
+  Bookshelf,
+  BookshelfRepository,
   ChallengeHistory,
   DailyChallenge,
   DayKey,
@@ -25,7 +27,7 @@ const CHALLENGES = 'challenges';
 const SETTINGS = 'settings';
 const ACHIEVEMENTS = 'achievements';
 
-type SettingKey = 'profile' | 'range' | 'reminder';
+type SettingKey = 'profile' | 'bookshelf' | 'range' | 'reminder';
 
 const promised = <T>(request: IDBRequest<T>): Promise<T> =>
   new Promise((resolve, reject) => {
@@ -89,6 +91,12 @@ class IndexedDbProfiles implements ProfileRepository {
   save = (profile: Profile) => this.settings.put('profile', profile);
 }
 
+class IndexedDbShelves implements BookshelfRepository {
+  constructor(private readonly settings: Settings) {}
+  load = () => this.settings.get<Bookshelf>('bookshelf');
+  save = (shelf: Bookshelf) => this.settings.put('bookshelf', shelf);
+}
+
 class IndexedDbPreferences implements PreferencesRepository {
   constructor(private readonly settings: Settings) {}
   loadRange = () => this.settings.get<PageRange>('range');
@@ -122,6 +130,7 @@ class IndexedDbAchievements implements AchievementLedger {
 export interface ReadingStorage {
   readonly history: ChallengeHistory;
   readonly profiles: ProfileRepository;
+  readonly shelves: BookshelfRepository;
   readonly preferences: PreferencesRepository;
   readonly achievements: AchievementLedger;
   close(): void;
@@ -142,6 +151,7 @@ export async function openReadingDatabase(name: string = DATABASE_NAME): Promise
   return {
     history: new IndexedDbChallengeHistory(db),
     profiles: new IndexedDbProfiles(settings),
+    shelves: new IndexedDbShelves(settings),
     preferences: new IndexedDbPreferences(settings),
     achievements: new IndexedDbAchievements(db),
     close: () => db.close(),

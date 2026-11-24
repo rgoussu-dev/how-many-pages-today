@@ -1,0 +1,45 @@
+/*
+ * Bundled typefaces (SIL Open Font License) — latin subset only, served from the app's own
+ * origin and precached, so the library keeps its look offline.
+ *  - EB Garamond: the text face, after Claude Garamont's 16th-century types.
+ *  - IM Fell English: the 17th-century Fell types, for display, numerals and small caps.
+ */
+@font-face {
+  font-family: 'Garamond Text';
+  font-style: normal;
+  font-weight: 400 800;
+  font-display: swap;
+  src: url('@fontsource-variable/eb-garamond/files/eb-garamond-latin-wght-normal.woff2') format('woff2-variations');
+}
+
+@font-face {
+  font-family: 'Garamond Text';
+  font-style: italic;
+  font-weight: 400 800;
+  font-display: swap;
+  src: url('@fontsource-variable/eb-garamond/files/eb-garamond-latin-wght-italic.woff2') format('woff2-variations');
+}
+
+@font-face {
+  font-family: 'Fell';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('@fontsource/im-fell-english/files/im-fell-english-latin-400-normal.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Fell';
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: url('@fontsource/im-fell-english/files/im-fell-english-latin-400-italic.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Fell SC';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('@fontsource/im-fell-english-sc/files/im-fell-english-sc-latin-400-normal.woff2') format('woff2');
+}

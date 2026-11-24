@@ -35,11 +35,24 @@ export interface Profile {
   readonly displayName: string;
   readonly avatar: string;
   readonly favouriteGenre: string;
-  readonly currentBook: string;
   readonly readerSince: DayKey;
 }
 
 export type ProfileInput = Omit<Profile, 'readerSince'>;
+
+export interface FinishedBook {
+  readonly title: string;
+  readonly finishedOn: DayKey;
+}
+
+/** The book in hand, and every book finished since — the reader's own shelf. */
+export interface Bookshelf {
+  readonly current: string | null;
+  /** Oldest first, in the order they were finished. */
+  readonly finished: readonly FinishedBook[];
+}
+
+export const EMPTY_SHELF: Bookshelf = { current: null, finished: [] };
 
 export interface ReminderSettings {
   readonly enabled: boolean;
@@ -64,8 +77,9 @@ export type AchievementId =
   | 'streak-7'
   | 'streak-30'
   | 'streak-100'
-  | 'challenges-10'
-  | 'challenges-50'
+  | 'book-1'
+  | 'books-5'
+  | 'books-12'
   | 'pages-500'
   | 'pages-1000'
   | 'pages-5000'
@@ -106,6 +120,7 @@ export interface ReadingStats {
   readonly bestStreak: number;
   readonly totalPages: number;
   readonly completedCount: number;
+  readonly booksRead: number;
   readonly level: ReaderLevel;
 }
 
@@ -115,6 +130,7 @@ export interface ReadingSnapshot {
   /** Newest first. */
   readonly history: readonly DailyChallenge[];
   readonly profile: Profile | null;
+  readonly shelf: Bookshelf;
   readonly range: PageRange;
   readonly reminder: ReminderSettings;
   readonly stats: ReadingStats;

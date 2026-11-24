@@ -13,7 +13,12 @@ const read = (day: string, pages = 20): DailyChallenge => ({
 });
 
 const earned = (history: DailyChallenge[]) =>
-  earnedAchievements({ history, profile: null, stats: computeStats(history, '2026-12-31') });
+  earnedAchievements({
+    history,
+    profile: null,
+    shelf: { current: null, finished: [] },
+    stats: computeStats(history, '2026-12-31'),
+  });
 
 describe('achievements', () => {
   it('recognises a full weekend', () => {

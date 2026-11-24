@@ -1,4 +1,5 @@
 import { AchievementList } from './achievement-list';
+import { Bookshelf } from './bookshelf';
 import { Celebration } from './celebration';
 import { Greeting } from './greeting';
 import { HistoryCalendar } from './history-calendar';
@@ -17,6 +18,7 @@ const ELEMENTS = {
   'hmpt-streak-summary': StreakSummary,
   'hmpt-history-calendar': HistoryCalendar,
   'hmpt-achievement-list': AchievementList,
+  'hmpt-bookshelf': Bookshelf,
   'hmpt-profile-form': ProfileForm,
   'hmpt-range-form': RangeForm,
   'hmpt-reminder-form': ReminderForm,

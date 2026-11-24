@@ -8,6 +8,7 @@
  */
 import '@rgoussu.dev/planks';
 import '@rgoussu.dev/planks/tokens';
+import '@hmpt/design-system/fonts.css';
 import '@hmpt/design-system/theme.css';
 import '@hmpt/elements/elements.css';
 import './shell.css';
@@ -32,6 +33,7 @@ async function assemble(): Promise<ReadingApp> {
   return createReadingApp({
     history: storage.history,
     profiles: storage.profiles,
+    shelves: storage.shelves,
     preferences: storage.preferences,
     achievements: storage.achievements,
     scheduler: new BrowserReminderScheduler(worker.registration),
@@ -54,6 +56,7 @@ async function boot(): Promise<void> {
     new Map<Context<unknown>, unknown>([
       [readingContexts.challenge, app.challenge],
       [readingContexts.profile, app.profile],
+      [readingContexts.bookshelf, app.bookshelf],
       [readingContexts.range, app.range],
       [readingContexts.reminder, app.reminder],
       [readingContexts.view, app.view],

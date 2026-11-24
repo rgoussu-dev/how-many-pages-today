@@ -1,6 +1,8 @@
 import type { Result } from '@hmpt/kernel';
 import type {
+  Bookshelf,
   DailyChallenge,
+  FinishedBook,
   PageRange,
   Profile,
   ProfileInput,
@@ -15,15 +17,13 @@ import type { ReadingEvent } from './events';
  * keys and never see the implementation.
  */
 
-export type ChallengeError = 'already-completed' | 'not-completed';
+export type ChallengeError = 'already-completed';
 
 export interface DailyChallengePort {
   /** Draws today's card if it does not exist yet, then refreshes the read model. Idempotent. */
   open(): Promise<DailyChallenge>;
-  /** "I read them": validates today's challenge. */
+  /** "I read them": validates today's challenge. Final — a day read stays read. */
   complete(): Promise<Result<DailyChallenge, ChallengeError>>;
-  /** Takes back today's validation (achievements already earned are kept). */
-  undo(): Promise<Result<DailyChallenge, ChallengeError>>;
 }
 
 export interface FieldError {
@@ -33,6 +33,15 @@ export interface FieldError {
 
 export interface ProfilePort {
   save(input: ProfileInput): Promise<Result<Profile, readonly FieldError[]>>;
+}
+
+export type ShelfError = 'nothing-in-progress';
+
+export interface BookshelfPort {
+  /** Puts a book in hand (replacing any unfinished one). */
+  startReading(title: string): Promise<Result<Bookshelf, readonly FieldError[]>>;
+  /** Shelves the book in hand as finished today. */
+  finishCurrent(): Promise<Result<FinishedBook, ShelfError>>;
 }
 
 export interface PageRangeUpdate {

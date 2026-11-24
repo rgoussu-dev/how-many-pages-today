@@ -98,6 +98,7 @@ module.exports = {
   options: {
     doNotFollow: { path: 'node_modules' },
     exclude: { path: '(^|/)(dist|test-results|playwright-report)/' },
+    parser: 'swc', // TypeScript 7.0's API lacks what the tsc parser needs
     tsPreCompilationDeps: true,
     combinedDependencies: false,
     tsConfig: { fileName: 'tsconfig.tests.json' },

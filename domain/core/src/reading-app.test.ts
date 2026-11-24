@@ -38,15 +38,10 @@ describe('the daily challenge', () => {
     expect(snapshot?.achievements.find((a) => a.id === 'first-challenge')?.unlockedOn).toBe('2026-11-24');
   });
 
-  it('refuses to validate twice, and undoes only a validated day', async () => {
-    expect(await app.challenge.undo()).toEqual({ ok: false, error: 'not-completed' });
+  it('refuses to validate twice: a day read stays read', async () => {
     await app.challenge.complete();
     expect(await app.challenge.complete()).toEqual({ ok: false, error: 'already-completed' });
-    const undone = await app.challenge.undo();
-    expect(undone.ok && undone.value.completedAt).toBeUndefined();
-    expect(snapshot?.stats.currentStreak).toBe(0);
-    // achievements are never taken back
-    expect(snapshot?.achievements.find((a) => a.id === 'first-challenge')?.unlockedOn).toBeDefined();
+    expect(snapshot?.stats.currentStreak).toBe(1);
   });
 
   it('builds a streak over consecutive days and unlocks Kindling on the third', async () => {
@@ -84,11 +79,42 @@ describe('the daily challenge', () => {
   });
 
   it('validates and saves the profile, stamping reader-since', async () => {
-    const bad = await app.profile.save({ displayName: '  ', avatar: '🦉', favouriteGenre: '', currentBook: '' });
+    const bad = await app.profile.save({ displayName: '  ', avatar: '🦉', favouriteGenre: '' });
     expect(bad.ok).toBe(false);
-    const good = await app.profile.save({ displayName: ' Ada ', avatar: '🦉', favouriteGenre: 'SF', currentBook: '' });
+    const good = await app.profile.save({ displayName: ' Ada ', avatar: '🦉', favouriteGenre: 'SF' });
     expect(good).toMatchObject({ ok: true, value: { displayName: 'Ada', readerSince: '2026-11-24' } });
     expect(snapshot?.achievements.find((a) => a.id === 'introductions')?.unlockedOn).toBe('2026-11-24');
+  });
+});
+
+describe('the bookshelf', () => {
+  it('puts a book in hand, shelves it when finished, and counts books read', async () => {
+    const deps = inMemoryDeps(at(24));
+    const app = createReadingApp(deps);
+    const events: ReadingEvent[] = [];
+    app.view.onEvent((e) => events.push(e));
+
+    expect(await app.bookshelf.finishCurrent()).toEqual({ ok: false, error: 'nothing-in-progress' });
+    expect(await app.bookshelf.startReading('   ')).toMatchObject({ ok: false });
+    await app.bookshelf.startReading('  The   Dispossessed ');
+    expect(app.view.current()?.shelf.current).toBe('The Dispossessed');
+
+    const finished = await app.bookshelf.finishCurrent();
+    expect(finished).toEqual({ ok: true, value: { title: 'The Dispossessed', finishedOn: '2026-11-24' } });
+    const snapshot = app.view.current();
+    expect(snapshot?.shelf).toEqual({ current: null, finished: [{ title: 'The Dispossessed', finishedOn: '2026-11-24' }] });
+    expect(snapshot?.stats.booksRead).toBe(1);
+    expect(events.map((e) => e.type)).toEqual(['book-finished', 'achievement-unlocked']);
+    expect(snapshot?.achievements.find((a) => a.id === 'book-1')?.unlockedOn).toBe('2026-11-24');
+  });
+
+  it('awards a shelf of your own at five books', async () => {
+    const app = createReadingApp(inMemoryDeps(at(24)));
+    for (const title of ['A', 'B', 'C', 'D', 'E']) {
+      await app.bookshelf.startReading(title);
+      await app.bookshelf.finishCurrent();
+    }
+    expect(app.view.current()?.achievements.find((a) => a.id === 'books-5')?.unlockedOn).toBe('2026-11-24');
   });
 });
 

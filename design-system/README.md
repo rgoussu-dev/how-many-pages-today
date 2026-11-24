@@ -1,6 +1,10 @@
 # @hmpt/design-system
 
-Domain-blind presentation. `theme.css` — colour, type, buttons, fields, meter, light and dark,
-layered on planks tokens. `<hmpt-ds-scene seed="…">` — the card illustration: one of six
-landscapes (mountains, night, sea, forest, dunes, library) painted as SVG from a seed;
-`renderScene(seed)` is a pure function.
+Domain-blind presentation for an old library on an autumn afternoon.
+
+- `theme.css` — parchment, leather, gilt and wood; lamplight and drifting dust; buttons,
+  ruled-paper fields, the meter; a lamplit evening variant for dark mode. Layered on planks tokens.
+- `fonts.css` — EB Garamond (text) and IM Fell English / SC (display), latin subsets,
+  bundled and precached (SIL Open Font License).
+- `<hmpt-ds-scene seed="…">` — the card plate: one of six cosy scenes (shelves, lamp, nook,
+  armchair, window, still life) painted as SVG from a seed; `renderScene(seed)` is pure.

@@ -1,6 +1,7 @@
 import type {
   Achievement,
   AchievementId,
+  Bookshelf,
   DailyChallenge,
   Profile,
   ReadingStats,
@@ -15,6 +16,7 @@ interface AchievementRule extends Achievement {
 export interface AchievementFacts {
   readonly history: readonly DailyChallenge[];
   readonly profile: Profile | null;
+  readonly shelf: Bookshelf;
   readonly stats: ReadingStats;
 }
 
@@ -60,18 +62,25 @@ const RULES: readonly AchievementRule[] = [
     earned: ({ stats }) => stats.bestStreak >= 100,
   },
   {
-    id: 'challenges-10',
-    icon: '📚',
-    title: 'Regular reader',
-    description: 'Complete ten challenges.',
-    earned: ({ stats }) => stats.completedCount >= 10,
+    id: 'book-1',
+    icon: '📕',
+    title: 'The end',
+    description: 'Finish your first book.',
+    earned: ({ shelf }) => shelf.finished.length >= 1,
   },
   {
-    id: 'challenges-50',
+    id: 'books-5',
+    icon: '📚',
+    title: 'A shelf of your own',
+    description: 'Finish five books.',
+    earned: ({ shelf }) => shelf.finished.length >= 5,
+  },
+  {
+    id: 'books-12',
     icon: '🏛️',
-    title: 'Fixture of the library',
-    description: 'Complete fifty challenges.',
-    earned: ({ stats }) => stats.completedCount >= 50,
+    title: 'A book a month',
+    description: 'Finish twelve books.',
+    earned: ({ shelf }) => shelf.finished.length >= 12,
   },
   {
     id: 'pages-500',

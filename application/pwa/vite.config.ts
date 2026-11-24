@@ -16,7 +16,7 @@ export default defineConfig({
       injectRegister: false, // main.ts registers it, after the domain is wired
       registerType: 'autoUpdate',
       injectManifest: {
-        globPatterns: ['**/*.{js,css,html,svg,png,ico,webmanifest}'],
+        globPatterns: ['**/*.{js,css,html,svg,png,ico,webmanifest,woff2}'],
         rollupFormat: 'iife',
       },
       includeAssets: ['icons/favicon.svg', 'icons/apple-touch-icon.png'],
@@ -30,8 +30,8 @@ export default defineConfig({
         scope: base,
         display: 'standalone',
         orientation: 'portrait',
-        background_color: '#f5eee2',
-        theme_color: '#b9532f',
+        background_color: '#e9d7b4',
+        theme_color: '#4a2d18',
         categories: ['books', 'education', 'lifestyle'],
         icons: [
           { src: 'icons/icon-192.png', sizes: '192x192', type: 'image/png' },

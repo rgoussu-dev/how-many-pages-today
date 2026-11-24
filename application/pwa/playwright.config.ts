@@ -13,6 +13,11 @@ export default defineConfig({
     baseURL: `http://127.0.0.1:${port}${base}`,
     trace: 'off',
     serviceWorkers: 'allow',
+    // CI installs the Chromium this Playwright version expects. Elsewhere, point
+    // PLAYWRIGHT_CHROMIUM_PATH at an existing Chromium to skip the download.
+    launchOptions: process.env.PLAYWRIGHT_CHROMIUM_PATH
+      ? { executablePath: process.env.PLAYWRIGHT_CHROMIUM_PATH }
+      : {},
   },
   projects: [{ name: 'mobile-chromium', use: { ...devices['Pixel 7'] } }],
   webServer: {

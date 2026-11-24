@@ -36,13 +36,15 @@ describe('IndexedDB storage', () => {
   it('round-trips challenges, profile and preferences', async () => {
     const storage = await open('round-trip');
     await storage.history.save({ ...card('2026-11-24', 30), status: 'completed', completedAt: '2026-11-24T19:00:00.000Z' });
-    await storage.profiles.save({ displayName: 'Ada', avatar: '🦉', favouriteGenre: '', currentBook: '', readerSince: '2026-11-24' });
+    await storage.profiles.save({ displayName: 'Ada', avatar: '🦉', favouriteGenre: '', readerSince: '2026-11-24' });
+    await storage.shelves.save({ current: 'Middlemarch', finished: [{ title: 'Persuasion', finishedOn: '2026-11-20' }] });
     await storage.preferences.saveRange({ min: 5, max: 50, step: 5 });
     await storage.preferences.saveReminder({ enabled: true, time: '21:30' });
 
     const reopened = await open('round-trip');
     expect(await reopened.history.byDay('2026-11-24')).toMatchObject({ status: 'completed', pages: 30 });
     expect((await reopened.profiles.load())?.displayName).toBe('Ada');
+    expect((await reopened.shelves.load())?.finished).toEqual([{ title: 'Persuasion', finishedOn: '2026-11-20' }]);
     expect(await reopened.preferences.loadRange()).toEqual({ min: 5, max: 50, step: 5 });
     expect(await reopened.preferences.loadReminder()).toEqual({ enabled: true, time: '21:30' });
   });

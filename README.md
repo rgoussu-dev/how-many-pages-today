@@ -1,15 +1,26 @@
 # How Many Pages Today
 
-An offline-first PWA that deals you one reading challenge a day: a card with an illustration
-and a number of pages. Read them, tap the button, keep the streak alive.
+An offline-first PWA that deals you one reading challenge a day: a card, bound like an old
+leather book, with an illustrated plate and a number of pages in gold. Read them, press the
+button, and the card is sealed with wax. Keep the candle burning.
+
+The room it lives in is an old library on an autumn afternoon — parchment, leather and gilt,
+dusty shelves, lamplight, pillows and a blanket — and, after dusk, the same room by lamplight.
 
 - **A card a day.** The page count is drawn from a range you control — by default 10 to 100
-  in steps of ten — and the card's illustration is painted from a seed, so the same day
-  always shows the same card, online or not.
-- **Gamified.** Current and best streak, total pages, a ten-rank reader level, sixteen
-  achievements, a six-week calendar, and a small fuss when you finish.
-- **A profile that never leaves the phone.** Name, avatar, favourite genre, current book —
-  all stored in the browser's IndexedDB. There is no server.
+  in steps of ten. The plate is one of six cosy library scenes (dusty shelves, a banker's
+  lamp, a window seat of pillows, a wingback armchair, a rainy windowsill, a candlelit
+  still life) painted from a seed, so the same day always shows the same card, online or not.
+- **A day read stays read.** Validating is deliberate and final — there is no undo.
+- **Gamified.** Current and best streak (a candle), pages read, books read, a ten-rank reader
+  level, seventeen achievements as bookplates, a six-week ledger, and a flurry of autumn
+  leaves when you finish.
+- **Your shelf.** Put a book on the nightstand; when you finish it, it joins your shelf,
+  spine out, and counts toward *books read*.
+- **A profile that never leaves the phone.** Name, avatar, favourite genre — stored in the
+  browser's IndexedDB. There is no server.
+- **Typography.** EB Garamond and IM Fell English (SIL OFL), bundled latin subsets,
+  precached — the look survives offline.
 - **Daily reminder.** A notification at a fixed hour until you have read; plus a one-tap
   calendar event as the reminder that never misses (see [Reminders](#reminders)).
 - **Installable and offline.** Every asset is precached by the service worker.
@@ -23,7 +34,9 @@ npm run verify       # typecheck + architecture lint + unit tests + build
 npm run e2e          # Playwright against the production build
 ```
 
-Node 22+. The end-to-end suite needs Chromium (`npx playwright install chromium`).
+Node 24+ (CI runs the current LTS, 26). The end-to-end suite needs the Chromium matching
+its Playwright version (`npx playwright install chromium`), or point
+`PLAYWRIGHT_CHROMIUM_PATH` at a Chromium you already have.
 
 ## Deploy
 
@@ -94,8 +107,8 @@ flowchart LR
 | [`platform/kernel`](platform/kernel) | `Result`, the `Clock`/`RandomSource` port types, the Context protocol |
 | [`platform/commons`](platform/commons) | System clock, `Math.random` |
 | [`domain/contract`](domain/contract) | Model, driving & driven ports, domain events |
-| [`domain/core`](domain/core) | Page draws, streaks, levels, achievements, reminder policy; in-memory fakes |
-| [`design-system`](design-system) | Theme tokens over planks; `<hmpt-ds-scene>`, the seeded illustration |
+| [`domain/core`](domain/core) | Page draws, streaks, levels, the bookshelf, achievements, reminder policy; in-memory fakes |
+| [`design-system`](design-system) | The library theme over planks tokens, bundled fonts; `<hmpt-ds-scene>`, the seeded illustration |
 | [`user-side/elements`](user-side/elements) | Port-bound custom elements and their context keys |
 | [`infra/storage-indexeddb`](infra/storage-indexeddb) | Every repository port on one IndexedDB database |
 | [`infra/reminders-browser`](infra/reminders-browser) | Notification permission, periodic sync, notifications |
@@ -112,4 +125,6 @@ The walls and what enforces them:
 | The core's internals stay internal | `domain/core`'s `exports` map: factories (and `./testing`) only |
 
 The workspace graph enforces nothing on its own — dependency-cruiser does, and it has been
-checked to fire on planted violations. Decisions are recorded in [`docs/adr`](docs/adr).
+checked to fire on planted violations. It parses with SWC: TypeScript 7.0's API lacks what
+its tsc parser needs, so it prints a `missing-tsc-transpiler` warning until TypeScript 7.1 —
+expected, and harmless. Decisions are recorded in [`docs/adr`](docs/adr).

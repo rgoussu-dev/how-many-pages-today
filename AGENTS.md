@@ -19,7 +19,10 @@ reference, `basic` layout, with `@rgoussu.dev/planks` for layout. Read `README.m
   Elements are light DOM (planks is light DOM — see `docs/adr/0001`), tags prefixed `hmpt-`,
   design-system tags `hmpt-ds-`.
 - **Everything stays on the device.** No network calls, no analytics, no external fonts
-  or images. The service worker precaches the whole build.
+  or images (fonts are bundled). The service worker precaches the whole build.
+- **The look is an old library on an autumn afternoon** (dark mode: the same room by
+  lamplight). Parchment for pages, leather and gilt for what matters, wood for the shelf.
+  Keep new UI in that vocabulary.
 - **Escape by construction.** User text reaches the DOM through `textContent` only.
 
 ## Testing
@@ -36,7 +39,9 @@ No contract tests between infra and the domain contract (house rule).
 ## Commands
 
 `npm run verify` (typecheck, lint:arch, test, build) must pass before every commit;
-`npm run e2e` before pushing. After editing `application/pwa/public/icons/favicon.svg`,
+`npm run e2e` before pushing (set `PLAYWRIGHT_CHROMIUM_PATH` to reuse an installed Chromium).
+dependency-cruiser's `missing-tsc-transpiler` warning is expected under TypeScript 7.0 — it
+parses with SWC; switch back to the tsc parser once TypeScript 7.1 ships. After editing `application/pwa/public/icons/favicon.svg`,
 run `npm run icons -w @hmpt/pwa` and commit the PNGs.
 
 Every package carries a `README.md` (what it is) and an `AGENTS.md` (local conventions).

@@ -2,7 +2,11 @@ import { err, ok, type Clock, type RandomSource } from '@hmpt/kernel';
 import {
   DEFAULT_PAGE_RANGE,
   DEFAULT_REMINDER,
+  EMPTY_SHELF,
   type AchievementLedger,
+  type Bookshelf,
+  type BookshelfPort,
+  type BookshelfRepository,
   type ChallengeHistory,
   type DailyChallenge,
   type DailyChallengePort,
@@ -23,7 +27,7 @@ import {
 import { ACHIEVEMENTS, earnedAchievements } from './achievements';
 import { dayKeyOf } from './days';
 import { drawArtSeed, drawPages, possiblePages, validateRange } from './pages';
-import { validateProfile } from './profile';
+import { validateProfile, validateTitle } from './profile';
 import { nextReminderAt, parseTime, reminderInstantOn } from './reminders';
 import { computeStats } from './stats';
 import { ReadingStore } from './store';
@@ -38,6 +42,7 @@ export interface ReminderCheckDeps {
 }
 
 export interface ReadingDeps extends ReminderCheckDeps {
+  readonly shelves: BookshelfRepository;
   readonly achievements: AchievementLedger;
   readonly scheduler: ReminderScheduler;
 }
@@ -45,6 +50,7 @@ export interface ReadingDeps extends ReminderCheckDeps {
 export interface ReadingApp {
   readonly challenge: DailyChallengePort;
   readonly profile: ProfilePort;
+  readonly bookshelf: BookshelfPort;
   readonly range: PageRangePort;
   readonly reminder: ReminderPort;
   readonly reminderCheck: ReminderCheckPort;
@@ -109,11 +115,13 @@ export function createReminderCheck(deps: ReminderCheckDeps): ReminderCheckPort 
 export function createReadingApp(deps: ReadingDeps): ReadingApp {
   const store = new ReadingStore();
   const today = () => dayKeyOf(deps.clock.now());
+  const loadShelf = async (): Promise<Bookshelf> => (await deps.shelves.load()) ?? EMPTY_SHELF;
 
   async function snapshotFor(todayChallenge: DailyChallenge): Promise<ReadingSnapshot> {
-    const [history, profile, range, reminder, unlocked] = await Promise.all([
+    const [history, profile, shelf, range, reminder, unlocked] = await Promise.all([
       deps.history.all(),
       deps.profiles.load(),
+      loadShelf(),
       deps.preferences.loadRange(),
       loadReminder(deps),
       deps.achievements.all(),
@@ -123,9 +131,10 @@ export function createReadingApp(deps: ReadingDeps): ReadingApp {
       today: todayChallenge,
       history: [...history].sort((a, b) => b.day.localeCompare(a.day)),
       profile: profile ?? null,
+      shelf,
       range: range ?? DEFAULT_PAGE_RANGE,
       reminder,
-      stats: computeStats(history, today()),
+      stats: computeStats(history, today(), shelf.finished.length),
       achievements: ACHIEVEMENTS.map((a) => {
         const on = unlockedOn.get(a.id);
         return on === undefined ? { ...a } : { ...a, unlockedOn: on };
@@ -141,14 +150,17 @@ export function createReadingApp(deps: ReadingDeps): ReadingApp {
 
   /** Records newly earned achievements (they are never taken back) and announces them. */
   async function awardAchievements(): Promise<void> {
-    const [history, profile, unlocked] = await Promise.all([
+    const [history, profile, shelf, unlocked] = await Promise.all([
       deps.history.all(),
       deps.profiles.load(),
+      loadShelf(),
       deps.achievements.all(),
     ]);
     const known = new Set(unlocked.map((u) => u.id));
-    const stats = computeStats(history, today());
-    const fresh = earnedAchievements({ history, profile: profile ?? null, stats }).filter((id) => !known.has(id));
+    const stats = computeStats(history, today(), shelf.finished.length);
+    const fresh = earnedAchievements({ history, profile: profile ?? null, shelf, stats }).filter(
+      (id) => !known.has(id),
+    );
     if (fresh.length === 0) return;
     await deps.achievements.record(fresh.map((id) => ({ id, unlockedOn: today() })));
     for (const id of fresh) {
@@ -171,17 +183,6 @@ export function createReadingApp(deps: ReadingDeps): ReadingApp {
       await refresh();
       return ok(done);
     },
-
-    async undo() {
-      const current = await ensureToday(deps);
-      if (current.status !== 'completed') return err('not-completed');
-      const { completedAt: _completedAt, ...rest } = current;
-      const reopened: DailyChallenge = { ...rest, status: 'pending' };
-      await deps.history.save(reopened);
-      store.emit({ type: 'challenge-undone', challenge: reopened });
-      await refresh();
-      return ok(reopened);
-    },
   };
 
   const profile: ProfilePort = {
@@ -195,6 +196,29 @@ export function createReadingApp(deps: ReadingDeps): ReadingApp {
       await awardAchievements();
       await refresh();
       return ok(saved);
+    },
+  };
+
+  const bookshelf: BookshelfPort = {
+    async startReading(title) {
+      const valid = validateTitle(title);
+      if (!valid.ok) return valid;
+      const shelf: Bookshelf = { ...(await loadShelf()), current: valid.value };
+      await deps.shelves.save(shelf);
+      await refresh();
+      return ok(shelf);
+    },
+
+    async finishCurrent() {
+      const shelf = await loadShelf();
+      if (shelf.current === null) return err('nothing-in-progress');
+      const book = { title: shelf.current, finishedOn: today() };
+      const finished = [...shelf.finished, book];
+      await deps.shelves.save({ current: null, finished });
+      store.emit({ type: 'book-finished', book, booksRead: finished.length });
+      await awardAchievements();
+      await refresh();
+      return ok(book);
     },
   };
 
@@ -266,6 +290,7 @@ export function createReadingApp(deps: ReadingDeps): ReadingApp {
   return {
     challenge,
     profile,
+    bookshelf,
     range,
     reminder,
     reminderCheck: createReminderCheck(deps),

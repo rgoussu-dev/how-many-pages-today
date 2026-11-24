@@ -14,10 +14,12 @@ const targets = [
   ['icon-512.png', 512, 0, null, true],
   ['apple-touch-icon.png', 180, 0, null, false],
   // maskable: full-bleed background, artwork inside the 80% safe zone
-  ['icon-maskable-512.png', 512, 0.12, '#b9532f', false],
+  ['icon-maskable-512.png', 512, 0.12, '#4a1a0e', false],
 ];
 
-const browser = await chromium.launch();
+const browser = await chromium.launch(
+  process.env.PLAYWRIGHT_CHROMIUM_PATH ? { executablePath: process.env.PLAYWRIGHT_CHROMIUM_PATH } : {},
+);
 const page = await browser.newPage({ deviceScaleFactor: 1 });
 
 for (const [file, size, pad, background, rounded] of targets) {
