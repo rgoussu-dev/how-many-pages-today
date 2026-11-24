@@ -1,0 +1,15 @@
+{
+  "name": "@hmpt/domain-core",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "The reading-challenge hexagon's implementation face. Its exports map publishes factories only (and in-memory fakes for tests).",
+  "exports": {
+    ".": "./src/index.ts",
+    "./testing": "./src/testing/index.ts"
+  },
+  "dependencies": {
+    "@hmpt/domain-contract": "0.1.0",
+    "@hmpt/kernel": "0.1.0"
+  }
+}

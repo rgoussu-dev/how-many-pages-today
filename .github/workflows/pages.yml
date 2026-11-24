@@ -1,0 +1,54 @@
+name: Verify & deploy to GitHub Pages
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pages-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Typecheck (each package against its own lib — the domain has no DOM)
+        run: npm run typecheck
+      - name: Architecture walls (dependency-cruiser)
+        run: npm run lint:arch
+      - name: Unit & integration tests
+        run: npm test
+      - name: Build the PWA
+        run: npm run build
+      - name: Install Chromium for the end-to-end suite
+        run: npx playwright install --with-deps chromium
+      - name: End-to-end (real browser, production build, offline included)
+        run: npm run e2e
+      - uses: actions/upload-pages-artifact@v4
+        if: github.event_name != 'pull_request' && github.ref_name == github.event.repository.default_branch
+        with:
+          path: application/pwa/dist
+
+  deploy:
+    needs: verify
+    if: github.event_name != 'pull_request' && github.ref_name == github.event.repository.default_branch
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

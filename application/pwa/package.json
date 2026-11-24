@@ -1,0 +1,32 @@
+{
+  "name": "@hmpt/pwa",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "The deployment unit: the installable PWA shell (assembly point, router, service worker).",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "e2e": "playwright test",
+    "icons": "node scripts/render-icons.mjs"
+  },
+  "dependencies": {
+    "@hmpt/commons": "0.1.0",
+    "@hmpt/design-system": "0.1.0",
+    "@hmpt/domain-contract": "0.1.0",
+    "@hmpt/domain-core": "0.1.0",
+    "@hmpt/elements": "0.1.0",
+    "@hmpt/infra-reminders-browser": "0.1.0",
+    "@hmpt/infra-storage-indexeddb": "0.1.0",
+    "@hmpt/kernel": "0.1.0",
+    "@rgoussu.dev/planks": "^0.3.1",
+    "workbox-precaching": "^7.4.1",
+    "workbox-routing": "^7.4.1"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.63.0",
+    "vite": "^8.3.8",
+    "vite-plugin-pwa": "^2.0.0"
+  }
+}

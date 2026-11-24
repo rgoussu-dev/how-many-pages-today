@@ -1,0 +1,445 @@
+/* Tag-scoped styles for the port-bound elements — the planks convention, applied to ours. */
+
+hmpt-today-card,
+hmpt-greeting,
+hmpt-streak-summary,
+hmpt-history-calendar,
+hmpt-achievement-list,
+hmpt-profile-form,
+hmpt-range-form,
+hmpt-reminder-form {
+  display: block;
+}
+
+/* — greeting — */
+
+hmpt-greeting .greeting {
+  display: flex;
+  align-items: center;
+  gap: var(--s0);
+}
+
+hmpt-greeting .greeting-avatar {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 3.25rem;
+  height: 3.25rem;
+  border-radius: 50%;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow);
+  font-size: 1.7rem;
+}
+
+hmpt-greeting h1 {
+  font-size: clamp(1.4rem, 5vw, 1.9rem);
+}
+
+hmpt-greeting a {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+/* — today's card — */
+
+hmpt-today-card .today {
+  overflow: hidden;
+  box-shadow: var(--shadow-lift);
+}
+
+hmpt-today-card .today-art {
+  position: relative;
+}
+
+hmpt-today-card frame-pk {
+  display: block;
+}
+
+hmpt-today-card .today-art::after {
+  /* a soft fold where the picture meets the page */
+  content: '';
+  position: absolute;
+  inset: auto 0 0 0;
+  height: 2.5rem;
+  background: linear-gradient(to bottom, transparent, color-mix(in srgb, var(--surface) 35%, transparent));
+  pointer-events: none;
+}
+
+hmpt-today-card .today-stamp {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  padding: 0.35rem 0.9rem;
+  border: 3px solid #fff;
+  border-radius: 0.6rem;
+  color: #fff;
+  background: color-mix(in srgb, var(--success) 85%, transparent);
+  font-family: var(--font-serif);
+  font-size: 1.15rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  transform: rotate(8deg) scale(0.6);
+  opacity: 0;
+  transition:
+    transform 260ms cubic-bezier(0.2, 1.6, 0.4, 1),
+    opacity 160ms ease;
+  box-shadow: 0 4px 14px rgb(0 0 0 / 0.25);
+}
+
+hmpt-today-card[data-done] .today-stamp {
+  opacity: 1;
+  transform: rotate(8deg) scale(1);
+}
+
+hmpt-today-card .today-body {
+  display: block;
+}
+
+hmpt-today-card .today-pages {
+  display: flex;
+  align-items: baseline;
+  gap: 0.4rem;
+  font-family: var(--font-serif);
+  line-height: 1;
+}
+
+hmpt-today-card .today-number {
+  font-size: clamp(3.5rem, 18vw, 4.75rem);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  font-variant-numeric: lining-nums tabular-nums;
+  color: var(--accent);
+}
+
+hmpt-today-card[data-done] .today-number {
+  color: var(--success);
+}
+
+hmpt-today-card .today-unit {
+  font-size: 1.4rem;
+  color: var(--ink-soft);
+}
+
+hmpt-today-card .today-actions .btn-quiet {
+  display: flex;
+  margin-inline: auto;
+}
+
+/* — streak summary — */
+
+hmpt-streak-summary .summary-streak {
+  display: flex;
+  align-items: center;
+  gap: var(--s0);
+}
+
+hmpt-streak-summary .summary-flame {
+  font-size: 2.6rem;
+  filter: grayscale(1);
+  opacity: 0.45;
+  transition:
+    filter 300ms ease,
+    opacity 300ms ease;
+}
+
+hmpt-streak-summary[data-alive] .summary-flame {
+  filter: none;
+  opacity: 1;
+  animation: flicker 2.4s ease-in-out infinite;
+}
+
+@keyframes flicker {
+  0%,
+  100% {
+    transform: scale(1) rotate(-2deg);
+  }
+  50% {
+    transform: scale(1.08) rotate(2deg);
+  }
+}
+
+hmpt-streak-summary .summary-big {
+  font-family: var(--font-serif);
+  font-size: 1.9rem;
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+hmpt-streak-summary .summary-stats > div {
+  padding: 0.6rem 0.75rem;
+  border-radius: var(--radius-sm);
+  background: var(--surface-sunk);
+}
+
+hmpt-streak-summary .summary-value {
+  font-size: 1.35rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+hmpt-streak-summary .summary-level {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+hmpt-streak-summary .summary-next {
+  font-size: 0.85rem;
+}
+
+/* — six-week calendar — */
+
+hmpt-history-calendar .calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 0.35rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+hmpt-history-calendar .calendar-head span {
+  text-align: center;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--ink-faint);
+}
+
+hmpt-history-calendar li {
+  display: grid;
+  place-items: center;
+  aspect-ratio: 1;
+  border-radius: 0.55rem;
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-faint);
+  background: var(--surface-sunk);
+}
+
+hmpt-history-calendar li[data-state='completed'],
+hmpt-history-calendar .cal-swatch[data-state='completed'] {
+  background: var(--success);
+  color: #fff;
+  font-weight: 700;
+}
+
+hmpt-history-calendar li[data-state='missed'],
+hmpt-history-calendar .cal-swatch[data-state='missed'] {
+  background: color-mix(in srgb, var(--danger) 14%, var(--surface-sunk));
+}
+
+hmpt-history-calendar li[data-today] {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+  color: var(--ink);
+  font-weight: 700;
+}
+
+hmpt-history-calendar .cal-swatch[data-state='today'] {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+hmpt-history-calendar li[data-state='future'],
+hmpt-history-calendar li[data-state='before'] {
+  background: transparent;
+  opacity: 0.55;
+}
+
+hmpt-history-calendar .calendar-legend {
+  font-size: 0.8rem;
+  color: var(--ink-soft);
+}
+
+hmpt-history-calendar .calendar-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+hmpt-history-calendar .cal-swatch {
+  display: inline-block;
+  width: 0.9rem;
+  height: 0.9rem;
+  border-radius: 0.25rem;
+  background: var(--surface-sunk);
+}
+
+/* — achievements — */
+
+hmpt-achievement-list .achievements-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+hmpt-achievement-list .badge {
+  display: grid;
+  gap: 0.2rem;
+  align-content: start;
+  padding: 0.85rem;
+  border-radius: var(--radius-sm);
+  border: 1px dashed var(--line);
+  color: var(--ink-faint);
+  background: transparent;
+}
+
+hmpt-achievement-list .badge[data-earned] {
+  border-style: solid;
+  color: var(--ink);
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+hmpt-achievement-list .badge-icon {
+  font-size: 1.8rem;
+  line-height: 1.2;
+}
+
+hmpt-achievement-list .badge:not([data-earned]) .badge-icon {
+  filter: grayscale(1);
+  opacity: 0.6;
+}
+
+hmpt-achievement-list .badge strong {
+  font-size: 0.95rem;
+}
+
+hmpt-achievement-list .badge-text {
+  font-size: 0.8rem;
+  color: var(--ink-soft);
+}
+
+hmpt-achievement-list .badge-when {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+
+hmpt-achievement-list .badge[data-earned] .badge-when {
+  color: var(--gold);
+}
+
+/* — forms — */
+
+hmpt-profile-form fieldset {
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+hmpt-profile-form .field-legend {
+  padding: 0;
+  margin-block-end: 0.35rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--ink-soft);
+}
+
+hmpt-profile-form .avatar-option input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+hmpt-profile-form .avatar-option span {
+  display: grid;
+  place-items: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 50%;
+  border: 2px solid var(--line);
+  background: var(--paper);
+  font-size: 1.4rem;
+  cursor: pointer;
+  transition:
+    transform 120ms ease,
+    border-color 120ms ease;
+}
+
+hmpt-profile-form .avatar-option input:checked + span {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 14%, var(--paper));
+  transform: scale(1.08);
+}
+
+hmpt-profile-form .avatar-option input:focus-visible + span {
+  box-shadow: var(--focus);
+}
+
+hmpt-range-form .range-fields > * {
+  min-width: 0;
+}
+
+hmpt-reminder-form .reminder-help summary {
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--accent);
+  margin-block-end: var(--s-1);
+}
+
+hmpt-reminder-form .switch span {
+  font-weight: 600;
+}
+
+[aria-invalid] {
+  border-color: var(--danger) !important;
+}
+
+/* — celebration — */
+
+hmpt-celebration {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 50;
+}
+
+hmpt-celebration .burst {
+  position: absolute;
+  left: 50%;
+  top: 40%;
+}
+
+hmpt-celebration .burst span {
+  position: absolute;
+  font-size: 1.4rem;
+  animation: burst 1.2s cubic-bezier(0.15, 0.7, 0.3, 1) forwards;
+}
+
+@keyframes burst {
+  from {
+    transform: translate(-50%, -50%) scale(0.4) rotate(0);
+    opacity: 1;
+  }
+  to {
+    transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) scale(1) rotate(var(--spin));
+    opacity: 0;
+  }
+}
+
+hmpt-celebration .toast {
+  position: absolute;
+  left: 50%;
+  bottom: calc(var(--tabbar-height) + env(safe-area-inset-bottom) + 1rem);
+  max-width: min(26rem, calc(100vw - 2rem));
+  padding: 0.75rem 1.1rem;
+  border-radius: var(--radius-sm);
+  background: var(--ink);
+  color: var(--paper);
+  font-weight: 600;
+  box-shadow: var(--shadow-lift);
+  transform: translate(-50%, 1rem);
+  opacity: 0;
+  transition:
+    transform 220ms ease,
+    opacity 220ms ease;
+}
+
+hmpt-celebration .toast[data-visible] {
+  transform: translate(-50%, 0);
+  opacity: 1;
+}

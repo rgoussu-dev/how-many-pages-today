@@ -1,0 +1,9 @@
+{
+  "name": "@hmpt/domain-contract",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "The reading-challenge hexagon's contract face: model types, driving and driven ports, domain events. No DOM.",
+  "exports": { ".": "./src/index.ts" },
+  "dependencies": { "@hmpt/kernel": "0.1.0" }
+}

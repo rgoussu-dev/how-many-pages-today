@@ -1,0 +1,37 @@
+{
+  "name": "how-many-pages-today",
+  "private": true,
+  "type": "module",
+  "description": "An offline-first PWA that hands you a daily reading challenge: a card, an image, and a number of pages.",
+  "workspaces": [
+    "platform/kernel",
+    "platform/commons",
+    "domain/contract",
+    "domain/core",
+    "design-system",
+    "user-side/elements",
+    "infra/storage-indexeddb",
+    "infra/reminders-browser",
+    "application/pwa"
+  ],
+  "scripts": {
+    "dev": "npm run dev -w @hmpt/pwa",
+    "build": "npm run build -w @hmpt/pwa",
+    "preview": "npm run preview -w @hmpt/pwa",
+    "typecheck": "node scripts/typecheck.mjs",
+    "lint:arch": "depcruise --config .dependency-cruiser.cjs platform domain design-system user-side infra application/pwa/src",
+    "test": "vitest run",
+    "e2e": "npm run e2e -w @hmpt/pwa",
+    "verify": "npm run typecheck && npm run lint:arch && npm test && npm run build"
+  },
+  "devDependencies": {
+    "@types/node": "^24.10.0",
+    "dependency-cruiser": "^18.9.0",
+    "fake-indexeddb": "^6.2.8",
+    "typescript": "^5.9.3",
+    "vitest": "^5.1.1"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

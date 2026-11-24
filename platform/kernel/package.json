@@ -1,0 +1,11 @@
+{
+  "name": "@hmpt/kernel",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Shared kernel: Result, the ubiquitous Clock/RandomSource port types, and the Context protocol.",
+  "exports": {
+    ".": "./src/index.ts",
+    "./context": "./src/context.ts"
+  }
+}

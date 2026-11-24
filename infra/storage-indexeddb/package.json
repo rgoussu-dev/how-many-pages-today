@@ -1,0 +1,9 @@
+{
+  "name": "@hmpt/infra-storage-indexeddb",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Driven adapter: every repository port on one IndexedDB database, readable from the page and the service worker alike.",
+  "exports": { ".": "./src/index.ts" },
+  "dependencies": { "@hmpt/domain-contract": "0.1.0" }
+}

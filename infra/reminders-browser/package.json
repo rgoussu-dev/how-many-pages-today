@@ -1,0 +1,12 @@
+{
+  "name": "@hmpt/infra-reminders-browser",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Driven adapters: notification permission + periodic background sync (scheduler), and ServiceWorkerRegistration notifications (notifier).",
+  "exports": {
+    ".": "./src/scheduler.ts",
+    "./notifier": "./src/notifier.ts"
+  },
+  "dependencies": { "@hmpt/domain-contract": "0.1.0" }
+}

@@ -1,0 +1,13 @@
+{
+  "name": "@hmpt/design-system",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Domain-blind presentation: theme tokens on top of planks, and the procedural card illustration.",
+  "exports": {
+    ".": "./src/index.ts",
+    "./scene": "./src/scene.ts",
+    "./theme.css": "./src/theme.css"
+  },
+  "dependencies": { "@rgoussu.dev/planks": "^0.3.1" }
+}

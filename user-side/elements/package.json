@@ -1,0 +1,17 @@
+{
+  "name": "@hmpt/elements",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Driving adapters: port-bound custom elements and the typed context keys they request.",
+  "exports": {
+    ".": "./src/index.ts",
+    "./elements.css": "./src/elements.css"
+  },
+  "dependencies": {
+    "@hmpt/design-system": "0.1.0",
+    "@hmpt/domain-contract": "0.1.0",
+    "@hmpt/kernel": "0.1.0",
+    "@rgoussu.dev/planks": "^0.3.1"
+  }
+}

@@ -1,0 +1,81 @@
+import type { ReadingEvent } from '@hmpt/domain-contract';
+import { readingContexts } from './contexts';
+import { plural } from './format';
+import { PortBoundElement } from './port-bound';
+
+const CONFETTI = ['📖', '✨', '📚', '⭐', '🔖', '🎉'];
+const TOAST_MS = 4200;
+
+/**
+ * `<hmpt-celebration>` — listens to domain events and makes a small fuss: a burst of
+ * confetti for a completed card, a toast for each achievement.
+ */
+export class Celebration extends PortBoundElement {
+  #queue: string[] = [];
+  #showing = false;
+
+  protected markup(): string {
+    return /* html */ `
+      <div class="burst" data-burst aria-hidden="true"></div>
+      <div class="toast" role="status" aria-live="polite" data-toast></div>`;
+  }
+
+  protected connect() {
+    const view = this.request(readingContexts.view);
+    return [view.onEvent((event) => this.#on(event))];
+  }
+
+  #on(event: ReadingEvent): void {
+    switch (event.type) {
+      case 'challenge-completed':
+        this.#burst();
+        this.#toast(
+          event.streak > 1
+            ? `🔥 ${plural(event.streak, 'day')} in a row. Splendid.`
+            : `✓ ${plural(event.challenge.pages, 'page')} read. Well done!`,
+        );
+        break;
+      case 'achievement-unlocked':
+        this.#toast(`${event.achievement.icon} Achievement unlocked: ${event.achievement.title}`);
+        break;
+      case 'challenge-undone':
+        break;
+    }
+  }
+
+  #burst(): void {
+    if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const burst = this.$('[data-burst]');
+    const pieces = Array.from({ length: 18 }, (_, i) => {
+      const piece = document.createElement('span');
+      piece.textContent = CONFETTI[i % CONFETTI.length] ?? '✨';
+      const angle = (i / 18) * Math.PI * 2;
+      const distance = 90 + Math.random() * 90;
+      piece.style.setProperty('--dx', `${Math.cos(angle) * distance}px`);
+      piece.style.setProperty('--dy', `${Math.sin(angle) * distance - 60}px`);
+      piece.style.setProperty('--spin', `${Math.random() * 540 - 270}deg`);
+      return piece;
+    });
+    burst.replaceChildren(...pieces);
+    setTimeout(() => burst.replaceChildren(), 1400);
+  }
+
+  #toast(message: string): void {
+    this.#queue.push(message);
+    if (!this.#showing) this.#next();
+  }
+
+  #next(): void {
+    const message = this.#queue.shift();
+    const toast = this.$('[data-toast]');
+    if (message === undefined) {
+      this.#showing = false;
+      toast.removeAttribute('data-visible');
+      return;
+    }
+    this.#showing = true;
+    toast.textContent = message;
+    toast.setAttribute('data-visible', '');
+    setTimeout(() => this.#next(), TOAST_MS);
+  }
+}

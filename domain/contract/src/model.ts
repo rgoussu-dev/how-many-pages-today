@@ -1,0 +1,122 @@
+/** A local calendar day, `YYYY-MM-DD`, in the reader's own timezone. */
+export type DayKey = string;
+
+/** The bounds the daily page count is drawn from: min, min+step, … up to max. */
+export interface PageRange {
+  readonly min: number;
+  readonly max: number;
+  readonly step: number;
+}
+
+export const DEFAULT_PAGE_RANGE: PageRange = { min: 10, max: 100, step: 10 };
+
+/** Hard limits on what a reader may configure. */
+export const PAGE_RANGE_LIMITS = { lowest: 1, highest: 1000 } as const;
+
+export type ChallengeStatus = 'pending' | 'completed';
+
+/** One card: the challenge drawn for a given day. */
+export interface DailyChallenge {
+  readonly day: DayKey;
+  readonly pages: number;
+  /** Seeds the card illustration; drawn once with the challenge so the card never changes. */
+  readonly artSeed: number;
+  readonly status: ChallengeStatus;
+  /** ISO-8601 instant. */
+  readonly drawnAt: string;
+  /** ISO-8601 instant, present once completed. */
+  readonly completedAt?: string;
+}
+
+export const AVATARS = ['📚', '🦉', '🐛', '🦊', '🐢', '🐈', '🌙', '☕', '🌿', '🚀', '🧙', '🎩'] as const;
+
+/** A deliberately small profile. It never leaves the device. */
+export interface Profile {
+  readonly displayName: string;
+  readonly avatar: string;
+  readonly favouriteGenre: string;
+  readonly currentBook: string;
+  readonly readerSince: DayKey;
+}
+
+export type ProfileInput = Omit<Profile, 'readerSince'>;
+
+export interface ReminderSettings {
+  readonly enabled: boolean;
+  /** `HH:MM`, 24-hour, local time. */
+  readonly time: string;
+  /** The last day a reminder notification was shown, so a day is never nagged twice. */
+  readonly lastNotifiedOn?: DayKey;
+}
+
+/** How the reminder will reach the reader on this device. */
+export type ReminderDelivery =
+  /** The browser wakes the app in the background (periodic background sync). */
+  | 'background'
+  /** Notifications fire only while the app is open or recently backgrounded. */
+  | 'while-open';
+
+export const DEFAULT_REMINDER: ReminderSettings = { enabled: false, time: '20:00' };
+
+export type AchievementId =
+  | 'first-challenge'
+  | 'streak-3'
+  | 'streak-7'
+  | 'streak-30'
+  | 'streak-100'
+  | 'challenges-10'
+  | 'challenges-50'
+  | 'pages-500'
+  | 'pages-1000'
+  | 'pages-5000'
+  | 'marathon'
+  | 'early-bird'
+  | 'night-owl'
+  | 'weekend'
+  | 'comeback'
+  | 'introductions';
+
+export interface Achievement {
+  readonly id: AchievementId;
+  readonly icon: string;
+  readonly title: string;
+  readonly description: string;
+}
+
+export interface UnlockedAchievement {
+  readonly id: AchievementId;
+  readonly unlockedOn: DayKey;
+}
+
+export interface AchievementStatus extends Achievement {
+  readonly unlockedOn?: DayKey;
+}
+
+export interface ReaderLevel {
+  readonly rank: number;
+  readonly title: string;
+  /** Pages already read inside the current level. */
+  readonly pagesIntoLevel: number;
+  /** Pages the current level spans; null at the top level. */
+  readonly pagesForLevel: number | null;
+}
+
+export interface ReadingStats {
+  readonly currentStreak: number;
+  readonly bestStreak: number;
+  readonly totalPages: number;
+  readonly completedCount: number;
+  readonly level: ReaderLevel;
+}
+
+/** Everything the UI renders, recomputed after every change. */
+export interface ReadingSnapshot {
+  readonly today: DailyChallenge;
+  /** Newest first. */
+  readonly history: readonly DailyChallenge[];
+  readonly profile: Profile | null;
+  readonly range: PageRange;
+  readonly reminder: ReminderSettings;
+  readonly stats: ReadingStats;
+  readonly achievements: readonly AchievementStatus[];
+}
