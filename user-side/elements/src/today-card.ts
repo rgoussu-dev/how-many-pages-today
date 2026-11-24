@@ -110,8 +110,14 @@ export class TodayCard extends PortBoundElement {
 
   protected markup(): string {
     return /* html */ `
+      <div class="tome-camera">
+      <!-- The open book's boards: a flat backdrop behind the 3D scene, never sorted into it. -->
+      <div class="tome-boards" aria-hidden="true"></div>
       <article class="tome" aria-labelledby="today-pages">
-        <div class="tome-boards" aria-hidden="true"></div>
+        <!-- The right half's page block: its edges, so the book is a solid, not a sheet. -->
+        <div class="tome-solid tome-solid-right" aria-hidden="true">
+          <i class="tome-edge tome-edge-fore"></i><i class="tome-edge tome-edge-head"></i><i class="tome-edge tome-edge-tail"></i>
+        </div>
         <div class="tome-inner">
           <p class="tome-date" data-date>Today</p>
           <div class="tome-plate">
@@ -173,6 +179,7 @@ export class TodayCard extends PortBoundElement {
           </span>
           <!-- The book falls open from the middle: this half carries the day before yesterday's page. -->
           <div class="tome-cover-back" aria-hidden="true" data-cover-back></div>
+          <i class="tome-edge tome-edge-fore" aria-hidden="true"></i><i class="tome-edge tome-edge-head" aria-hidden="true"></i><i class="tome-edge tome-edge-tail" aria-hidden="true"></i>
         </div>
         <div class="tome-back" data-back>
           <div class="tome-back-face" role="group" aria-label="Today, read and sealed">
@@ -184,7 +191,8 @@ export class TodayCard extends PortBoundElement {
             <button type="button" class="tome-back-open" data-open-book>Open the book</button>
           </div>
         </div>
-      </article>`;
+      </article>
+      </div>`;
   }
 
   protected override setup(): void {
