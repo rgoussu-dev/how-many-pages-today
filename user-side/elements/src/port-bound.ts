@@ -1,4 +1,6 @@
+import type { LanguageSetting } from '@hmpt/domain-contract';
 import { ContextRequestEvent, type Context } from '@hmpt/kernel/context';
+import { localize, speech, type Speech } from './i18n';
 
 const templates = new WeakMap<object, HTMLTemplateElement>();
 
@@ -13,6 +15,8 @@ const templates = new WeakMap<object, HTMLTemplateElement>();
 export abstract class PortBoundElement extends HTMLElement {
   #rendered = false;
   #cleanups: Array<() => void> = [];
+  /** The language the static words were last put in. */
+  #spoken: Speech | null = null;
 
   protected abstract markup(): string;
   protected setup(): void {}
@@ -38,6 +42,19 @@ export abstract class PortBoundElement extends HTMLElement {
     this.dispatchEvent(new ContextRequestEvent(context, (provided) => (value = provided)));
     if (value === undefined) throw new Error(`<${this.localName}>: no provider for ${context.name}`);
     return value;
+  }
+
+  /**
+   * The words for this language. The first call, and the first after the language changes,
+   * also puts the template's marked static words (`data-t…`) into it.
+   */
+  protected speak(setting: Pick<LanguageSetting, 'language' | 'locale'>): Speech {
+    const words = speech(setting);
+    if (words !== this.#spoken) {
+      localize(this, words.t);
+      this.#spoken = words;
+    }
+    return words;
   }
 
   protected $<E extends Element = HTMLElement>(selector: string): E {

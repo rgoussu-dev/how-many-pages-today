@@ -13,15 +13,16 @@ import '@hmpt/design-system/theme.css';
 import '@hmpt/elements/elements.css';
 import './shell.css';
 
-import { mathRandom, systemClock } from '@hmpt/commons';
+import { deviceLanguages, mathRandom, systemClock } from '@hmpt/commons';
 import { defineDesignSystem } from '@hmpt/design-system';
 import { createReadingApp, type ReadingApp } from '@hmpt/domain-core';
-import { defineReadingElements, readingContexts } from '@hmpt/elements';
+import { defineReadingElements, deviceSpeech, readingContexts, speech } from '@hmpt/elements';
 import { createBrowserInstaller } from '@hmpt/infra-install-browser';
 import { BrowserReminderScheduler } from '@hmpt/infra-reminders-browser';
 import { RegistrationNotifier } from '@hmpt/infra-reminders-browser/notifier';
 import { openReadingDatabase } from '@hmpt/infra-storage-indexeddb';
 import { provideContexts, type Context } from '@hmpt/kernel/context';
+import { localizeShell } from './localize-shell';
 import { startRouter } from './router';
 import { registerServiceWorker } from './service-worker';
 import { keepFresh } from './keep-fresh';
@@ -49,6 +50,7 @@ async function assemble(): Promise<ReadingApp> {
     }),
     clock: systemClock,
     random: mathRandom,
+    languages: deviceLanguages,
   });
 }
 
@@ -66,13 +68,20 @@ async function boot(): Promise<void> {
       [readingContexts.welcome, app.welcome],
       [readingContexts.range, app.range],
       [readingContexts.reminder, app.reminder],
+      [readingContexts.language, app.language],
       [readingContexts.view, app.view],
     ]),
   );
 
+  // The shell takes the reader's language before the elements upgrade, so they all land in it.
+  const words = () => {
+    const language = app.view.current()?.language;
+    return language ? speech(language) : deviceSpeech();
+  };
+  const router = startRouter(() => words().t.shell.titles);
+  localizeShell(app.view, router);
   defineDesignSystem();
   defineReadingElements();
-  startRouter();
   keepFresh(app);
   document.querySelector('[data-booting]')?.removeAttribute('data-booting');
 }
@@ -81,7 +90,6 @@ boot().catch((error: unknown) => {
   console.error(error);
   const message = document.createElement('p');
   message.className = 'app-fatal';
-  message.textContent =
-    'Your reading card could not be dealt: this browser blocked local storage (private browsing?). Open the app in a regular window to keep your progress.';
+  message.textContent = deviceSpeech().t.shell.fatal;
   document.body.replaceChildren(message);
 });

@@ -1,6 +1,6 @@
 import type { DailyChallenge, ReadingSnapshot } from '@hmpt/domain-contract';
 import { readingContexts } from './contexts';
-import { addDays, dateOf, longDate, plural } from './format';
+import { addDays, dateOf } from './format';
 import { PortBoundElement } from './port-bound';
 
 const WEEKS = 6;
@@ -8,19 +8,19 @@ const WEEKS = 6;
 /** `<hmpt-history-calendar>` — the last six weeks, one square per day, Monday first. */
 export class HistoryCalendar extends PortBoundElement {
   protected markup(): string {
-    const weekdays = ['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((d) => `<span aria-hidden="true">${d}</span>`).join('');
+    const weekdays = Array.from({ length: 7 }, () => `<span aria-hidden="true"></span>`).join('');
     return /* html */ `
       <section class="calendar surface" aria-labelledby="calendar-title">
         <box-pk padding="var(--s1)">
           <stack-pk space="var(--s0)">
-            <h2 id="calendar-title">Last six weeks</h2>
-            <div class="calendar-grid calendar-head">${weekdays}</div>
+            <h2 id="calendar-title" data-t="calendar.heading"></h2>
+            <div class="calendar-grid calendar-head" data-weekdays>${weekdays}</div>
             <ol class="calendar-grid" data-days></ol>
             <cluster-pk space="var(--s0)" class="calendar-legend" aria-hidden="true">
-              <span><i class="cal-swatch" data-state="completed"></i> goal met</span>
-              <span><i class="cal-swatch" data-state="completed" data-short></i> some pages</span>
-              <span><i class="cal-swatch" data-state="missed"></i> missed</span>
-              <span><i class="cal-swatch" data-state="today"></i> today</span>
+              <span><i class="cal-swatch" data-state="completed"></i> <span data-t="calendar.legend.met"></span></span>
+              <span><i class="cal-swatch" data-state="completed" data-short></i> <span data-t="calendar.legend.short"></span></span>
+              <span><i class="cal-swatch" data-state="missed"></i> <span data-t="calendar.legend.missed"></span></span>
+              <span><i class="cal-swatch" data-state="today"></i> <span data-t="calendar.legend.today"></span></span>
             </cluster-pk>
           </stack-pk>
         </box-pk>
@@ -32,7 +32,11 @@ export class HistoryCalendar extends PortBoundElement {
     return [view.subscribe((snapshot) => this.#render(snapshot))];
   }
 
-  #render({ today, history }: ReadingSnapshot): void {
+  #render({ today, history, language }: ReadingSnapshot): void {
+    const words = this.speak(language);
+    const { t } = words;
+    const initials = words.weekdayInitials();
+    this.querySelectorAll('[data-weekdays] span').forEach((span, i) => (span.textContent = initials[i] ?? ''));
     const byDay = new Map<string, DailyChallenge>(history.map((c) => [c.day, c]));
     const mondayOffset = (dateOf(today.day).getDay() + 6) % 7; // 0 when today is a Monday
     const first = addDays(today.day, -(mondayOffset + (WEEKS - 1) * 7));
@@ -60,10 +64,13 @@ export class HistoryCalendar extends PortBoundElement {
       }
       if (day === today.day) cell.dataset.today = '';
       cell.textContent = String(dateOf(day).getDate());
+      const date = words.longDate(day);
       cell.title =
         state === 'completed' && card
-          ? `${longDate(day)} — ${plural(card.pagesRead ?? card.pages, 'page')} read of ${card.pages}${card.finishedBook ? ', a book finished' : ''}`
-          : `${longDate(day)}${state === 'missed' ? ' — missed' : ''}`;
+          ? t.calendar.read(date, card.pagesRead ?? card.pages, card.pages, card.finishedBook === true)
+          : state === 'missed'
+            ? t.calendar.missed(date)
+            : date;
       cell.setAttribute('aria-label', cell.title);
       cells.push(cell);
     }

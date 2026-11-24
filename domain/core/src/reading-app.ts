@@ -1,17 +1,21 @@
-import { err, ok, type Clock, type RandomSource } from '@hmpt/kernel';
+import { err, ok, type Clock, type LanguageSource, type RandomSource } from '@hmpt/kernel';
 import {
   DEFAULT_PAGE_RANGE,
   DEFAULT_REMINDER,
   EMPTY_SHELF,
   type AchievementLedger,
   type AppInstaller,
+  type BookInHand,
   type Bookshelf,
   type BookshelfPort,
   type BookshelfRepository,
   type ChallengeHistory,
   type DailyChallenge,
   type DailyChallengePort,
+  type FieldError,
   type FinishedBook,
+  type LanguagePort,
+  type LanguageSetting,
   type OverviewPort,
   type Notifier,
   type PageRange,
@@ -29,25 +33,29 @@ import {
   type WelcomePort,
 } from '@hmpt/domain-contract';
 import { ACHIEVEMENTS, earnedAchievements } from './achievements';
+import { advance, readTo } from './bookmark';
 import { dayKeyOf } from './days';
+import { isLanguageChoice, resolveLanguage } from './language';
 import { drawArtSeed, drawPages, possiblePages, validateRange } from './pages';
-import { validateOptionalTitle, validatePagesRead, validateProfile, validateTitle } from './profile';
+import { validateBookPage, validateOptionalTitle, validatePagesRead, validateProfile, validateTitle } from './profile';
 import { monthOverview, yearOverview } from './overview';
 import { nextReminderAt, parseTime, reminderInstantOn } from './reminders';
 import { computeStats, goalMetOf, pagesReadOf } from './stats';
 import { ReadingStore } from './store';
+import { reminderNotification, testNotification } from './wording';
 
 export interface ReminderCheckDeps {
   readonly history: ChallengeHistory;
   readonly profiles: ProfileRepository;
+  readonly shelves: BookshelfRepository;
   readonly preferences: PreferencesRepository;
   readonly notifier: Notifier;
   readonly clock: Clock;
   readonly random: RandomSource;
+  readonly languages: LanguageSource;
 }
 
 export interface ReadingDeps extends ReminderCheckDeps {
-  readonly shelves: BookshelfRepository;
   readonly installer: AppInstaller;
   readonly achievements: AchievementLedger;
   readonly scheduler: ReminderScheduler;
@@ -62,6 +70,7 @@ export interface ReadingApp {
   readonly reminder: ReminderPort;
   readonly reminderCheck: ReminderCheckPort;
   readonly welcome: WelcomePort;
+  readonly language: LanguagePort;
   readonly view: ReadingView;
 }
 
@@ -86,6 +95,32 @@ async function ensureToday(deps: ReminderCheckDeps): Promise<DailyChallenge> {
 const loadReminder = async (deps: ReminderCheckDeps): Promise<ReminderSettings> =>
   (await deps.preferences.loadReminder()) ?? DEFAULT_REMINDER;
 
+const loadLanguage = async (deps: ReminderCheckDeps): Promise<LanguageSetting> =>
+  resolveLanguage((await deps.preferences.loadLanguage()) ?? 'auto', deps.languages.preferred());
+
+/** Shelves saved before books carried a start date held the book in hand as a bare title. */
+const upgradeShelf = (stored: Bookshelf | undefined, today: string): Bookshelf => {
+  if (!stored) return EMPTY_SHELF;
+  const current = stored.current as unknown;
+  return typeof current === 'string' ? { ...stored, current: { title: current, startedOn: today } } : stored;
+};
+
+/** A bookmark and a length that fit together: the bookmark within the book. */
+function validateBook(bookmark: number | undefined, totalPages: number | undefined): FieldError[] {
+  const errors: FieldError[] = [];
+  if (bookmark !== undefined) {
+    const valid = validateBookPage(bookmark, 'bookmark');
+    if (!valid.ok) errors.push(...valid.error);
+  }
+  if (totalPages !== undefined) {
+    const valid = validateBookPage(totalPages, 'totalPages');
+    if (!valid.ok) errors.push(...valid.error);
+  }
+  if (errors.length === 0 && bookmark !== undefined && totalPages !== undefined && bookmark > totalPages)
+    errors.push({ field: 'bookmark', problem: 'past-the-end', max: totalPages });
+  return errors;
+}
+
 /**
  * The scheduled driving port, assembled on its own so the service worker can run it
  * without the read model or the achievement machinery.
@@ -104,16 +139,19 @@ export function createReminderCheck(deps: ReminderCheckDeps): ReminderCheckPort 
       const challenge = await ensureToday(deps);
       if (challenge.status === 'completed') return 'already-read';
 
-      const [profile, history] = await Promise.all([deps.profiles.load(), deps.history.all()]);
-      const streak = computeStats(history, today).currentStreak;
-      const who = profile?.displayName ? `${profile.displayName}, today` : 'Today';
-      const nudge =
-        streak > 0 ? `Keep your ${streak}-day streak alive 🔥` : 'A fresh card is waiting for you 📖';
-      await deps.notifier.notify({
-        title: 'How many pages today?',
-        body: `${who}'s card: ${challenge.pages} pages. ${nudge}`,
-        tag: REMINDER_TAG,
-      });
+      const [profile, history, shelf, language] = await Promise.all([
+        deps.profiles.load(),
+        deps.history.all(),
+        deps.shelves.load(),
+        loadLanguage(deps),
+      ]);
+      const facts = {
+        pages: challenge.pages,
+        streak: computeStats(history, today).currentStreak,
+        readerName: profile?.displayName || null,
+        untilPage: readTo(upgradeShelf(shelf, today).current, challenge.pages),
+      };
+      await deps.notifier.notify(reminderNotification(language.language, facts, REMINDER_TAG));
       await deps.preferences.saveReminder({ ...settings, lastNotifiedOn: today });
       return 'notified';
     },
@@ -123,13 +161,15 @@ export function createReminderCheck(deps: ReminderCheckDeps): ReminderCheckPort 
 export function createReadingApp(deps: ReadingDeps): ReadingApp {
   const store = new ReadingStore();
   const today = () => dayKeyOf(deps.clock.now());
-  const loadShelf = async (): Promise<Bookshelf> => {
-    const stored = await deps.shelves.load();
-    if (!stored) return EMPTY_SHELF;
-    // Shelves saved before books carried a start date held the book in hand as a bare title.
-    const current = stored.current as unknown;
-    return typeof current === 'string' ? { ...stored, current: { title: current, startedOn: today() } } : stored;
-  };
+  const loadShelf = async (): Promise<Bookshelf> => upgradeShelf(await deps.shelves.load(), today());
+
+  /** Moves the bookmark in the book in hand on by pages just read. */
+  async function turnPages(pages: number): Promise<void> {
+    const shelf = await loadShelf();
+    if (!shelf.current) return;
+    const moved = advance(shelf.current, pages);
+    if (moved !== shelf.current) await deps.shelves.save({ ...shelf, current: moved });
+  }
 
   /** Puts a finished book on the shelf and announces it. The caller refreshes. */
   async function shelve(title: string | null): Promise<FinishedBook> {
@@ -147,12 +187,13 @@ export function createReadingApp(deps: ReadingDeps): ReadingApp {
   }
 
   async function snapshotFor(todayChallenge: DailyChallenge): Promise<ReadingSnapshot> {
-    const [history, profile, shelf, range, reminder, unlocked] = await Promise.all([
+    const [history, profile, shelf, range, reminder, language, unlocked] = await Promise.all([
       deps.history.all(),
       deps.profiles.load(),
       loadShelf(),
       deps.preferences.loadRange(),
       loadReminder(deps),
+      loadLanguage(deps),
       deps.achievements.all(),
     ]);
     const unlockedOn = new Map(unlocked.map((u) => [u.id, u.unlockedOn]));
@@ -161,8 +202,10 @@ export function createReadingApp(deps: ReadingDeps): ReadingApp {
       history: [...history].sort((a, b) => b.day.localeCompare(a.day)),
       profile: profile ?? null,
       shelf,
+      readTo: todayChallenge.status === 'pending' ? readTo(shelf.current, todayChallenge.pages) : null,
       range: range ?? DEFAULT_PAGE_RANGE,
       reminder,
+      language,
       stats: computeStats(history, today(), shelf.finished.length),
       achievements: ACHIEVEMENTS.map((a) => {
         const on = unlockedOn.get(a.id);
@@ -228,6 +271,7 @@ export function createReadingApp(deps: ReadingDeps): ReadingApp {
         goalMet: pagesRead >= current.pages || finishedBook,
       };
       await deps.history.save(done);
+      await turnPages(pagesRead);
       const streak = computeStats(await deps.history.all(), today()).currentStreak;
       store.emit({ type: 'challenge-completed', challenge: done, streak });
       if (finishedBook) await shelve(title.value);
@@ -247,6 +291,7 @@ export function createReadingApp(deps: ReadingDeps): ReadingApp {
         goalMet: goalMetOf(current) || pagesRead >= current.pages,
       };
       await deps.history.save(updated);
+      await turnPages(pages);
       store.emit({ type: 'pages-added', challenge: updated, added: pages });
       await awardAchievements();
       await refresh();
@@ -269,10 +314,37 @@ export function createReadingApp(deps: ReadingDeps): ReadingApp {
   };
 
   const bookshelf: BookshelfPort = {
-    async startReading(title) {
+    async startReading({ title, bookmark = 0, totalPages }) {
       const valid = validateTitle(title);
-      if (!valid.ok) return valid;
-      const shelf: Bookshelf = { ...(await loadShelf()), current: { title: valid.value, startedOn: today() } };
+      const errors = [...(valid.ok ? [] : valid.error), ...validateBook(bookmark, totalPages)];
+      if (!valid.ok || errors.length > 0) return err(errors);
+      const book: BookInHand = {
+        title: valid.value,
+        startedOn: today(),
+        bookmark,
+        ...(totalPages === undefined ? {} : { totalPages }),
+      };
+      const shelf: Bookshelf = { ...(await loadShelf()), current: book };
+      await deps.shelves.save(shelf);
+      await refresh();
+      return ok(shelf);
+    },
+
+    async updateBook(update) {
+      const stored = await loadShelf();
+      const book = stored.current;
+      if (!book) return err([{ field: 'bookmark', problem: 'no-book' }]);
+      const bookmark = update.bookmark ?? book.bookmark;
+      const totalPages = update.totalPages === null ? undefined : (update.totalPages ?? book.totalPages);
+      const errors = validateBook(bookmark, totalPages);
+      if (errors.length > 0) return err(errors);
+      const { bookmark: _b, totalPages: _t, ...rest } = book;
+      const current: BookInHand = {
+        ...rest,
+        ...(bookmark === undefined ? {} : { bookmark }),
+        ...(totalPages === undefined ? {} : { totalPages }),
+      };
+      const shelf: Bookshelf = { ...stored, current };
       await deps.shelves.save(shelf);
       await refresh();
       return ok(shelf);
@@ -350,13 +422,9 @@ export function createReadingApp(deps: ReadingDeps): ReadingApp {
       const permission = await deps.scheduler.requestPermission();
       if (permission === 'denied') return err('permission-denied');
       if (permission === 'unsupported') return err('unsupported');
-      const current = await ensureToday(deps);
+      const [current, language] = await Promise.all([ensureToday(deps), loadLanguage(deps)]);
       try {
-        await deps.notifier.notify({
-          title: 'How many pages today?',
-          body: `This is what your reminder will look like. Today's card: ${current.pages} pages.`,
-          tag: `${REMINDER_TAG}-test`,
-        });
+        await deps.notifier.notify(testNotification(language.language, current.pages, `${REMINDER_TAG}-test`));
       } catch {
         return err('delivery-failed');
       }
@@ -380,6 +448,15 @@ export function createReadingApp(deps: ReadingDeps): ReadingApp {
     },
   };
 
+  const language: LanguagePort = {
+    async choose(choice) {
+      if (!isLanguageChoice(choice)) return err('unsupported-language');
+      await deps.preferences.saveLanguage(choice);
+      await refresh();
+      return ok(resolveLanguage(choice, deps.languages.preferred()));
+    },
+  };
+
   return {
     challenge,
     profile,
@@ -389,6 +466,7 @@ export function createReadingApp(deps: ReadingDeps): ReadingApp {
     reminder,
     reminderCheck: createReminderCheck(deps),
     welcome,
+    language,
     view: store,
   };
 }

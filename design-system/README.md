@@ -6,5 +6,6 @@ Domain-blind presentation for an old library on an autumn afternoon.
   ruled-paper fields, the meter; a lamplit evening variant for dark mode. Layered on planks tokens.
 - `fonts.css` — EB Garamond (text) and IM Fell English / SC (display), latin subsets,
   bundled and precached (SIL Open Font License).
-- `<hmpt-ds-scene seed="…">` — the card plate: one of six cosy scenes (shelves, lamp, nook,
-  armchair, window, still life) painted as SVG from a seed; `renderScene(seed)` is pure.
+- `<hmpt-ds-scene seed="…" [lang="fr"]>` — the card plate: one of six cosy scenes (shelves,
+  lamp, nook, armchair, window, still life) painted as SVG from a seed, described (its
+  aria-label) in English or French; `renderScene(seed, kind?, lang?)` is pure.

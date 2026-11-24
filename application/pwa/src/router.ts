@@ -1,21 +1,23 @@
 /** The shell's router: four hash routes (GitHub Pages has no server-side routing). */
 
-const ROUTES = ['today', 'progress', 'overview', 'profile'] as const;
-type Route = (typeof ROUTES)[number];
-
-const TITLES: Record<Route, string> = {
-  today: 'How Many Pages Today',
-  progress: 'Progress · How Many Pages Today',
-  overview: 'Overview · How Many Pages Today',
-  profile: 'You · How Many Pages Today',
-};
+export const ROUTES = ['today', 'progress', 'overview', 'profile'] as const;
+export type Route = (typeof ROUTES)[number];
 
 const routeOf = (hash: string): Route => {
   const name = hash.replace(/^#/, '');
   return (ROUTES as readonly string[]).includes(name) ? (name as Route) : 'today';
 };
 
-export function startRouter(root: ParentNode = document): void {
+export interface Router {
+  /** Re-titles the document — after the language changes. */
+  retitle(): void;
+}
+
+/** `titles` names each route's document title, in the reader's language of the moment. */
+export function startRouter(titles: () => Record<Route, string>, root: ParentNode = document): Router {
+  const retitle = () => {
+    document.title = titles()[routeOf(location.hash)];
+  };
   const show = (scroll: boolean) => {
     const route = routeOf(location.hash);
     for (const section of root.querySelectorAll<HTMLElement>('[data-route]')) {
@@ -25,9 +27,10 @@ export function startRouter(root: ParentNode = document): void {
       if (tab.dataset.tab === route) tab.setAttribute('aria-current', 'page');
       else tab.removeAttribute('aria-current');
     }
-    document.title = TITLES[route];
+    retitle();
     if (scroll) window.scrollTo({ top: 0 });
   };
   window.addEventListener('hashchange', () => show(true));
   show(false);
+  return { retitle };
 }

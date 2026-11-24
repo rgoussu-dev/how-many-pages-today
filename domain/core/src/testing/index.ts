@@ -1,11 +1,12 @@
 // The domain owns its in-memory fakes: unit tests, element previews and any future
 // browser test wire the real core against these instead of IndexedDB or notifications.
-import type { Clock, RandomSource } from '@hmpt/kernel';
+import type { Clock, LanguageSource, RandomSource } from '@hmpt/kernel';
 import type {
   AchievementLedger,
   AppInstaller,
   InstallAvailability,
   InstallOutcome,
+  LanguageChoice,
   WelcomeState,
   Bookshelf,
   BookshelfRepository,
@@ -69,6 +70,13 @@ export class InMemoryPreferences implements PreferencesRepository {
   range: PageRange | undefined;
   reminder: ReminderSettings | undefined;
   welcome: WelcomeState | undefined;
+  language: LanguageChoice | undefined;
+  async loadLanguage() {
+    return this.language;
+  }
+  async saveLanguage(choice: LanguageChoice) {
+    this.language = choice;
+  }
   async loadWelcome() {
     return this.welcome;
   }
@@ -118,6 +126,14 @@ export class SequenceRandom implements RandomSource {
     const value = this.values[this.#i % this.values.length] ?? 0;
     this.#i += 1;
     return value;
+  }
+}
+
+/** The device's languages, as the test sets them. */
+export class FixedLanguages implements LanguageSource {
+  constructor(public tags: readonly string[] = ['en-GB']) {}
+  preferred() {
+    return this.tags;
   }
 }
 
@@ -172,6 +188,7 @@ export type InMemoryDeps = ReadingDeps & {
   readonly notifier: RecordingNotifier;
   readonly clock: ManualClock;
   readonly random: SequenceRandom;
+  readonly languages: FixedLanguages;
 };
 
 export function inMemoryDeps(start: Date = new Date(2026, 10, 24, 9, 0), random: readonly number[] = [0.5]): InMemoryDeps {
@@ -186,5 +203,6 @@ export function inMemoryDeps(start: Date = new Date(2026, 10, 24, 9, 0), random:
     notifier: new RecordingNotifier(),
     clock: new ManualClock(start),
     random: new SequenceRandom(random),
+    languages: new FixedLanguages(),
   };
 }

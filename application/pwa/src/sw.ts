@@ -4,7 +4,7 @@
  * - the scheduled typology: on a periodic background sync it asks the domain whether a
  *   reminder is due, through the very same ReminderCheckPort the page uses.
  */
-import { mathRandom, systemClock } from '@hmpt/commons';
+import { deviceLanguages, mathRandom, systemClock } from '@hmpt/commons';
 import { createReminderCheck } from '@hmpt/domain-core';
 import { REMINDER_SYNC_TAG, RegistrationNotifier } from '@hmpt/infra-reminders-browser/notifier';
 import { openReadingDatabase } from '@hmpt/infra-storage-indexeddb';
@@ -35,6 +35,7 @@ async function checkReminder(): Promise<void> {
     const check = createReminderCheck({
       history: storage.history,
       profiles: storage.profiles,
+      shelves: storage.shelves,
       preferences: storage.preferences,
       notifier: new RegistrationNotifier(async () => self.registration, {
         icon: new URL('icons/icon-192.png', scope).href,
@@ -43,6 +44,7 @@ async function checkReminder(): Promise<void> {
       }),
       clock: systemClock,
       random: mathRandom,
+      languages: deviceLanguages,
     });
     await check.run();
   } finally {

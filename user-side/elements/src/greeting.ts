@@ -2,9 +2,6 @@ import type { ReadingSnapshot } from '@hmpt/domain-contract';
 import { readingContexts } from './contexts';
 import { PortBoundElement } from './port-bound';
 
-const salutation = (hour: number): string =>
-  hour < 5 ? 'Still up' : hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
-
 /** `<hmpt-greeting>` — says hello, or invites a first-time reader to introduce themselves. */
 export class Greeting extends PortBoundElement {
   protected markup(): string {
@@ -12,7 +9,7 @@ export class Greeting extends PortBoundElement {
       <header class="greeting">
         <span class="greeting-avatar" data-avatar aria-hidden="true">📚</span>
         <div>
-          <h1 data-hello>Hello</h1>
+          <h1 data-hello></h1>
           <p class="muted" data-sub></p>
         </div>
       </header>`;
@@ -23,19 +20,23 @@ export class Greeting extends PortBoundElement {
     return [view.subscribe((snapshot) => this.#render(snapshot))];
   }
 
-  #render({ profile, shelf }: ReadingSnapshot): void {
-    const hello = salutation(new Date().getHours());
+  #render({ profile, shelf, language }: ReadingSnapshot): void {
+    const { t } = this.speak(language);
+    const hello = t.greeting.salutation(new Date().getHours());
     this.$('[data-avatar]').textContent = profile?.avatar ?? '📚';
-    this.$('[data-hello]').textContent = profile ? `${hello}, ${profile.displayName}` : `${hello}!`;
+    this.$('[data-hello]').textContent = profile ? t.greeting.named(hello, profile.displayName) : t.greeting.anonymous(hello);
     const sub = this.$('[data-sub]');
     if (shelf.current) {
       const title = document.createElement('cite');
       title.textContent = shelf.current.title;
-      sub.replaceChildren('On the nightstand: ', title, '.');
+      sub.replaceChildren(t.greeting.nightstand, title, t.greeting.nightstandEnd(shelf.current.bookmark ?? null));
     } else if (!profile) {
-      sub.innerHTML = 'New here? <a href="#profile">Fill in your reader’s card</a>.';
+      const link = document.createElement('a');
+      link.href = '#profile';
+      link.textContent = t.greeting.fillCard;
+      sub.replaceChildren(t.greeting.newHere, link, '.');
     } else {
-      sub.textContent = 'Your card for today has been laid out.';
+      sub.textContent = t.greeting.laidOut;
     }
   }
 }

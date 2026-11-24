@@ -5,6 +5,7 @@ import type {
   ChallengeHistory,
   DailyChallenge,
   DayKey,
+  LanguageChoice,
   PageRange,
   PreferencesRepository,
   Profile,
@@ -28,7 +29,7 @@ const CHALLENGES = 'challenges';
 const SETTINGS = 'settings';
 const ACHIEVEMENTS = 'achievements';
 
-type SettingKey = 'profile' | 'bookshelf' | 'range' | 'reminder' | 'welcome';
+type SettingKey = 'profile' | 'bookshelf' | 'range' | 'reminder' | 'welcome' | 'language';
 
 const promised = <T>(request: IDBRequest<T>): Promise<T> =>
   new Promise((resolve, reject) => {
@@ -106,6 +107,8 @@ class IndexedDbPreferences implements PreferencesRepository {
   saveReminder = (reminder: ReminderSettings) => this.settings.put('reminder', reminder);
   loadWelcome = () => this.settings.get<WelcomeState>('welcome');
   saveWelcome = (welcome: WelcomeState) => this.settings.put('welcome', welcome);
+  loadLanguage = () => this.settings.get<LanguageChoice>('language');
+  saveLanguage = (choice: LanguageChoice) => this.settings.put('language', choice);
 }
 
 class IndexedDbAchievements implements AchievementLedger {

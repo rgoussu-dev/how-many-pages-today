@@ -3,6 +3,7 @@ import { Bookshelf } from './bookshelf';
 import { Celebration } from './celebration';
 import { Greeting } from './greeting';
 import { HistoryCalendar } from './history-calendar';
+import { LanguageForm } from './language-form';
 import { ProfileForm } from './profile-form';
 import { RangeForm } from './range-form';
 import { ReadingOverview } from './reading-overview';
@@ -12,7 +13,8 @@ import { TodayCard } from './today-card';
 import { Welcome, WelcomeReplay } from './welcome';
 
 export { readingContexts } from './contexts';
-export { dailyReminderInvite } from './calendar-invite';
+export { dailyReminderInvite, type InviteWording } from './calendar-invite';
+export { deviceSpeech, localize, speech, type Messages, type Speech } from './i18n';
 
 const ELEMENTS = {
   'hmpt-today-card': TodayCard,
@@ -25,6 +27,7 @@ const ELEMENTS = {
   'hmpt-profile-form': ProfileForm,
   'hmpt-range-form': RangeForm,
   'hmpt-reminder-form': ReminderForm,
+  'hmpt-language-form': LanguageForm,
   'hmpt-celebration': Celebration,
   'hmpt-welcome': Welcome,
   'hmpt-welcome-replay': WelcomeReplay,

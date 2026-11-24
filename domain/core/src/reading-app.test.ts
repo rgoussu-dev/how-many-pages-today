@@ -106,9 +106,9 @@ describe('the bookshelf', () => {
     const events: ReadingEvent[] = [];
     app.view.onEvent((e) => events.push(e));
 
-    expect(await app.bookshelf.startReading('   ')).toMatchObject({ ok: false });
-    await app.bookshelf.startReading('  The   Dispossessed ');
-    expect(app.view.current()?.shelf.current).toEqual({ title: 'The Dispossessed', startedOn: '2026-11-20' });
+    expect(await app.bookshelf.startReading({ title: '   ' })).toMatchObject({ ok: false });
+    await app.bookshelf.startReading({ title: '  The   Dispossessed ' });
+    expect(app.view.current()?.shelf.current).toEqual({ title: 'The Dispossessed', startedOn: '2026-11-20', bookmark: 0 });
 
     deps.clock.set(at(24));
     const finished = await app.bookshelf.finishBook();
@@ -134,7 +134,7 @@ describe('the bookshelf', () => {
   it('awards a shelf of your own at five books', async () => {
     const app = createReadingApp(inMemoryDeps(at(24)));
     for (const title of ['A', 'B', 'C', 'D', 'E']) {
-      await app.bookshelf.startReading(title);
+      await app.bookshelf.startReading({ title });
       await app.bookshelf.finishBook();
     }
     expect(app.view.current()?.achievements.find((a) => a.id === 'books-5')?.unlockedOn).toBe('2026-11-24');
@@ -146,6 +146,117 @@ describe('the bookshelf', () => {
     const app = createReadingApp(deps);
     await app.challenge.open();
     expect(app.view.current()?.shelf.current).toEqual({ title: 'Middlemarch', startedOn: '2026-11-24' });
+  });
+
+  it('refuses a field problem with a code the UI can word', async () => {
+    const app = createReadingApp(inMemoryDeps(at(24)));
+    expect(await app.bookshelf.startReading({ title: 'x'.repeat(121) })).toEqual({
+      ok: false,
+      error: [{ field: 'title', problem: 'too-long', max: 120 }],
+    });
+  });
+});
+
+describe('the bookmark', () => {
+  it('starts where the reader is, and shows the page the day leads to', async () => {
+    const app = createReadingApp(inMemoryDeps(at(24), [0.35])); // goal: 40
+    await app.bookshelf.startReading({ title: 'Middlemarch', bookmark: 112, totalPages: 880 });
+    expect(app.view.current()?.shelf.current).toMatchObject({ bookmark: 112, totalPages: 880 });
+    expect(app.view.current()?.readTo).toBe(152);
+  });
+
+  it('starts at the beginning when the reader does not say', async () => {
+    const app = createReadingApp(inMemoryDeps(at(24), [0.35]));
+    await app.bookshelf.startReading({ title: 'Kindred' });
+    expect(app.view.current()?.readTo).toBe(40);
+  });
+
+  it('moves on by the pages logged, and by pages added later', async () => {
+    const deps = inMemoryDeps(at(24), [0.35]);
+    const app = createReadingApp(deps);
+    await app.bookshelf.startReading({ title: 'Middlemarch', bookmark: 112 });
+    await app.challenge.complete({ pagesRead: 30 });
+    expect(app.view.current()?.shelf.current?.bookmark).toBe(142);
+    expect(app.view.current()?.readTo).toBeNull(); // the day is read
+    await app.challenge.addPages(8);
+    expect(app.view.current()?.shelf.current?.bookmark).toBe(150);
+
+    deps.clock.set(at(25)); // a new card: 40 pages again, from page 150
+    await app.challenge.open();
+    expect(app.view.current()?.readTo).toBe(190);
+  });
+
+  it('stops at the last page', async () => {
+    const app = createReadingApp(inMemoryDeps(at(24), [0.35]));
+    await app.bookshelf.startReading({ title: 'Piranesi', bookmark: 230, totalPages: 245 });
+    expect(app.view.current()?.readTo).toBe(245);
+    await app.challenge.complete();
+    expect(app.view.current()?.shelf.current?.bookmark).toBe(245);
+  });
+
+  it('can be moved by hand, and the book given or stripped of a length', async () => {
+    const app = createReadingApp(inMemoryDeps(at(24), [0.35]));
+    expect(await app.bookshelf.updateBook({ bookmark: 3 })).toEqual({
+      ok: false,
+      error: [{ field: 'bookmark', problem: 'no-book' }],
+    });
+    await app.bookshelf.startReading({ title: 'Middlemarch' });
+    await app.bookshelf.updateBook({ bookmark: 200, totalPages: 880 });
+    expect(app.view.current()?.shelf.current).toMatchObject({ bookmark: 200, totalPages: 880 });
+    expect(await app.bookshelf.updateBook({ totalPages: 150 })).toEqual({
+      ok: false,
+      error: [{ field: 'bookmark', problem: 'past-the-end', max: 150 }],
+    });
+    expect(await app.bookshelf.updateBook({ bookmark: -1 })).toMatchObject({
+      ok: false,
+      error: [{ field: 'bookmark', problem: 'out-of-range' }],
+    });
+    await app.bookshelf.updateBook({ totalPages: null });
+    expect(app.view.current()?.shelf.current).toEqual({ title: 'Middlemarch', startedOn: '2026-11-24', bookmark: 200 });
+  });
+
+  it('is placed in a book from before bookmarks existed, which until then stays unmarked', async () => {
+    const deps = inMemoryDeps(at(24), [0.35]);
+    deps.shelves.shelf = { current: { title: 'Middlemarch', startedOn: '2026-11-01' }, finished: [] };
+    const app = createReadingApp(deps);
+    await app.challenge.complete();
+    expect(app.view.current()?.shelf.current).toEqual({ title: 'Middlemarch', startedOn: '2026-11-01' });
+    await app.bookshelf.updateBook({ bookmark: 300 });
+    expect(app.view.current()?.shelf.current?.bookmark).toBe(300);
+  });
+
+  it('goes on the shelf with the book', async () => {
+    const app = createReadingApp(inMemoryDeps(at(24), [0.35]));
+    await app.bookshelf.startReading({ title: 'Piranesi', bookmark: 230, totalPages: 245 });
+    await app.challenge.complete({ pagesRead: 15, finishedBook: true });
+    expect(app.view.current()?.shelf).toEqual({
+      current: null,
+      finished: [{ title: 'Piranesi', startedOn: '2026-11-24', finishedOn: '2026-11-24' }],
+    });
+  });
+});
+
+describe('the language', () => {
+  it('follows the device by default, English when the device speaks nothing the app does', async () => {
+    const deps = inMemoryDeps(at(24));
+    deps.languages.tags = ['de-DE', 'fr-CA', 'en'];
+    const app = createReadingApp(deps);
+    await app.challenge.open();
+    expect(app.view.current()?.language).toEqual({ choice: 'auto', language: 'fr', locale: 'fr-CA' });
+    deps.languages.tags = ['de-DE'];
+    await app.challenge.open();
+    expect(app.view.current()?.language).toEqual({ choice: 'auto', language: 'en', locale: 'en' });
+  });
+
+  it('keeps the reader’s pick, and goes back to the device on asking', async () => {
+    const deps = inMemoryDeps(at(24));
+    const app = createReadingApp(deps); // device: en-GB
+    expect(await app.language.choose('fr')).toEqual({ ok: true, value: { choice: 'fr', language: 'fr', locale: 'fr' } });
+    expect(deps.preferences.language).toBe('fr');
+    expect(app.view.current()?.language.language).toBe('fr');
+    await app.language.choose('auto');
+    expect(app.view.current()?.language).toEqual({ choice: 'auto', language: 'en', locale: 'en-GB' });
+    expect(await app.language.choose('de' as never)).toEqual({ ok: false, error: 'unsupported-language' });
   });
 });
 
@@ -178,7 +289,7 @@ describe('logging what was actually read', () => {
   it('meets the goal by finishing a book, even short of the pages', async () => {
     const deps = inMemoryDeps(at(24), [0.35]);
     const app = createReadingApp(deps);
-    await app.bookshelf.startReading('Piranesi');
+    await app.bookshelf.startReading({ title: 'Piranesi' });
     const events: ReadingEvent[] = [];
     app.view.onEvent((e) => events.push(e));
     await app.challenge.complete({ pagesRead: 18, finishedBook: true });
@@ -263,6 +374,19 @@ describe('reminders', () => {
     expect(await app.reminder.nextCheckAt()).toEqual(at(24, 20, 0));
     deps.clock.set(at(24, 21, 0));
     expect(await app.reminder.nextCheckAt()).toEqual(at(25, 20, 0));
+  });
+
+  it('speaks the reader’s language, and points to the page the day leads to', async () => {
+    const deps = inMemoryDeps(at(24, 20, 5), [0.35]);
+    const app = createReadingApp(deps);
+    await app.reminder.configure({ enabled: true, time: '20:00' });
+    await app.bookshelf.startReading({ title: 'Middlemarch', bookmark: 112 });
+    await app.language.choose('fr');
+    expect(await app.reminderCheck.run()).toBe('notified');
+    expect(deps.notifier.sent[0]).toMatchObject({
+      title: 'Combien de pages aujourd’hui\u202f?',
+      body: 'La carte du jour\u00a0: 40 pages, jusqu’à la page 152. Une nouvelle carte vous attend 📖',
+    });
   });
 
   it('reports a notification the platform refused to show', async () => {
