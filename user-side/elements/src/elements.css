@@ -1293,9 +1293,14 @@ html[data-welcoming] hmpt-celebration {
    The book is two half-books hinged at the spine (x = 0 of the card, z = 0). Each half has a
    thickness (a board and a block of pages) and real page edges — fore-edge, head and tail — so
    standing on its spine it shows as a block, its fore-edge toward you. Closed, the left half
-   lies on the right one. The halves turn with --left-turn / --right-turn (0 = lying open to
-   the right, -180 = lying open to the left, -90 = standing up); --lift lowers the whole book
-   so that whatever lies on top sits at z = 0 — exactly where the flat page sits at rest. */
+   lies on the right one. A half's pose is translateZ(lift) rotateY(turn): turn 0 = lying open
+   to the right, -180 = lying open to the left, -90 = standing up; the lift lowers the whole
+   book so that whatever lies on top sits at z = 0 — exactly where the flat page sits at rest.
+   At rest the pose comes from --left-turn / --right-turn / --lift. In motion every piece runs
+   its own `transform` keyframes, with the numbers written out (-13px = -half): transform
+   animations run on the compositor, so the book turns smoothly even while the page is busy —
+   animating the custom properties instead restyled the whole card on the main thread every
+   frame, and it stuttered. */
 
 @property --left-turn {
   syntax: '<angle>';
@@ -1937,61 +1942,77 @@ hmpt-today-card[data-reveal='closed'] .tome-camera {
 /* Opening (≈3.8s). 0–0.7s the camera pulls back as the book rises to stand on its spine,
    leaning a little, front cover toward you; a beat; 1.0–1.7s it falls open from the middle;
    1.7–2.6s a few leaves riffle over as the camera starts pushing in on today's page. */
-hmpt-today-card[data-reveal='opening'] {
-  animation:
-    lift-open 3800ms linear both,
-    left-open 3800ms linear both,
-    right-open 3800ms linear both;
+hmpt-today-card[data-reveal='opening'] .tome-cover {
+  animation: cover-open 3800ms linear both;
+}
+
+hmpt-today-card[data-reveal='opening'] :is(.tome-inner, .tome-solid-right) {
+  animation: half-open 3800ms linear both;
+}
+
+hmpt-today-card[data-reveal='opening'] .tome-leaves {
+  animation: leaves-open 3800ms linear both;
 }
 
 hmpt-today-card[data-reveal='opening'] .tome-camera {
   animation: camera-open 3800ms both;
 }
 
-@keyframes lift-open {
+/* The left half: the front board, rising onto the spine, then falling open to the left. */
+@keyframes cover-open {
   0% {
-    --lift: -13px; /* = -half */
-    animation-timing-function: cubic-bezier(0.45, 0, 0.3, 1);
-  }
-  18%,
-  100% {
-    --lift: 0px;
-  }
-}
-
-@keyframes left-open {
-  0% {
-    --left-turn: 0deg;
+    transform: translateZ(-13px) rotateY(0deg);
     animation-timing-function: cubic-bezier(0.45, 0, 0.3, 1);
   }
   18%,
   26% {
-    --left-turn: -84deg; /* standing on the spine, leaning toward you */
+    transform: translateZ(0px) rotateY(-84deg); /* standing on the spine, leaning toward you */
     animation-timing-function: cubic-bezier(0.45, 0, 0.35, 1);
   }
   45%,
   100% {
-    --left-turn: -180deg;
+    transform: translateZ(0px) rotateY(-180deg);
   }
 }
 
-@keyframes right-open {
+/* The right half (the real page and its block), and the leaves lying on it. */
+@keyframes half-open {
   0% {
-    --right-turn: 0deg;
+    transform: translateZ(-13px) rotateY(0deg);
     animation-timing-function: cubic-bezier(0.45, 0, 0.3, 1);
   }
   18%,
   26% {
-    --right-turn: -84deg;
+    transform: translateZ(0px) rotateY(-84deg);
     animation-timing-function: cubic-bezier(0.55, 0, 0.75, 0.3);
   }
   42% {
-    --right-turn: 2deg; /* lands, with the slightest bounce */
+    transform: translateZ(0px) rotateY(2deg); /* lands, with the slightest bounce */
     animation-timing-function: ease-out;
   }
   46%,
   100% {
-    --right-turn: 0deg;
+    transform: translateZ(0px) rotateY(0deg);
+  }
+}
+
+@keyframes leaves-open {
+  0% {
+    transform: translateZ(-13px) rotateY(0deg) translateZ(0.5px);
+    animation-timing-function: cubic-bezier(0.45, 0, 0.3, 1);
+  }
+  18%,
+  26% {
+    transform: translateZ(0px) rotateY(-84deg) translateZ(0.5px);
+    animation-timing-function: cubic-bezier(0.55, 0, 0.75, 0.3);
+  }
+  42% {
+    transform: translateZ(0px) rotateY(2deg) translateZ(0.5px);
+    animation-timing-function: ease-out;
+  }
+  46%,
+  100% {
+    transform: translateZ(0px) rotateY(0deg) translateZ(0.5px);
   }
 }
 
@@ -2068,60 +2089,74 @@ hmpt-today-card[data-reveal='landed'] .tome-number {
    halves close up onto the spine, leaning a little, back cover toward you; a beat; 1.7–2.5s
    the book tips over onto its other side and settles; 2.3–3.6s the camera pushes in on the
    back cover. */
-hmpt-today-card[data-closing] {
-  animation:
-    lift-close 3600ms linear both,
-    left-close 3600ms linear both,
-    right-close 3600ms linear both;
+hmpt-today-card[data-closing] .tome-cover {
+  animation: cover-close 3600ms linear both;
+}
+
+hmpt-today-card[data-closing] :is(.tome-inner, .tome-solid-right) {
+  animation: half-close 3600ms linear both;
+}
+
+hmpt-today-card[data-closing] .tome-back {
+  animation: back-close 3600ms linear both;
 }
 
 hmpt-today-card[data-closing] .tome-camera {
   animation: camera-close 3600ms both;
 }
 
-@keyframes lift-close {
-  0%,
-  62% {
-    --lift: 0px;
-    animation-timing-function: ease-in;
-  }
-  72%,
-  100% {
-    --lift: -13px; /* = -half: settled, the back cover lies where the card sits */
-  }
-}
-
-@keyframes left-close {
+/* The halves close up onto the spine, leaning, then the book tips over and is lowered to lie
+   on its back cover. */
+@keyframes cover-close {
   0%,
   22% {
-    --left-turn: -180deg;
+    transform: translateZ(0px) rotateY(-180deg);
     animation-timing-function: cubic-bezier(0.45, 0, 0.4, 1);
   }
   42%,
   48% {
-    --left-turn: -96deg;
+    transform: translateZ(0px) rotateY(-96deg);
     animation-timing-function: cubic-bezier(0.5, 0, 0.6, 1);
   }
   70%,
   100% {
-    --left-turn: -180deg;
+    transform: translateZ(-13px) rotateY(-180deg); /* settled: the back cover lies where the card sits */
   }
 }
 
-@keyframes right-close {
+@keyframes half-close {
   0%,
   22% {
-    --right-turn: 0deg;
+    transform: translateZ(0px) rotateY(0deg);
     animation-timing-function: cubic-bezier(0.45, 0, 0.4, 1);
   }
   42%,
   48% {
-    --right-turn: -96deg; /* standing on the spine, leaning the other way */
+    transform: translateZ(0px) rotateY(-96deg); /* standing on the spine, leaning the other way */
     animation-timing-function: cubic-bezier(0.55, 0, 0.7, 0.4);
   }
   70%,
   100% {
-    --right-turn: -180deg;
+    transform: translateZ(-13px) rotateY(-180deg); /* settled: the back cover lies where the card sits */
+  }
+}
+
+/* The back board: the right half's underside — the same turn, then down to the bottom of the
+   block and turned to face away. */
+@keyframes back-close {
+  0%,
+  22% {
+    transform: translateZ(0px) rotateY(0deg) translateZ(-13px) translateX(100%) rotateY(180deg);
+    animation-timing-function: cubic-bezier(0.45, 0, 0.4, 1);
+  }
+  42%,
+  48% {
+    transform: translateZ(0px) rotateY(-96deg) translateZ(-13px) translateX(100%) rotateY(180deg);
+    animation-timing-function: cubic-bezier(0.55, 0, 0.7, 0.4);
+  }
+  70%,
+  100% {
+    transform: translateZ(-13px) rotateY(-180deg) translateZ(-13px) translateX(100%) rotateY(180deg); /* settled: the back cover lies where the card sits */
   }
 }
 

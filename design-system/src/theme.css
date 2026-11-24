@@ -1,6 +1,6 @@
 /*
  * The look: an old library on an autumn afternoon. Parchment pages, leather bindings,
- * gilt tooling, wood shelves, lamplight and a little dust in the air. Light scheme is the
+ * gilt tooling, wood shelves, lamplight. Light scheme is the
  * afternoon; dark scheme is the same room by lamplight after dusk.
  *
  * Layered on @rgoussu.dev/planks tokens: planks owns layout (spacing scale, measure),
@@ -53,7 +53,6 @@
   --lamp-glow: rgb(255 196 110 / 0.55);
   --window-light: rgb(255 226 170 / 0.35);
   --vignette: rgb(60 32 12 / 0.38);
-  --dust: rgb(255 240 205 / 0.75);
 
   --radius: 0.35rem;
   --radius-sm: 0.25rem;
@@ -94,7 +93,6 @@
     --lamp-glow: rgb(255 170 80 / 0.22);
     --window-light: rgb(255 190 120 / 0.06);
     --vignette: rgb(0 0 0 / 0.65);
-    --dust: rgb(255 220 160 / 0.45);
     --shadow: 0 1px 1px rgb(0 0 0 / 0.5), 0 10px 26px -10px rgb(0 0 0 / 0.8);
     --shadow-lift: 0 2px 3px rgb(0 0 0 / 0.5), 0 24px 44px -14px rgb(0 0 0 / 0.9);
   }
@@ -122,7 +120,6 @@ body {
   font-variant-numeric: oldstyle-nums proportional-nums;
   -webkit-font-smoothing: antialiased;
   overflow-x: hidden;
-  /* a stacking context, so the dust layer (z-index -1) sits above this background */
   position: relative;
   isolation: isolate;
   /* lamplight from the upper left, the room darkening toward the corners */
@@ -133,40 +130,6 @@ body {
     var(--grain-paper),
     var(--paper);
   background-attachment: fixed;
-}
-
-/* Dust drifting in the lamplight. Purely decorative, behind everything. */
-body::before {
-  content: '';
-  position: fixed;
-  inset: -20% 0 0;
-  z-index: -1;
-  pointer-events: none;
-  background-image:
-    radial-gradient(circle, var(--dust) 0 1px, transparent 1.6px),
-    radial-gradient(circle, var(--dust) 0 0.7px, transparent 1.2px),
-    radial-gradient(circle, var(--dust) 0 1.3px, transparent 2px);
-  background-size:
-    190px 230px,
-    130px 170px,
-    310px 290px;
-  background-position:
-    0 0,
-    40px 60px,
-    120px 30px;
-  mask-image: radial-gradient(70% 55% at 18% 10%, #000, transparent 75%);
-  -webkit-mask-image: radial-gradient(70% 55% at 18% 10%, #000, transparent 75%);
-  opacity: 0.8;
-  animation: dust-drift 90s linear infinite;
-}
-
-@keyframes dust-drift {
-  to {
-    background-position:
-      60px -230px,
-      -40px -170px,
-      180px -290px;
-  }
 }
 
 h1,
