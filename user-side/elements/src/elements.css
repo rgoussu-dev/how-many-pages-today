@@ -1834,7 +1834,6 @@ hmpt-today-card .tome-board > i {
 
 hmpt-today-card .tome-board-under {
   inset: 0;
-  border-radius: inherit;
   background: var(--leather-deep) !important;
   transform: translateZ(calc(var(--board-t) * -1)) rotateY(180deg);
 }
@@ -1955,6 +1954,11 @@ hmpt-today-card .tome-cover .tome-board-fore {
   left: 100%;
 }
 
+/* The underside is the board turned over (mirrored): its rounded corners are on its other side. */
+hmpt-today-card .tome-cover .tome-board-under {
+  border-radius: var(--board-r) var(--board-r-spine) var(--board-r-spine) var(--board-r);
+}
+
 hmpt-today-card .tome-cover :is(.tome-board-head, .tome-board-tail) {
   left: var(--board-r-spine);
   right: var(--board-r);
@@ -1964,6 +1968,10 @@ hmpt-today-card .tome-cover :is(.tome-board-head, .tome-board-tail) {
 hmpt-today-card .tome-back .tome-board {
   inset: calc(var(--over) * -1) 0 calc(var(--over-tail) * -1) calc(var(--over) * -1);
   border-radius: var(--board-r) var(--board-r-spine) var(--board-r-spine) var(--board-r);
+}
+
+hmpt-today-card .tome-back .tome-board-under {
+  border-radius: var(--board-r-spine) var(--board-r) var(--board-r) var(--board-r-spine);
 }
 
 hmpt-today-card .tome-back .tome-board-fore {
@@ -2252,11 +2260,11 @@ hmpt-today-card[data-reveal='opening'] .tome-camera {
     animation-timing-function: cubic-bezier(0.65, 0, 0.35, 1);
   }
   16.7%,
-  32% {
-    transform: var(--cam-stand);
+  33% {
+    transform: var(--cam-stand); /* then back to the whole spread before the halves land */
     animation-timing-function: cubic-bezier(0.45, 0, 0.55, 1);
   }
-  52%,
+  45%,
   56.3% {
     transform: var(--cam-back);
     animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
@@ -2408,8 +2416,9 @@ hmpt-today-card[data-closing] .tome-camera {
     transform: var(--cam-rest);
     animation-timing-function: cubic-bezier(0.65, 0, 0.35, 1);
   }
-  18.2% {
-    transform: var(--cam-back);
+  18.2%,
+  25% {
+    transform: var(--cam-back); /* back while the halves are still spread wide */
     animation-timing-function: cubic-bezier(0.45, 0, 0.55, 1);
   }
   38.6%,
