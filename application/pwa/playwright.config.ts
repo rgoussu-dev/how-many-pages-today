@@ -22,7 +22,16 @@ export default defineConfig({
       ? { executablePath: process.env.PLAYWRIGHT_CHROMIUM_PATH }
       : {},
   },
-  projects: [{ name: 'mobile-chromium', use: { ...devices['Pixel 7'] } }],
+  projects: [
+    { name: 'mobile-chromium', use: { ...devices['Pixel 7'] }, testIgnore: /updates\.spec\.ts/ },
+    // Ships a new service worker into the build mid-test: it runs alone, after the rest.
+    {
+      name: 'updates',
+      use: { ...devices['Pixel 7'] },
+      testMatch: /updates\.spec\.ts/,
+      dependencies: ['mobile-chromium'],
+    },
+  ],
   webServer: {
     // Tests run against the production build, service worker included.
     command: `npx vite preview --port ${port} --strictPort --host 127.0.0.1`,

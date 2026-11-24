@@ -23,7 +23,11 @@ interface PeriodicSyncEvent extends ExtendableEvent {
 
 const scope = self.registration.scope;
 
-self.addEventListener('install', () => void self.skipWaiting());
+// A new version waits until the reader chooses to open it (the page offers it): it never swaps
+// the app out from under them. The very first install has nothing to wait for.
+self.addEventListener('message', (event) => {
+  if ((event.data as { type?: unknown } | null)?.type === 'skip-waiting') void self.skipWaiting();
+});
 self.addEventListener('activate', (event) => event.waitUntil(self.clients.claim()));
 
 precacheAndRoute(self.__WB_MANIFEST);

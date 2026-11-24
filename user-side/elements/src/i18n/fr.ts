@@ -113,6 +113,11 @@ export const fr: Messages = {
       profile: 'Vous · Combien de pages aujourd’hui',
     },
     footnote: 'Tout reste sur cet appareil. Effacer les données du site dans le navigateur les supprime.',
+    update: {
+      notice: 'Une nouvelle édition est sur l’étagère.',
+      open: 'L’ouvrir',
+      later: 'Plus tard',
+    },
     fatal:
       'Impossible de distribuer votre carte de lecture : ce navigateur bloque le stockage local (navigation privée ?). Ouvrez l’application dans une fenêtre normale pour garder votre progression.',
   },

@@ -60,7 +60,11 @@ dusty shelves, lamplight, pillows and a blanket — and, after dusk, the same ro
   app: the browser's own prompt where there is one, illustrated *Share → Add to Home Screen*
   steps on iPhone and iPad), and hands them their first card. Skippable at any point
   (Escape works), shown once, and replayable from the reading room.
-- **Installable and offline.** Every asset is precached by the service worker.
+- **Installable and offline.** Every asset is precached by the service worker. A new version
+  never swaps the app out from under you: it downloads in the background and waits, and the
+  app offers it — *A new edition is on the shelf* — to open now (the page reloads into it)
+  or later (it opens by itself next time). The app looks for one whenever it comes back to
+  the foreground.
 
 ## Run it
 
