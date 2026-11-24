@@ -177,6 +177,10 @@ export const en = {
     openBook: 'Open the book',
     bookmarkAt: (page: number, total: number | null) =>
       total === null ? `Bookmark at page ${n(page)}.` : `Bookmark at page ${n(page)} of ${n(total)}.`,
+    /** The page written on the bookmark itself, or nothing yet at the very start. */
+    bookmarkTag: (page: number): string => (page > 0 ? `p. ${n(page)}` : ''),
+    bookmarkLabel: (title: string, page: number): string =>
+      page > 0 ? `Bookmark in “${title}”, at page ${n(page)}` : `Bookmark in “${title}”, at the very start`,
     lastPage: (title: string) => `The last page of “${title}”. Finished?`,
     shelveIt: 'Put it on the shelf',
     hints: [

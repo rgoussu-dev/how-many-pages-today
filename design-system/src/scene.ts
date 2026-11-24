@@ -1,3 +1,5 @@
+import { between, n, pick, seeded, type Rng } from './paint';
+
 /*
  * The card illustration: a cosy library vignette painted from a seed. Pure string output,
  * no DOM, no network — the same seed always paints the same picture, so a day's card
@@ -46,23 +48,6 @@ const sceneLanguage = (lang: string | undefined): SceneLanguage => {
   return (SCENE_LANGUAGES as readonly string[]).includes(base ?? '') ? (base as SceneLanguage) : 'en';
 };
 
-type Rng = () => number;
-
-/** mulberry32 — tiny, fast, good enough for pictures. */
-function seeded(seed: number): Rng {
-  let state = seed >>> 0;
-  return () => {
-    state = (state + 0x6d2b79f5) >>> 0;
-    let t = state;
-    t = Math.imul(t ^ (t >>> 15), t | 1);
-    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
-
-const between = (rng: Rng, low: number, high: number): number => low + rng() * (high - low);
-const pick = <T>(rng: Rng, items: readonly T[]): T => items[Math.floor(rng() * items.length)] as T;
-const n = (value: number): string => (Math.round(value * 10) / 10).toString();
 const hsl = (h: number, s: number, l: number, a = 1): string => {
   const hue = n(((h % 360) + 360) % 360);
   return a === 1 ? `hsl(${hue} ${n(s)}% ${n(l)}%)` : `hsl(${hue} ${n(s)}% ${n(l)}% / ${a})`;
@@ -526,8 +511,10 @@ const PAINTERS: Record<SceneKind, (rng: Rng, id: string) => string> = {
   'still-life': stillLife,
 };
 
-/** Paints the scene a seed picks — or, given `only`, that scene, still varied by the seed. */
-/** Paints the scene for a seed; `lang` (a BCP 47 tag) picks the language of its description. */
+/**
+ * Paints the scene a seed picks — or, given `only`, that scene, still varied by the seed.
+ * `lang` (a BCP 47 tag) picks the language of its description.
+ */
 export function renderScene(seed: number, only?: SceneKind, lang?: string): Scene {
   const rng = seeded(seed);
   const drawn = KINDS[Math.floor(rng() * KINDS.length)] ?? 'shelves';

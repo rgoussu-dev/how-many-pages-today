@@ -35,15 +35,15 @@ const WORDING: Record<Language, Wording> = {
     test: (pages) => `This is what your reminder will look like. Today's card: ${pagesEn(pages)}.`,
   },
   fr: {
-    title: 'Combien de pages aujourd’hui ?',
+    title: 'Combien de pages aujourd’hui\u202f?',
     reminder: ({ pages, streak, readerName, untilPage }) => {
-      const who = readerName ? `${readerName}, la carte du jour` : 'La carte du jour';
+      const who = readerName ? `${readerName}, votre carte du jour` : 'Votre carte du jour';
       const until = untilPage === null ? '' : `, jusqu’à la page ${untilPage}`;
       const nudge =
-        streak > 0 ? `Gardez votre série de ${streak} jours en vie 🔥` : 'Une nouvelle carte vous attend 📖';
-      return `${who} : ${pagesFr(pages)}${until}. ${nudge}`;
+        streak > 0 ? `Ne laissez pas filer votre série de ${streak}\u00a0jours 🔥` : 'Une carte toute neuve vous attend 📖';
+      return `${who}\u00a0: ${pagesFr(pages)}${until}. ${nudge}`;
     },
-    test: (pages) => `Voici à quoi ressemblera votre rappel. La carte du jour : ${pagesFr(pages)}.`,
+    test: (pages) => `Voici à quoi ressemblera votre rappel. Carte du jour\u00a0: ${pagesFr(pages)}.`,
   },
 };
 
