@@ -13,7 +13,7 @@ dusty shelves, lamplight, pillows and a blanket — and, after dusk, the same ro
   still life) painted from a seed, so the same day always shows the same card, online or not.
 - **The book of the day.** The day's card waits on the table as a closed book — front cover
   up: a leather board, the date, a gilt emblem — until it is tapped. Then the camera pulls back
-  as the book rises to stand on its spine, leaning; it falls open from the middle on the two
+  as the book — a thick one, its leather boards standing proud of the pages, corners rounded — rises to stand on its spine and rests there a breath; it falls open from the middle on the two
   days before (their plates and what was read; a new book shows an Ex libris on leaf-strewn
   endpaper, facing "Chapter One"), and a few leaves riffle over while the camera pushes in on
   today's page — a printed page with a running head, the illustration as a captioned plate,

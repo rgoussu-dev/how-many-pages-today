@@ -382,7 +382,7 @@ test.describe('with motion', () => {
     await book.getByRole('button', { name: 'Open today’s card' }).press('Enter'); // keyboard opens it too
     await expect(book).toHaveAttribute('data-reveal', 'opening');
     await expect(book.locator('.tome-leaves')).toBeVisible();
-    await expect(book).not.toHaveAttribute('data-reveal', { timeout: 6000 });
+    await expect(book).not.toHaveAttribute('data-reveal', { timeout: 9000 });
     await expect(book.locator('[data-pages]')).toHaveText(goal ?? '');
     await expect(book.locator('[data-folio]')).toHaveText(`— ${goal} —`);
     await expect(book.locator('.tome-inner')).toHaveJSProperty('inert', false);
@@ -391,7 +391,7 @@ test.describe('with motion', () => {
     await book.getByRole('button', { name: /^I read/ }).click();
     await expect(book).toHaveAttribute('data-closing', '');
     await expect(book.locator('[data-cover-back] .past-verso')).toHaveCount(1); // the left half, closing up
-    await expect(book).not.toHaveAttribute('data-closing', { timeout: 6000 });
+    await expect(book).not.toHaveAttribute('data-closing', { timeout: 9000 });
     await expect(book.locator('.tome-back-face')).toBeVisible();
     await expect(book.locator('[data-message]')).not.toBeEmpty();
     await expect(book.locator('.tome-inner')).toHaveJSProperty('inert', true);

@@ -180,8 +180,10 @@ export class TodayCard extends PortBoundElement {
           <!-- The book falls open from the middle: this half carries the day before yesterday's page. -->
           <div class="tome-cover-back" aria-hidden="true" data-cover-back></div>
           <i class="tome-edge tome-edge-fore" aria-hidden="true"></i><i class="tome-edge tome-edge-head" aria-hidden="true"></i><i class="tome-edge tome-edge-tail" aria-hidden="true"></i>
+          <span class="tome-board" aria-hidden="true"><i class="tome-board-under"></i><i class="tome-board-fore"></i><i class="tome-board-head"></i><i class="tome-board-tail"></i></span>
         </div>
         <div class="tome-back" data-back>
+          <span class="tome-board" aria-hidden="true"><i class="tome-board-under"></i><i class="tome-board-fore"></i><i class="tome-board-head"></i><i class="tome-board-tail"></i></span>
           <div class="tome-back-face" role="group" aria-label="Today, read and sealed">
             <span class="tome-back-seal" aria-hidden="true"><span>✓</span></span>
             <p class="tome-back-eyebrow tome-done" role="status">Read, and sealed.</p>
@@ -314,8 +316,10 @@ export class TodayCard extends PortBoundElement {
       show(1);
       this.setAttribute('data-reveal', 'opening');
       this.#syncInert();
-      await wait(2550); // pull back, stand on the spine, fall open from the middle, the leaves begin to riffle
-      await countUp(show, target, 950); // …and the count runs up as the camera pushes in
+      await wait(3300); // stand on the spine, a breath, fall open from the middle, the leaves riffle
+      await countUp(show, target, 1100); // …and the count runs up as the camera pushes in
+      // Hand over to the page only once the camera has come to rest: never mid-move.
+      await Promise.race([finished(this.$('.tome-camera')), wait(1500)]);
       this.setAttribute('data-reveal', 'landed');
       await wait(550);
     }
@@ -339,7 +343,7 @@ export class TodayCard extends PortBoundElement {
     setTimeout(() => {
       this.removeAttribute('data-closing');
       this.#syncInert();
-    }, 3700);
+    }, 4650); // the note has appeared on the back cover
   }
 
   #render(snapshot: ReadingSnapshot): void {
@@ -389,6 +393,10 @@ export class TodayCard extends PortBoundElement {
 }
 
 const wait = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
+
+/** Resolves once the element's running animations have finished. */
+const finished = (element: Element) =>
+  Promise.all(element.getAnimations().map((animation) => animation.finished.catch(() => undefined))).then(() => undefined);
 
 /** Riffles the number from 1 up to `target`, fast at first, settling at the end. */
 function countUp(show: (n: number) => void, target: number, duration: number): Promise<void> {
