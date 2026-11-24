@@ -388,13 +388,13 @@ test.describe('with motion', () => {
     await expect(book.locator('.tome-inner')).toHaveJSProperty('inert', true);
 
     // A first book: the spread the camera pulls back to is its front matter.
-    await expect(book.locator('[data-left]')).toContainText('Ex libris');
+    await expect(book.locator('[data-cover-back]')).toContainText('Ex libris');
     await expect(book.locator('[data-leaf]')).toContainText('Chapter');
 
-    await book.getByRole('button', { name: 'Open today’s card' }).click();
+    await book.getByRole('button', { name: 'Open today’s card' }).press('Enter'); // keyboard opens it too
     await expect(book).toHaveAttribute('data-reveal', 'opening');
-    await expect(book.locator('.tome-left')).toBeVisible();
-    await expect(book).not.toHaveAttribute('data-reveal', { timeout: 6000 });
+    await expect(book.locator('.tome-leaves')).toBeVisible();
+    await expect(book).not.toHaveAttribute('data-reveal', { timeout: 9000 });
     await expect(book.locator('[data-pages]')).toHaveText(goal ?? '');
     await expect(book.locator('[data-folio]')).toHaveText(`— ${goal} —`);
     await expect(book.locator('.tome-inner')).toHaveJSProperty('inert', false);
@@ -402,11 +402,23 @@ test.describe('with motion', () => {
     // Reading the pages: pull back, turn today's page, turn the book over onto its back.
     await book.getByRole('button', { name: /^I read/ }).click();
     await expect(book).toHaveAttribute('data-closing', '');
-    await expect(book.locator('[data-left] .past-verso')).toHaveCount(1);
-    await expect(book).not.toHaveAttribute('data-closing', { timeout: 6000 });
+    await expect(book.locator('[data-cover-back] .past-verso')).toHaveCount(1); // the left half, closing up
+    await expect(book).not.toHaveAttribute('data-closing', { timeout: 9000 });
     await expect(book.locator('.tome-back-face')).toBeVisible();
     await expect(book.locator('[data-message]')).not.toBeEmpty();
     await expect(book.locator('.tome-inner')).toHaveJSProperty('inert', true);
+
+    // Reopening it later: the closing rewound, onto today's page; closing it again, replayed.
+    await book.getByRole('button', { name: 'Open the book' }).click();
+    await expect(book).toHaveAttribute('data-closing', 'reopen');
+    await expect(book).not.toHaveAttribute('data-closing', { timeout: 6000 });
+    await expect(book.locator('.tome-inner')).toHaveJSProperty('inert', false);
+    await expect(book.getByRole('button', { name: 'Close the book' })).toBeFocused();
+    await book.getByRole('button', { name: 'Close the book' }).click();
+    await expect(book).toHaveAttribute('data-closing', 'again');
+    await expect(book).not.toHaveAttribute('data-closing', { timeout: 6000 });
+    await expect(book.locator('.tome-back-face')).toBeVisible();
+    await expect(book.getByRole('button', { name: 'Open the book' })).toBeFocused();
 
     await page.reload();
     await expect(book.locator('[data-pages]')).toHaveText(goal ?? '');
@@ -437,8 +449,9 @@ test.describe('with motion', () => {
     await page.reload();
     const book = card(page);
     await expect(book).toHaveAttribute('data-reveal', 'closed');
-    await expect(book.locator('[data-left] .past-number')).toHaveText('52');
-    await expect(book.locator('[data-left] .past-note')).toHaveText('52 pages read · sealed');
+    // The day before yesterday is carried on the inside of the half that falls open.
+    await expect(book.locator('[data-cover-back] .past-number')).toHaveText('52');
+    await expect(book.locator('[data-cover-back] .past-note')).toHaveText('52 pages read · sealed');
     await expect(book.locator('[data-leaf] .past-note')).toHaveText('pages dealt, left unread');
   });
 });

@@ -1356,13 +1356,46 @@ html[data-welcoming] hmpt-celebration {
   visibility: hidden;
 }
 
-/* — the book of the day: closed → the open book → today's page; and back, onto the back cover — */
+/* — the book of the day, a solid in 3D: flat → standing on its spine → fallen open from the
+     middle → today's page; and back: closed up onto its spine → tipped over onto its back cover —
+
+   The book is two half-books hinged at the spine (x = 0 of the card, z = 0). Each half has a
+   thickness (a board and a block of pages) and real page edges — fore-edge, head and tail — so
+   standing on its spine it shows as a block, its fore-edge toward you. Closed, the left half
+   lies on the right one. A half's pose is translateZ(lift) rotateY(turn): turn 0 = lying open
+   to the right, -180 = lying open to the left, -90 = standing up; the lift lowers the whole
+   book so that whatever lies on top sits at z = 0 — exactly where the flat page sits at rest.
+   At rest the pose comes from --left-turn / --right-turn / --lift. In motion every piece runs
+   its own `transform` keyframes, with the numbers written out (-30px = -half): transform
+   animations run on the compositor, so the book turns smoothly even while the page is busy —
+   animating the custom properties instead restyled the whole card on the main thread every
+   frame, and it stuttered. */
+
+@property --left-turn {
+  syntax: '<angle>';
+  inherits: true;
+  initial-value: 0deg;
+}
+
+@property --right-turn {
+  syntax: '<angle>';
+  inherits: true;
+  initial-value: 0deg;
+}
+
+@property --lift {
+  syntax: '<length>';
+  inherits: true;
+  initial-value: 0px;
+}
 
 hmpt-today-card {
   /* paper for a right-hand page (gutter on its left) and a left-hand page (gutter on its right) */
   --paper-grain: var(--grain-paper), linear-gradient(180deg, color-mix(in srgb, var(--surface) 94%, #fff), var(--surface));
   --paper-right: linear-gradient(90deg, rgb(60 35 15 / 0.28), rgb(60 35 15 / 0.06) 1.4rem, transparent 3rem), var(--paper-grain);
   --paper-left: linear-gradient(270deg, rgb(60 35 15 / 0.28), rgb(60 35 15 / 0.06) 1.4rem, transparent 3rem), var(--paper-grain);
+  --ruled: repeating-linear-gradient(180deg, transparent 0 1.3rem, color-mix(in srgb, var(--ink) 12%, transparent) 1.3rem calc(1.3rem + 1px))
+    2rem 3rem / calc(100% - 4rem) calc(100% - 6rem) no-repeat;
   --spine-bands: repeating-linear-gradient(
     180deg,
     transparent 0 18%,
@@ -1371,75 +1404,238 @@ hmpt-today-card {
     transparent 20% 25%
   );
   --board: var(--grain-leather), radial-gradient(120% 90% at 30% 15%, var(--leather-light), var(--leather) 55%, var(--leather-deep));
-  /* Turkish 'stone' marbling: drops of colour floated on a combed ground */
-  --marbled:
-    radial-gradient(ellipse 13px 8px at 30% 40%, rgb(150 55 40 / 0.6) 0 62%, transparent 66%) 0 0 / 46px 34px,
-    radial-gradient(ellipse 11px 7px at 70% 60%, rgb(40 70 110 / 0.55) 0 62%, transparent 66%) 13px 9px / 52px 38px,
-    radial-gradient(ellipse 8px 6px at 50% 50%, rgb(190 150 60 / 0.6) 0 62%, transparent 66%) 21px 16px / 38px 30px,
-    radial-gradient(ellipse 10px 6px at 40% 30%, rgb(60 100 70 / 0.5) 0 62%, transparent 66%) 6px 21px / 60px 44px,
-    repeating-linear-gradient(115deg, #efe2c4 0 5px, #e5d2ab 5px 8px);
+  /* endpapers: autumn leaves, in keeping with the room */
+  --endpaper: var(--pattern-leaves) 0 0 / 140px 140px, #efe3c6;
+  /* the edges of a block of pages, and the leather of the boards around them */
+  --page-edges: repeating-linear-gradient(var(--edge-angle, 90deg), #f3e7cc 0 1px, #d8c59d 1px 2px, #ede0c2 2px 3px);
+  /* half the book's thickness: one half-book (board + pages) — a good thick novel */
+  --half: 30px;
+  /* the boards: thicker than a page, standing proud of the pages (the squares), corners rounded */
+  --board-t: 5px;
+  --over: 0.7rem; /* at the head and the fore-edge */
+  --over-tail: 0.8rem;
+  --board-r: 0.9rem; /* corners at the fore-edge; at the spine they stay nearly square */
+  --board-r-spine: 0.25rem;
+
+  /* the camera's poses */
+  --cam-rest: translate(0, 0) scale(1) translate(0, 0);
+  --cam-back: translate(0, 25%) scale(0.5) translate(100%, 0); /* pulled back, the spine at the centre */
+  /* closer in on the book standing on its spine (the spine still at the centre: for scale s,
+     translate((0.5 - s) * 100%, (0.5 - s / 2) * 100%) scale(s) translate(100%, 0)) */
+  --cam-stand: translate(-22%, 14%) scale(0.72) translate(100%, 0);
 }
 
-/* The camera: the whole book moves; the real page is its right-hand page. */
-hmpt-today-card .tome {
+/* The camera moves the whole book. It lives on a plain wrapper outside the 3D scene: with the
+   camera on the scene's root, Chromium culls the half lying left of the spine as it zooms. */
+hmpt-today-card .tome-camera {
+  position: relative;
+  display: block;
   transform-origin: 0 0;
-  perspective: 2400px;
 }
 
-/* Stacking, bottom to top: the boards; the front cover once it has swung open; the pages;
-   the leaf that turns; the closed front cover. */
-hmpt-today-card .tome-inner {
-  z-index: 2;
+/* The scene spans the whole open spread — the left half's room to the left of the card is part
+   of its box (Chromium culls 3D content outside the scene's box) — and its eye sits just above
+   the spine, in the middle. The real page still sits exactly in the card's place. */
+hmpt-today-card .tome {
+  margin-left: -100%;
+  padding-left: 100%;
+  transform-style: preserve-3d;
+  perspective-origin: 50% 50%;
 }
 
-/* — the stage: present only while the camera is pulled back — */
+/* Perspective is on only while the halves are tilted. With it on and the camera close in,
+   Chromium misjudges which part of the left-hand pages is on screen and drops them; while
+   everything lies flat it changes nothing, so it is off then. */
+hmpt-today-card[data-reveal='opening'] .tome {
+  animation: depth-open 4800ms linear both;
+}
+
+hmpt-today-card[data-closing] .tome {
+  animation: depth-close var(--closing-time) linear both;
+}
+
+@keyframes depth-open {
+  0%,
+  75.4% {
+    perspective: 2400px;
+  }
+  75.5%,
+  100% {
+    perspective: none; /* the leaves have landed: all flat from here */
+  }
+}
+
+@keyframes depth-close {
+  0%,
+  18.1% {
+    perspective: none; /* still flat while the camera pulls back */
+  }
+  18.2%,
+  73.4% {
+    perspective: 2400px;
+  }
+  73.5%,
+  100% {
+    perspective: none; /* settled, back cover up, at the card's own depth */
+  }
+}
+
+/* Everything belonging to a half turns about the spine. */
+hmpt-today-card :is(.tome-inner, .tome-leaves, .tome-solid, .tome-cover, .tome-back) {
+  transform-origin: 0 50%;
+}
+
+/* Moving, the right half's pieces share one turn; the left half is one solid group. */
+hmpt-today-card:is([data-reveal], [data-closing]) :is(.tome-inner, .tome-solid-right) {
+  transform: translateZ(var(--lift)) rotateY(var(--right-turn));
+}
+
+hmpt-today-card:is([data-reveal], [data-closing]) .tome-leaves {
+  transform: translateZ(var(--lift)) rotateY(var(--right-turn)) translateZ(0.5px);
+}
+
+hmpt-today-card:is([data-reveal], [data-closing]) .tome-cover {
+  transform: translateZ(var(--lift)) rotateY(var(--left-turn));
+}
+
+/* Closed and waiting: the book lowered so its front cover lies where the page will be. */
+hmpt-today-card[data-reveal='closed'] {
+  --lift: calc(var(--half) * -1);
+}
+
+/* — the stage: present only while the book is moving — */
 
 hmpt-today-card .tome-boards,
-hmpt-today-card .tome-left,
-hmpt-today-card .tome-leaf {
+hmpt-today-card .tome-leaves,
+hmpt-today-card .tome-solid {
   display: none;
   position: absolute;
 }
 
-hmpt-today-card[data-reveal='opening'] :is(.tome-boards, .tome-left, .tome-leaf),
-hmpt-today-card[data-closing] :is(.tome-boards, .tome-left) {
+/* They are laid out already while the book waits closed (hidden under its cover, the boards
+   transparent), so the tap starts the motion at once rather than first painting them. */
+hmpt-today-card[data-reveal='closed'] :is(.tome-boards, .tome-leaves, .tome-solid),
+hmpt-today-card[data-reveal='opening'] :is(.tome-boards, .tome-leaves, .tome-solid),
+hmpt-today-card[data-closing] :is(.tome-boards, .tome-solid) {
   display: block;
 }
 
-/* The open book's boards, under both pages, the spine's shadow at the gutter. */
+hmpt-today-card[data-reveal='closed'] .tome-boards {
+  opacity: 0;
+}
+
+/* The open book's boards, behind both page blocks, the spine's shadow at the gutter. A flat
+   backdrop outside the 3D scene: inside it, Chromium sometimes sorts this large plane above the
+   left-hand pages. The card is the right-hand page; the boards reach a page further left. */
 hmpt-today-card .tome-boards {
-  z-index: 0;
-  inset: -0.7rem -0.7rem -0.8rem calc(-100% - 0.7rem);
-  border-radius: 0.7rem;
+  inset: calc(var(--over) * -1) calc(var(--over) * -1) calc(var(--over-tail) * -1) calc(-100% - var(--over));
+  border-radius: var(--board-r);
   background:
     linear-gradient(90deg, transparent calc(50% - 1rem), rgb(0 0 0 / 0.45) 50%, transparent calc(50% + 1rem)),
     var(--board);
   box-shadow: var(--shadow-lift);
 }
 
-/* The left-hand page: the day before yesterday — or the back of yesterday's page. */
-hmpt-today-card .tome-left {
-  z-index: 2;
-  top: 0;
-  bottom: 0;
-  left: -100%;
-  width: 100%;
-  overflow: hidden;
-  border-radius: 0.6rem 0.2rem 0.2rem 0.6rem;
-  background: var(--paper-left);
-  box-shadow:
-    -3px 1px 0 -1px var(--surface),
-    -3px 1px 0 0 var(--line),
-    -6px 2px 0 -1px var(--surface-sunk),
-    -6px 2px 0 0 var(--line);
+/* A half-book's edges: thin faces standing out of the page plane, showing the page block. */
+hmpt-today-card .tome-solid {
+  inset: 0 0 0 50%; /* from the spine */
+  transform-style: preserve-3d;
 }
 
-/* The leaf that turns: yesterday's page on its face, ruled paper on its back. */
+hmpt-today-card .tome-edge {
+  position: absolute;
+  display: block;
+  background: var(--page-edges);
+  /* Each face of the solid is turned to face outward and drawn from the front only: from any
+     angle you see the faces turned toward you, never one from inside the book. */
+  backface-visibility: hidden;
+}
+
+/* Right half: the block hangs below the page (z from 0 down to -half). */
+hmpt-today-card .tome-solid-right .tome-edge-fore {
+  left: 100%;
+  top: 0;
+  width: var(--half);
+  height: 100%;
+  transform-origin: 0 50%;
+  transform: rotateY(90deg);
+  box-shadow: inset 0 0 0 1px rgb(120 90 50 / 0.25);
+}
+
+hmpt-today-card .tome-solid-right .tome-edge-head {
+  --edge-angle: 0deg;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: var(--half);
+  transform-origin: 50% 0;
+  transform: rotateX(-90deg) rotateY(180deg);
+}
+
+hmpt-today-card .tome-solid-right .tome-edge-tail {
+  --edge-angle: 0deg;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: var(--half);
+  transform-origin: 50% 100%;
+  transform: rotateX(90deg) rotateY(180deg);
+}
+
+/* Left half: its block rises above its inner page (z from 0 up to +half) to the front board. */
+hmpt-today-card .tome-cover .tome-edge-fore {
+  left: 100%;
+  top: 0;
+  width: var(--half);
+  height: 100%;
+  transform-origin: 0 50%;
+  transform: rotateY(-90deg) rotateX(180deg);
+  box-shadow: inset 0 0 0 1px rgb(120 90 50 / 0.25);
+}
+
+hmpt-today-card .tome-cover .tome-edge-head {
+  --edge-angle: 0deg;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: var(--half);
+  transform-origin: 50% 0;
+  transform: rotateX(90deg);
+}
+
+hmpt-today-card .tome-cover .tome-edge-tail {
+  --edge-angle: 0deg;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: var(--half);
+  transform-origin: 50% 100%;
+  transform: rotateX(-90deg);
+}
+
+/* The leaves on the right half, between the two days before and today. */
+hmpt-today-card .tome-leaves {
+  inset: 0 0 0 50%; /* from the spine */
+  transform-style: preserve-3d;
+}
+
 hmpt-today-card .tome-leaf {
-  z-index: 3;
+  position: absolute;
   inset: 0;
   transform-origin: 0 50%;
   transform-style: preserve-3d;
+  transform: translateZ(var(--depth)) rotateY(0);
+}
+
+/* Yesterday's page on top of the stack; the depth rides along with each leaf's turn. */
+hmpt-today-card .tome-leaf:nth-child(1) {
+  --depth: 0.6px;
+}
+hmpt-today-card .tome-leaf:nth-child(2) {
+  --depth: 0.4px;
+}
+hmpt-today-card .tome-leaf:nth-child(3) {
+  --depth: 0.2px;
 }
 
 hmpt-today-card .tome-leaf-front,
@@ -1453,15 +1649,17 @@ hmpt-today-card .tome-leaf-back {
 hmpt-today-card .tome-leaf-front {
   border-radius: 0.2rem 0.6rem 0.6rem 0.2rem;
   background: var(--paper-right);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--line) 50%, transparent);
+}
+
+hmpt-today-card .tome-leaf-ruled {
+  background: var(--ruled), var(--paper-right);
 }
 
 hmpt-today-card .tome-leaf-back {
   transform: rotateY(180deg);
   border-radius: 0.6rem 0.2rem 0.2rem 0.6rem;
-  background:
-    repeating-linear-gradient(180deg, transparent 0 1.3rem, color-mix(in srgb, var(--ink) 12%, transparent) 1.3rem calc(1.3rem + 1px)) 2rem 3rem /
-      calc(100% - 4rem) calc(100% - 6rem) no-repeat,
-    var(--paper-left);
+  background: var(--ruled), var(--paper-left);
 }
 
 /* — the past days' pages, as glimpsed in the open book — */
@@ -1473,6 +1671,7 @@ hmpt-today-card .past-page {
   height: 100%;
   padding: var(--s0) var(--s1);
   color: var(--ink);
+  text-align: start;
 }
 
 hmpt-today-card .past-head {
@@ -1516,16 +1715,19 @@ hmpt-today-card .past-note {
 }
 
 hmpt-today-card .past-verso {
-  background: repeating-linear-gradient(180deg, transparent 0 1.3rem, color-mix(in srgb, var(--ink) 12%, transparent) 1.3rem calc(1.3rem + 1px)) 2rem 3rem /
-    calc(100% - 4rem) calc(100% - 6rem) no-repeat;
+  background: var(--ruled);
 }
 
-/* A brand-new book: an Ex libris plate facing "Chapter One". */
+/* A brand-new book: an Ex libris plate on leaf-strewn endpaper, facing "Chapter One". */
 hmpt-today-card .past-ex-libris,
 hmpt-today-card .past-chapter-one {
   align-content: center;
   justify-items: center;
   text-align: center;
+}
+
+hmpt-today-card .past-ex-libris {
+  background: var(--endpaper);
 }
 
 hmpt-today-card .past-bookplate {
@@ -1535,6 +1737,9 @@ hmpt-today-card .past-bookplate {
   border: 3px double var(--gilt-dark);
   outline: 1px solid var(--line);
   outline-offset: 6px;
+  background: #f6ecd4;
+  color: #2a1a0e;
+  box-shadow: 0 2px 6px rgb(60 35 15 / 0.25);
 }
 
 hmpt-today-card .past-bookplate-title,
@@ -1543,6 +1748,10 @@ hmpt-today-card .past-chapter-eyebrow {
   font-size: 1.5rem;
   letter-spacing: 0.1em;
   color: var(--ink-soft);
+}
+
+hmpt-today-card .past-bookplate-title {
+  color: #5c4228;
 }
 
 hmpt-today-card .past-bookplate-name {
@@ -1562,62 +1771,49 @@ hmpt-today-card .past-ornament {
   color: var(--gilt-dark);
 }
 
-/* — the front board: closed, it is the button that opens the day — */
+/* — the left half: the front board on top, a page on its inside; closed, it is what you tap — */
 
 hmpt-today-card .tome-cover {
   display: none;
   position: absolute;
-  inset: 0;
-  z-index: 4;
+  inset: 0 0 0 50%; /* from the spine */
   margin: 0;
   padding: 0;
   border: 0;
-  border-radius: 0.3rem 0.7rem 0.7rem 0.3rem;
   font: inherit;
   color: inherit;
   text-align: center;
   cursor: pointer;
-  transform-origin: 0 50%;
   transform-style: preserve-3d;
-  background:
-    var(--spine-bands) 0 0 / 1.1rem 100% no-repeat,
-    linear-gradient(90deg, rgb(0 0 0 / 0.45), rgb(255 255 255 / 0.08) 0.66rem, rgb(0 0 0 / 0.3) 1.1rem, transparent 1.1rem),
-    var(--board);
-  box-shadow:
-    4px 1px 0 -1px #efe0bf,
-    5px 2px 0 -1px #c7ad7c,
-    var(--shadow-lift);
   -webkit-tap-highlight-color: transparent;
 }
 
 hmpt-today-card[data-reveal='closed'] .tome-cover,
-hmpt-today-card[data-reveal='opening'] .tome-cover {
+hmpt-today-card[data-reveal='opening'] .tome-cover,
+hmpt-today-card[data-closing] .tome-cover {
   display: block;
+}
+
+/* The front board, on top of the left half's block. */
+hmpt-today-card .tome-cover-face {
+  position: absolute;
+  inset: calc(var(--over) * -1) calc(var(--over) * -1) calc(var(--over-tail) * -1) 0; /* proud of the pages */
+  display: grid;
+  place-content: center;
+  gap: 0.7rem;
+  border-radius: var(--board-r-spine) var(--board-r) var(--board-r) var(--board-r-spine);
+  transform: translateZ(var(--half));
+  backface-visibility: hidden;
+  background:
+    var(--spine-bands) 0 0 / 1.1rem 100% no-repeat,
+    linear-gradient(90deg, rgb(0 0 0 / 0.45), rgb(255 255 255 / 0.08) 0.66rem, rgb(0 0 0 / 0.3) 1.1rem, transparent 1.1rem),
+    var(--board);
+  box-shadow: var(--shadow-lift);
 }
 
 hmpt-today-card .tome-cover:focus-visible {
   outline: 3px solid var(--gilt);
   outline-offset: 3px;
-}
-
-hmpt-today-card .tome-cover::before {
-  /* the marbled endpaper inside the front board */
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: 0.7rem 0.3rem 0.3rem 0.7rem;
-  transform: rotateY(180deg);
-  backface-visibility: hidden;
-  background: var(--marbled);
-}
-
-hmpt-today-card .tome-cover-face {
-  position: absolute;
-  inset: 0;
-  display: grid;
-  place-content: center;
-  gap: 0.7rem;
-  backface-visibility: hidden;
 }
 
 hmpt-today-card .tome-cover-face::before {
@@ -1676,44 +1872,235 @@ hmpt-today-card[data-reveal='opening'] .tome-cover-hint {
   }
 }
 
-/* — the back board: two faces; the book is turned over onto it — */
+/* The inside of the left half: the day before yesterday's page (or the Ex libris). */
+hmpt-today-card .tome-cover-back {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  transform: rotateY(180deg);
+  backface-visibility: hidden;
+  border-radius: 0.6rem 0.2rem 0.2rem 0.6rem;
+  background: var(--paper-left);
+  text-align: start;
+}
+
+/* — a board's thickness: the leather slab under each face —
+   The face is the slab's top. Beneath it: the underside (the leather turned in, seen where the
+   board stands proud of the pages) and three thin edges, going down into the book. Plain leather,
+   no texture: cheap to draw. The corners at the fore-edge are left open, as they are rounded. */
+hmpt-today-card .tome-board {
+  position: absolute;
+  transform-style: preserve-3d;
+  pointer-events: none;
+}
+
+hmpt-today-card .tome-board > i {
+  position: absolute;
+  display: block;
+  backface-visibility: hidden;
+  background: linear-gradient(180deg, var(--leather-light), var(--leather-deep));
+}
+
+hmpt-today-card .tome-board-under {
+  inset: 0;
+  background: var(--leather-deep) !important;
+  transform: translateZ(calc(var(--board-t) * -1)) rotateY(180deg);
+}
+
+hmpt-today-card .tome-board-fore {
+  top: var(--board-r);
+  bottom: var(--board-r);
+  width: var(--board-t);
+  transform-origin: 0 50%;
+  transform: rotateY(90deg);
+}
+
+hmpt-today-card .tome-board-head {
+  top: 0;
+  height: var(--board-t);
+  transform-origin: 50% 0;
+  transform: rotateX(-90deg) rotateY(180deg);
+}
+
+hmpt-today-card .tome-board-tail {
+  bottom: 0;
+  height: var(--board-t);
+  transform-origin: 50% 100%;
+  transform: rotateX(90deg) rotateY(180deg);
+}
+
+/* The rounded corners at the fore-edge, each edged by three short segments (30° apiece) set
+   around the corner's centre, so the board's edge runs right round them. A segment's anchor is
+   the corner's centre; it is turned to its mid angle, pushed out to the chord, and folded down
+   into the board like the other edges. */
+hmpt-today-card .tome-board-arc {
+  width: var(--board-t);
+  height: calc(var(--board-r) * 0.518); /* the chord of 30° */
+  transform-origin: 0 0;
+  transform: rotateZ(var(--a)) translate(calc(var(--board-r) * 0.966), calc(var(--board-r) * -0.259)) rotateY(90deg);
+}
+
+hmpt-today-card .tome-cover .tome-board-arc-0 {
+  --a: -75deg;
+  left: calc(100% - var(--board-r));
+  top: var(--board-r);
+}
+
+hmpt-today-card .tome-cover .tome-board-arc-1 {
+  --a: -45deg;
+  left: calc(100% - var(--board-r));
+  top: var(--board-r);
+}
+
+hmpt-today-card .tome-cover .tome-board-arc-2 {
+  --a: -15deg;
+  left: calc(100% - var(--board-r));
+  top: var(--board-r);
+}
+
+hmpt-today-card .tome-cover .tome-board-arc-3 {
+  --a: 15deg;
+  left: calc(100% - var(--board-r));
+  top: calc(100% - var(--board-r));
+}
+
+hmpt-today-card .tome-cover .tome-board-arc-4 {
+  --a: 45deg;
+  left: calc(100% - var(--board-r));
+  top: calc(100% - var(--board-r));
+}
+
+hmpt-today-card .tome-cover .tome-board-arc-5 {
+  --a: 75deg;
+  left: calc(100% - var(--board-r));
+  top: calc(100% - var(--board-r));
+}
+
+hmpt-today-card .tome-back .tome-board-arc-0 {
+  --a: -105deg;
+  left: var(--board-r);
+  top: var(--board-r);
+}
+
+hmpt-today-card .tome-back .tome-board-arc-1 {
+  --a: -135deg;
+  left: var(--board-r);
+  top: var(--board-r);
+}
+
+hmpt-today-card .tome-back .tome-board-arc-2 {
+  --a: -165deg;
+  left: var(--board-r);
+  top: var(--board-r);
+}
+
+hmpt-today-card .tome-back .tome-board-arc-3 {
+  --a: 105deg;
+  left: var(--board-r);
+  top: calc(100% - var(--board-r));
+}
+
+hmpt-today-card .tome-back .tome-board-arc-4 {
+  --a: 135deg;
+  left: var(--board-r);
+  top: calc(100% - var(--board-r));
+}
+
+hmpt-today-card .tome-back .tome-board-arc-5 {
+  --a: 165deg;
+  left: var(--board-r);
+  top: calc(100% - var(--board-r));
+}
+
+/* The front board: on top of the left half's block, the spine on its left. */
+hmpt-today-card .tome-cover .tome-board {
+  inset: calc(var(--over) * -1) calc(var(--over) * -1) calc(var(--over-tail) * -1) 0;
+  border-radius: var(--board-r-spine) var(--board-r) var(--board-r) var(--board-r-spine);
+  transform: translateZ(var(--half));
+}
+
+hmpt-today-card .tome-cover .tome-board-fore {
+  left: 100%;
+}
+
+/* The underside is the board turned over (mirrored): its rounded corners are on its other side. */
+hmpt-today-card .tome-cover .tome-board-under {
+  border-radius: var(--board-r) var(--board-r-spine) var(--board-r-spine) var(--board-r);
+}
+
+hmpt-today-card .tome-cover :is(.tome-board-head, .tome-board-tail) {
+  left: var(--board-r-spine);
+  right: var(--board-r);
+}
+
+/* The back board, seen from behind: the spine on its right. */
+hmpt-today-card .tome-back .tome-board {
+  inset: calc(var(--over) * -1) 0 calc(var(--over-tail) * -1) calc(var(--over) * -1);
+  border-radius: var(--board-r) var(--board-r-spine) var(--board-r-spine) var(--board-r);
+}
+
+hmpt-today-card .tome-back .tome-board-under {
+  border-radius: var(--board-r-spine) var(--board-r) var(--board-r) var(--board-r-spine);
+}
+
+hmpt-today-card .tome-back .tome-board-fore {
+  left: 0;
+  transform: rotateY(90deg) rotateX(180deg); /* the fore-edge is on its left: face left */
+}
+
+hmpt-today-card .tome-back :is(.tome-board-head, .tome-board-tail) {
+  left: var(--board-r);
+  right: var(--board-r-spine);
+}
+
+/* — the back board: the underside of the right half; the book ends lying on it — */
 
 hmpt-today-card .tome-back {
   display: none;
   position: absolute;
-  inset: 0;
-  z-index: 3;
+  inset: 0 0 0 50%; /* from the spine */
   transform-style: preserve-3d;
 }
 
-hmpt-today-card[data-done]:not([data-peek]) .tome-back {
+hmpt-today-card[data-done]:not([data-peek]) .tome-back,
+hmpt-today-card[data-closing] .tome-back,
+hmpt-today-card:is([data-reveal='closed'], [data-reveal='opening']) .tome-back {
   display: block;
 }
 
-hmpt-today-card .tome-back-face,
-hmpt-today-card .tome-back-inside {
-  position: absolute;
-  inset: 0;
-  backface-visibility: hidden;
+/* Before the day is read the back board is only a board: its face (the seal, the note) waits,
+   and it never takes a tap meant for the front cover. */
+hmpt-today-card:is([data-reveal='closed'], [data-reveal='opening']) .tome-back {
+  pointer-events: none;
+}
+
+hmpt-today-card:is([data-reveal='closed'], [data-reveal='opening']) .tome-back-face {
+  visibility: hidden;
+}
+
+/* Moving, it is the right half's underside: the same turn, then down to the bottom of the
+   block and turned to face away (mirrored about the card, so it reads true once face up). */
+hmpt-today-card:is([data-closing], [data-reveal='closed'], [data-reveal='opening']) .tome-back {
+  transform: translateZ(var(--lift)) rotateY(var(--right-turn)) translateZ(calc(var(--half) * -1)) translateX(100%) rotateY(180deg);
 }
 
 /* Seen from behind, a book has its spine on the right. */
 hmpt-today-card .tome-back-face {
+  position: absolute;
+  inset: calc(var(--over) * -1) 0 calc(var(--over-tail) * -1) calc(var(--over) * -1); /* proud of the pages */
   display: grid;
   place-content: center;
   justify-items: center;
   gap: 0.75rem;
   padding: 2rem 2.4rem 2rem 1.6rem;
   text-align: center;
-  border-radius: 0.7rem 0.3rem 0.3rem 0.7rem;
+  border-radius: var(--board-r) var(--board-r-spine) var(--board-r-spine) var(--board-r);
+  backface-visibility: hidden;
   background:
     var(--spine-bands) 100% 0 / 1.1rem 100% no-repeat,
     linear-gradient(270deg, rgb(0 0 0 / 0.45), rgb(255 255 255 / 0.08) 0.66rem, rgb(0 0 0 / 0.3) 1.1rem, transparent 1.1rem),
     var(--board);
-  box-shadow:
-    -4px 1px 0 -1px #efe0bf,
-    -5px 2px 0 -1px #c7ad7c,
-    var(--shadow-lift);
+  box-shadow: var(--shadow-lift);
 }
 
 hmpt-today-card .tome-back-face::before {
@@ -1725,15 +2112,6 @@ hmpt-today-card .tome-back-face::before {
   outline-offset: -5px;
   border-radius: 0.2rem;
   pointer-events: none;
-}
-
-/* The inside of the back board: marbled endpaper, seen when today's page has turned. */
-hmpt-today-card .tome-back-inside {
-  transform: rotateY(180deg);
-  border-radius: 0.2rem 0.6rem 0.6rem 0.2rem;
-  background:
-    linear-gradient(90deg, rgb(60 35 15 / 0.3), transparent 2rem),
-    var(--marbled);
 }
 
 /* The wax seal, pressed onto the back board. */
@@ -1815,36 +2193,8 @@ hmpt-today-card .tome-back-open {
 
 /* — the choreography — */
 
-/* The camera's three positions: on today's page (rest), pulled back to the open book. */
-@keyframes camera-open {
-  0% {
-    transform: translate(0, 0) scale(1) translate(0, 0);
-  }
-  30%,
-  56% {
-    transform: translate(0, 25%) scale(0.5) translate(100%, 0);
-  }
-  100% {
-    transform: translate(0, 0) scale(1) translate(0, 0);
-  }
-}
-
-@keyframes camera-close {
-  0% {
-    transform: translate(0, 0) scale(1) translate(0, 0);
-  }
-  22%,
-  52% {
-    transform: translate(0, 25%) scale(0.5) translate(100%, 0);
-  }
-  85%,
-  100% {
-    transform: translate(0, 0) scale(1) translate(0, 0);
-  }
-}
-
 /* Waiting, closed: the book settles onto the table once. */
-hmpt-today-card[data-reveal='closed'] .tome {
+hmpt-today-card[data-reveal='closed'] .tome-camera {
   animation: tome-arrive 700ms cubic-bezier(0.2, 0.9, 0.3, 1.15) both;
 }
 
@@ -1858,53 +2208,184 @@ hmpt-today-card[data-reveal='closed'] .tome {
   }
 }
 
-/* Opening (≈2.6s): the cover lifts as the camera pulls back to the two days before;
-   yesterday's page turns as it pushes in on today's. */
-hmpt-today-card[data-reveal='opening'] .tome {
-  animation: camera-open 2600ms cubic-bezier(0.45, 0, 0.25, 1) both;
-}
-
+/* Opening (≈4.8s), unhurried. 0–0.8s the camera draws back as the book rises to stand on its
+   spine, front cover toward you; it stays there a breath (0.8–1.7s), swaying a touch; 1.7–2.5s it
+   falls open from the middle as the camera draws back to the whole spread; 2.55–3.6s a few
+   leaves riffle over while the camera pushes in, slowly, on today's page (2.7–4.8s). Every
+   hand-off happens at rest, so nothing jumps. */
 hmpt-today-card[data-reveal='opening'] .tome-cover {
-  animation: cover-lift 820ms linear both; /* easing lives in the keyframes, either side of upright */
+  animation: cover-open 4800ms linear both;
 }
 
-hmpt-today-card[data-reveal='opening'] .tome-leaf {
-  animation: leaf-over 900ms cubic-bezier(0.45, 0, 0.3, 1) 1250ms both;
+hmpt-today-card[data-reveal='opening'] :is(.tome-inner, .tome-solid-right) {
+  animation: half-open 4800ms linear both;
 }
 
-hmpt-today-card[data-reveal='landed'] .tome-number {
-  animation: page-found 600ms cubic-bezier(0.2, 1.4, 0.4, 1);
+hmpt-today-card[data-reveal='opening'] .tome-leaves {
+  animation: leaves-open 4800ms linear both;
 }
 
-/* The cover swings open on its spine; past upright it passes beneath the first pages and
-   comes to rest under the left-hand page, only its edge showing around it. */
-@keyframes cover-lift {
+hmpt-today-card[data-reveal='opening'] .tome-back {
+  animation: back-open 4800ms linear both;
+}
+
+hmpt-today-card[data-reveal='opening'] .tome-camera {
+  animation: camera-open 4800ms both;
+}
+
+/* The left half: the front board, rising onto the spine, then falling open to the left. */
+@keyframes cover-open {
   0% {
-    transform: rotateY(0);
-    z-index: 4;
-    animation-timing-function: cubic-bezier(0.55, 0, 0.8, 0.5); /* rising towards upright */
+    transform: translateZ(-30px) rotateY(0deg);
+    animation-timing-function: cubic-bezier(0.65, 0, 0.35, 1);
   }
-  49.9% {
-    z-index: 4;
+  16.7% {
+    transform: translateZ(0px) rotateY(-86deg); /* standing on the spine, leaning toward you */
+    animation-timing-function: cubic-bezier(0.37, 0, 0.63, 1);
   }
-  50% {
-    transform: rotateY(-90deg); /* on edge, exactly when it passes beneath the pages */
-    z-index: 1;
-    animation-timing-function: cubic-bezier(0.2, 0.5, 0.35, 1); /* settling down on the left */
+  35.4% {
+    transform: translateZ(0px) rotateY(-88.5deg); /* …a breath, leaning a touch further, before it falls open */
+    animation-timing-function: cubic-bezier(0.45, 0, 0.3, 1);
+  }
+  52%,
+  100% {
+    transform: translateZ(0px) rotateY(-180deg);
+  }
+}
+
+/* The right half (the real page and its block), and the leaves lying on it. */
+@keyframes half-open {
+  0% {
+    transform: translateZ(-30px) rotateY(0deg);
+    animation-timing-function: cubic-bezier(0.65, 0, 0.35, 1);
+  }
+  16.7% {
+    transform: translateZ(0px) rotateY(-86deg);
+    animation-timing-function: cubic-bezier(0.37, 0, 0.63, 1);
+  }
+  35.4% {
+    transform: translateZ(0px) rotateY(-88.5deg);
+    animation-timing-function: cubic-bezier(0.55, 0, 0.8, 0.4);
+  }
+  49% {
+    transform: translateZ(0px) rotateY(1.5deg); /* lands, with the slightest bounce */
+    animation-timing-function: ease-out;
+  }
+  53%,
+  100% {
+    transform: translateZ(0px) rotateY(0deg);
+  }
+}
+
+@keyframes leaves-open {
+  0% {
+    transform: translateZ(-30px) rotateY(0deg) translateZ(0.5px);
+    animation-timing-function: cubic-bezier(0.65, 0, 0.35, 1);
+  }
+  16.7% {
+    transform: translateZ(0px) rotateY(-86deg) translateZ(0.5px);
+    animation-timing-function: cubic-bezier(0.37, 0, 0.63, 1);
+  }
+  35.4% {
+    transform: translateZ(0px) rotateY(-88.5deg) translateZ(0.5px);
+    animation-timing-function: cubic-bezier(0.55, 0, 0.8, 0.4);
+  }
+  49% {
+    transform: translateZ(0px) rotateY(1.5deg) translateZ(0.5px); /* lands, with the slightest bounce */
+    animation-timing-function: ease-out;
+  }
+  53%,
+  100% {
+    transform: translateZ(0px) rotateY(0deg) translateZ(0.5px);
+  }
+}
+
+/* The back board, under the right half — only its leather shows on the way in. */
+@keyframes back-open {
+  0% {
+    transform: translateZ(-30px) rotateY(0deg) translateZ(-30px) translateX(100%) rotateY(180deg);
+    animation-timing-function: cubic-bezier(0.65, 0, 0.35, 1);
+  }
+  16.7% {
+    transform: translateZ(0px) rotateY(-86deg) translateZ(-30px) translateX(100%) rotateY(180deg);
+    animation-timing-function: cubic-bezier(0.37, 0, 0.63, 1);
+  }
+  35.4% {
+    transform: translateZ(0px) rotateY(-88.5deg) translateZ(-30px) translateX(100%) rotateY(180deg);
+    animation-timing-function: cubic-bezier(0.55, 0, 0.8, 0.4);
+  }
+  49% {
+    transform: translateZ(0px) rotateY(1.5deg) translateZ(-30px) translateX(100%) rotateY(180deg); /* lands, with the slightest bounce */
+    animation-timing-function: ease-out;
+  }
+  53%,
+  100% {
+    transform: translateZ(0px) rotateY(0deg) translateZ(-30px) translateX(100%) rotateY(180deg);
+  }
+}
+
+@keyframes camera-open {
+  0% {
+    transform: var(--cam-rest);
+    animation-timing-function: cubic-bezier(0.65, 0, 0.35, 1);
+  }
+  16.7%,
+  33% {
+    transform: var(--cam-stand); /* then back to the whole spread before the halves land */
+    animation-timing-function: cubic-bezier(0.45, 0, 0.55, 1);
+  }
+  45%,
+  56.3% {
+    transform: var(--cam-back);
+    animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
   }
   100% {
-    transform: rotateY(-180deg);
-    z-index: 1;
+    transform: var(--cam-rest);
   }
+}
+
+/* The open book's boards appear as it falls open. */
+hmpt-today-card[data-reveal='opening'] .tome-boards {
+  animation: boards-appear 4800ms linear both;
+}
+
+@keyframes boards-appear {
+  0%,
+  42% {
+    opacity: 0;
+  }
+  50%,
+  100% {
+    opacity: 1;
+  }
+}
+
+/* A few leaves riffle over — yesterday's page first. */
+hmpt-today-card[data-reveal='opening'] .tome-leaf {
+  animation: leaf-over 620ms cubic-bezier(0.45, 0, 0.3, 1) both; /* the last lands by 3.59s */
+}
+
+hmpt-today-card[data-reveal='opening'] .tome-leaf:nth-child(1) {
+  animation-delay: 2550ms;
+}
+hmpt-today-card[data-reveal='opening'] .tome-leaf:nth-child(2) {
+  animation-delay: 2760ms;
+}
+hmpt-today-card[data-reveal='opening'] .tome-leaf:nth-child(3) {
+  animation-delay: 2970ms;
 }
 
 @keyframes leaf-over {
   from {
-    transform: rotateY(0);
+    transform: translateZ(var(--depth)) rotateY(0);
   }
   to {
-    transform: rotateY(-180deg);
+    transform: translateZ(var(--depth)) rotateY(-180deg);
   }
+}
+
+hmpt-today-card[data-reveal='landed'] .tome-number {
+  animation: page-found 600ms cubic-bezier(0.2, 1.4, 0.4, 1);
 }
 
 @keyframes page-found {
@@ -1917,40 +2398,136 @@ hmpt-today-card[data-reveal='landed'] .tome-number {
   }
 }
 
-/* Closing (≈3.2s): the camera pulls back, today's page turns to the left, the book is
-   turned over onto its back as the camera pushes in; the seal is pressed; the note appears. */
-hmpt-today-card[data-closing] .tome {
-  animation: camera-close 3000ms cubic-bezier(0.45, 0, 0.25, 1) both;
+/* Closing (≈4.4s), the reverse, as unhurried. 0–0.8s the camera draws back to the open book;
+   0.8–1.7s the halves close up onto the spine, back cover toward you, as the camera comes in a
+   little; it stands a breath (1.7–2.4s); 2.4–3.2s it tips over onto its other side and settles;
+   2.4–4.4s the camera follows it over and pushes in on the back cover, then the seal is pressed and the note
+   appears. */
+hmpt-today-card[data-closing] .tome-cover {
+  animation: cover-close var(--closing-time) linear both;
 }
 
+hmpt-today-card[data-closing] :is(.tome-inner, .tome-solid-right) {
+  animation: half-close var(--closing-time) linear both;
+}
+
+hmpt-today-card[data-closing] .tome-back {
+  animation: back-close var(--closing-time) linear both;
+}
+
+hmpt-today-card[data-closing] .tome-camera {
+  animation: camera-close var(--closing-time) both;
+}
+
+@keyframes cover-close {
+  0%,
+  18.2% {
+    transform: translateZ(0px) rotateY(-180deg);
+    animation-timing-function: cubic-bezier(0.65, 0, 0.35, 1);
+  }
+  38.6% {
+    transform: translateZ(0px) rotateY(-94deg); /* closed up, standing on the spine */
+    animation-timing-function: cubic-bezier(0.37, 0, 0.63, 1);
+  }
+  54.5% {
+    transform: translateZ(0px) rotateY(-91.5deg); /* a breath, then it tips over */
+    animation-timing-function: cubic-bezier(0.5, 0, 0.8, 0.45);
+  }
+  72.7%,
+  100% {
+    transform: translateZ(-30px) rotateY(-180deg); /* settled: the back cover lies where the card sits */
+  }
+}
+
+@keyframes half-close {
+  0%,
+  18.2% {
+    transform: translateZ(0px) rotateY(0deg);
+    animation-timing-function: cubic-bezier(0.65, 0, 0.35, 1);
+  }
+  38.6% {
+    transform: translateZ(0px) rotateY(-94deg); /* standing on the spine, leaning the other way */
+    animation-timing-function: cubic-bezier(0.37, 0, 0.63, 1);
+  }
+  54.5% {
+    transform: translateZ(0px) rotateY(-91.5deg);
+    animation-timing-function: cubic-bezier(0.5, 0, 0.8, 0.45);
+  }
+  72.7%,
+  100% {
+    transform: translateZ(-30px) rotateY(-180deg);
+  }
+}
+
+/* The back board: the right half's underside — the same turn, then down to the bottom of the
+   block and turned to face away. */
+@keyframes back-close {
+  0%,
+  18.2% {
+    transform: translateZ(0px) rotateY(0deg) translateZ(-30px) translateX(100%) rotateY(180deg);
+    animation-timing-function: cubic-bezier(0.65, 0, 0.35, 1);
+  }
+  38.6% {
+    transform: translateZ(0px) rotateY(-94deg) translateZ(-30px) translateX(100%) rotateY(180deg); /* standing on the spine, leaning the other way */
+    animation-timing-function: cubic-bezier(0.37, 0, 0.63, 1);
+  }
+  54.5% {
+    transform: translateZ(0px) rotateY(-91.5deg) translateZ(-30px) translateX(100%) rotateY(180deg);
+    animation-timing-function: cubic-bezier(0.5, 0, 0.8, 0.45);
+  }
+  72.7%,
+  100% {
+    transform: translateZ(-30px) rotateY(-180deg) translateZ(-30px) translateX(100%) rotateY(180deg);
+  }
+}
+
+@keyframes camera-close {
+  0% {
+    transform: var(--cam-rest);
+    animation-timing-function: cubic-bezier(0.65, 0, 0.35, 1);
+  }
+  18.2%,
+  25% {
+    transform: var(--cam-back); /* back while the halves are still spread wide */
+    animation-timing-function: cubic-bezier(0.45, 0, 0.55, 1);
+  }
+  38.6%,
+  54.5% {
+    transform: var(--cam-stand); /* then it follows the book as it tips over, and pushes in */
+    animation-timing-function: cubic-bezier(0.45, 0, 0.2, 1);
+  }
+  100% {
+    /* the book now lies to the left of the spine: bring it to where the card sits */
+    transform: translate(100%, 0) scale(1) translate(0, 0);
+  }
+}
+
+/* While it closes the real page turns away with its half; the back board takes over. */
 hmpt-today-card[data-closing] .tome-inner {
-  z-index: 3; /* today's page turns over the left-hand page */
-  transform-origin: 0 50%;
   backface-visibility: hidden;
-  animation: leaf-over 820ms cubic-bezier(0.45, 0, 0.3, 1) 700ms both;
 }
 
-hmpt-today-card[data-done][data-closing] .tome-back {
-  display: block;
-  z-index: 1;
-  animation: turn-over 1000ms cubic-bezier(0.45, 0, 0.25, 1) 1560ms both;
+hmpt-today-card[data-closing] .tome-boards {
+  animation: boards-leave var(--closing-time) linear both;
+}
+
+@keyframes boards-leave {
+  0%,
+  20% {
+    opacity: 1;
+  }
+  30%,
+  100% {
+    opacity: 0;
+  }
 }
 
 hmpt-today-card[data-closing] .tome-back-seal {
-  animation: seal-press 460ms cubic-bezier(0.2, 1.4, 0.4, 1) 2550ms both;
+  animation: seal-press 460ms cubic-bezier(0.2, 1.4, 0.4, 1) 3750ms both;
 }
 
 hmpt-today-card[data-closing] .tome-back-face > :not(.tome-back-seal) {
-  animation: note-appear 600ms ease-out 2750ms both;
-}
-
-@keyframes turn-over {
-  from {
-    transform: rotateY(180deg); /* the inside of the back board first, then the book turns over */
-  }
-  to {
-    transform: rotateY(0);
-  }
+  animation: note-appear 600ms ease-out 3950ms both;
 }
 
 @keyframes seal-press {
@@ -1969,6 +2546,26 @@ hmpt-today-card[data-closing] .tome-back-face > :not(.tome-back-seal) {
     opacity: 0;
     transform: translateY(0.4rem);
   }
+}
+
+/* — after the day is read: closing it again after a look inside, and reopening it —
+   The same closing, quicker; reopening plays it rewound. The seal is already pressed and the
+   note already written: they simply ride along on the back board. */
+hmpt-today-card {
+  --closing-time: 4400ms;
+}
+
+hmpt-today-card:is([data-closing='again'], [data-closing='reopen']) {
+  --closing-time: 3000ms;
+}
+
+hmpt-today-card[data-closing='reopen'] :is(.tome, .tome-cover, .tome-inner, .tome-solid-right, .tome-back, .tome-camera, .tome-boards) {
+  animation-direction: reverse;
+}
+
+hmpt-today-card:is([data-closing='again'], [data-closing='reopen']) .tome-back-seal,
+hmpt-today-card:is([data-closing='again'], [data-closing='reopen']) .tome-back-face > :not(.tome-back-seal) {
+  animation: none;
 }
 
 /* — the bookmark ribbon: a strip of red silk with a swallowtail — */

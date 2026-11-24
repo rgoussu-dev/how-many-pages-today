@@ -26,15 +26,19 @@ import { localizeShell } from './localize-shell';
 import { startRouter } from './router';
 import { registerServiceWorker } from './service-worker';
 import { keepFresh } from './keep-fresh';
+import { databaseName, stage } from './stage';
 
 const base = import.meta.env.BASE_URL;
+
+// A staging copy wears a tag in the corner, so it is never mistaken for the real app.
+if (stage) document.documentElement.dataset.stage = stage;
 
 // Listen for the install prompt before anything else: it fires once, early.
 const installer = createBrowserInstaller();
 
 async function assemble(): Promise<ReadingApp> {
   const worker = registerServiceWorker(`${base}sw.js`);
-  const storage = await openReadingDatabase();
+  const storage = await openReadingDatabase(databaseName);
   return createReadingApp({
     history: storage.history,
     profiles: storage.profiles,

@@ -11,17 +11,18 @@ dusty shelves, lamplight, pillows and a blanket — and, after dusk, the same ro
   in steps of ten. The plate is one of six cosy library scenes (dusty shelves, a banker's
   lamp, a window seat of pillows, a wingback armchair, a rainy windowsill, a candlelit
   still life) painted from a seed, so the same day always shows the same card, online or not.
-- **The book of the day.** The day's card waits on the table as a closed book — a leather
-  cover, the date, a gilt emblem — until it is tapped. Then the camera pulls back as the cover
-  swings open and slips beneath the first pages: the open book shows the two days before
-  (their plates and what was read; a new book shows its Ex libris and "Chapter One"), and
-  pushes in again while yesterday's page turns, landing on today's page — a printed page with
-  a running head, the illustration as a captioned plate, the number in ink, a folio at its foot.
-  Once the reading is logged the camera pulls back, today's page turns to the marbled inside
-  of the back board, and the book is turned over onto its back cover as the camera pushes in:
-  sealed in wax, with a warm note from the librarian (by chance, but the same all day: a goal
-  met, gone beyond, a short day, a book finished) and the streak or any bookplate earned.
-  "Open the book" turns back to the page to add pages read later. Instant with reduced motion.
+- **The book of the day.** The day's card waits on the table as a closed book — front cover
+  up: a leather board, the date, a gilt emblem — until it is tapped. Then the camera pulls back
+  as the book — a thick one, its leather boards standing proud of the pages, corners rounded — rises to stand on its spine and rests there a breath; it falls open from the middle on the two
+  days before (their plates and what was read; a new book shows an Ex libris on leaf-strewn
+  endpaper, facing "Chapter One"), and a few leaves riffle over while the camera pushes in on
+  today's page — a printed page with a running head, the illustration as a captioned plate,
+  the number in ink, a folio at its foot. Once the reading is logged, the reverse: the camera
+  pulls back, the book closes up onto its spine, tips over onto its other side, and the camera
+  pushes in on its back cover — sealed in wax, with a warm note from the librarian (by chance,
+  but the same all day: a goal met, gone beyond, a short day, a book finished) and the streak
+  or any bookplate earned. "Open the book" plays the closing rewound — up off the back cover, onto the spine, open, and in to today's page — to add pages read later; "Close the book" plays it again (both a little quicker, the seal not pressed twice).
+  Instant with reduced motion.
 - **Log what you actually read.** One tap logs the day's goal; or enter the real count —
   more or fewer pages. Any reading keeps the streak alive (every page counts); the goal is
   met at the goal or beyond, or by finishing a book. A day read stays read — there is no
@@ -76,12 +77,32 @@ its Playwright version (`npx playwright install chromium`), or point
 
 ## Deploy
 
-`.github/workflows/pages.yml` verifies every pull request and every push to `main`, and
-deploys to GitHub Pages **only from `main`** — on a push to it, or a manual run of the
-workflow on it. Pull requests are verified, never published. Every action is pinned to a full commit
-SHA, with the release tag in a comment. One-time setup: *Settings → Pages →
-Build and deployment → Source: **GitHub Actions***. The app is then served at
-`https://<owner>.github.io/how-many-pages-today/` (change `BASE_PATH` for another host).
+`.github/workflows/pages.yml` verifies every pushed commit and publishes one GitHub Pages
+site holding two copies of the app — automatically. Pull requests are never published (their
+branch's pushes are already verified and staged; a fork's pull request is verified only).
+Every action is pinned to a full commit SHA, with the release tag in a comment.
+
+| Copy | URL | Published |
+|---|---|---|
+| Production | `https://<owner>.github.io/how-many-pages-today/` | on every push to `main` |
+| Staging | `https://<owner>.github.io/how-many-pages-today/staging/` | on every push to any other branch, once it passes the checks — the latest push wins |
+
+Every deploy rebuilds both: production from `main`, staging from the commit last staged (the
+live `staging/STAGING_REF` records it), so a push to `main` keeps staging as it was — unless
+the staged branch has been merged into `main` or deleted: then staging is taken down.
+*Run workflow* does the same by hand (a branch to **staging**, `main` to **production**, or
+**unstage**). A staging copy installs under its own name, keeps its own database and offline
+cache, and wears a "Staging" tag: it never touches the real app's data. A branch is staged
+once it contains this workflow (merge `main` into older branches).
+
+One-time setup:
+
+- *Settings → Pages → Build and deployment → Source:* **GitHub Actions**.
+- *Settings → Environments → github-pages*: **Deployment branches and tags: No restriction**
+  (staging deploys run on any branch), no required reviewers, no wait timer.
+
+Every deploy publishes the whole site, so anyone who can push a branch to this repository can
+publish it — on a personal repository, that is you. (Change `BASE_PATH` for another host.)
 
 ## Reminders
 

@@ -101,3 +101,22 @@
     border-radius: 0.4rem;
   }
 }
+
+/* A staging copy wears a gilt-edged leather tag in the corner. */
+html[data-stage] body::after {
+  content: 'Staging';
+  position: fixed;
+  top: calc(env(safe-area-inset-top) + 0.4rem);
+  left: 0.4rem;
+  z-index: 100;
+  padding: 0.1rem 0.55rem;
+  border: 1px solid var(--gilt);
+  border-radius: 3px;
+  background: var(--leather);
+  color: var(--gilt-light);
+  font-size: 0.7rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  pointer-events: none;
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.35);
+}

@@ -2,7 +2,7 @@
 
 Domain-blind presentation for an old library on an autumn afternoon.
 
-- `theme.css` — parchment, leather, gilt and wood; lamplight and drifting dust; buttons,
+- `theme.css` — parchment, leather, gilt and wood; lamplight; buttons,
   ruled-paper fields, the meter; a lamplit evening variant for dark mode. Layered on planks tokens.
 - `fonts.css` — EB Garamond (text) and IM Fell English / SC (display), latin subsets,
   bundled and precached (SIL Open Font License).

@@ -1,6 +1,6 @@
 /*
  * The look: an old library on an autumn afternoon. Parchment pages, leather bindings,
- * gilt tooling, wood shelves, lamplight and a little dust in the air. Light scheme is the
+ * gilt tooling, wood shelves, lamplight. Light scheme is the
  * afternoon; dark scheme is the same room by lamplight after dusk.
  *
  * Layered on @rgoussu.dev/planks tokens: planks owns layout (spacing scale, measure),
@@ -53,7 +53,6 @@
   --lamp-glow: rgb(255 196 110 / 0.55);
   --window-light: rgb(255 226 170 / 0.35);
   --vignette: rgb(60 32 12 / 0.38);
-  --dust: rgb(255 240 205 / 0.75);
 
   --radius: 0.35rem;
   --radius-sm: 0.25rem;
@@ -66,6 +65,8 @@
   /* textures — generated noise, inlined, so nothing is fetched */
   --grain-paper: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .36 0 0 0 0 .24 0 0 0 0 .12 0 0 0 .16 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
   --grain-leather: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='turbulence' baseFrequency='.55' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .35 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  /* endpapers: autumn leaves scattered on cream, a tile with no seams */
+  --pattern-leaves: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140' viewBox='0 0 140 140'%3E%3Crect width='140' height='140' fill='%23efe3c6'/%3E%3Cg transform='translate(22 24) rotate(-30) scale(1.0)'%3E%3Cpath d='M0-12C7-7 7 5 0 12C-7 5-7-7 0-12Z' fill='%23c8602a' fill-opacity='.85'/%3E%3Cpath d='M0-10V14' stroke='%235b3a1e' stroke-opacity='.55' stroke-width='.8'/%3E%3C/g%3E%3Cg transform='translate(70 18) rotate(40) scale(0.9)'%3E%3Cpath d='M0-12L3-5L10-7L6 0L11 4L3 4L2 11L0 8L-2 11L-3 4L-11 4L-6 0L-10-7L-3-5Z' fill='%23b9862c' fill-opacity='.85'/%3E%3Cpath d='M0-6V12' stroke='%235b3a1e' stroke-opacity='.55' stroke-width='.8'/%3E%3C/g%3E%3Cg transform='translate(116 30) rotate(15) scale(0.9)'%3E%3Cpath d='M0-12C7-7 7 5 0 12C-7 5-7-7 0-12Z' fill='%238e3b24' fill-opacity='.85'/%3E%3Cpath d='M0-10V14' stroke='%235b3a1e' stroke-opacity='.55' stroke-width='.8'/%3E%3C/g%3E%3Cg transform='translate(40 70) rotate(70) scale(1.0)'%3E%3Cpath d='M0-12L3-5L10-7L6 0L11 4L3 4L2 11L0 8L-2 11L-3 4L-11 4L-6 0L-10-7L-3-5Z' fill='%23d98c2b' fill-opacity='.85'/%3E%3Cpath d='M0-6V12' stroke='%235b3a1e' stroke-opacity='.55' stroke-width='.8'/%3E%3C/g%3E%3Cg transform='translate(92 66) rotate(-20) scale(1.1)'%3E%3Cpath d='M0-12C7-7 7 5 0 12C-7 5-7-7 0-12Z' fill='%23a8452a' fill-opacity='.85'/%3E%3Cpath d='M0-10V14' stroke='%235b3a1e' stroke-opacity='.55' stroke-width='.8'/%3E%3C/g%3E%3Cg transform='translate(128 92) rotate(110) scale(0.8)'%3E%3Cpath d='M0-12C7-7 7 5 0 12C-7 5-7-7 0-12Z' fill='%23c99a3e' fill-opacity='.85'/%3E%3Cpath d='M0-10V14' stroke='%235b3a1e' stroke-opacity='.55' stroke-width='.8'/%3E%3C/g%3E%3Cg transform='translate(18 112) rotate(20) scale(0.85)'%3E%3Cpath d='M0-12L3-5L10-7L6 0L11 4L3 4L2 11L0 8L-2 11L-3 4L-11 4L-6 0L-10-7L-3-5Z' fill='%239a5a2a' fill-opacity='.85'/%3E%3Cpath d='M0-6V12' stroke='%235b3a1e' stroke-opacity='.55' stroke-width='.8'/%3E%3C/g%3E%3Cg transform='translate(64 118) rotate(-60) scale(0.95)'%3E%3Cpath d='M0-12C7-7 7 5 0 12C-7 5-7-7 0-12Z' fill='%23c8602a' fill-opacity='.85'/%3E%3Cpath d='M0-10V14' stroke='%235b3a1e' stroke-opacity='.55' stroke-width='.8'/%3E%3C/g%3E%3Cg transform='translate(108 124) rotate(35) scale(0.8)'%3E%3Cpath d='M0-12L3-5L10-7L6 0L11 4L3 4L2 11L0 8L-2 11L-3 4L-11 4L-6 0L-10-7L-3-5Z' fill='%23d2a04a' fill-opacity='.85'/%3E%3Cpath d='M0-6V12' stroke='%235b3a1e' stroke-opacity='.55' stroke-width='.8'/%3E%3C/g%3E%3C/svg%3E");
   --grain-wood: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='60'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.012 .6' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .45 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 }
 
@@ -92,7 +93,6 @@
     --lamp-glow: rgb(255 170 80 / 0.22);
     --window-light: rgb(255 190 120 / 0.06);
     --vignette: rgb(0 0 0 / 0.65);
-    --dust: rgb(255 220 160 / 0.45);
     --shadow: 0 1px 1px rgb(0 0 0 / 0.5), 0 10px 26px -10px rgb(0 0 0 / 0.8);
     --shadow-lift: 0 2px 3px rgb(0 0 0 / 0.5), 0 24px 44px -14px rgb(0 0 0 / 0.9);
   }
@@ -120,7 +120,6 @@ body {
   font-variant-numeric: oldstyle-nums proportional-nums;
   -webkit-font-smoothing: antialiased;
   overflow-x: hidden;
-  /* a stacking context, so the dust layer (z-index -1) sits above this background */
   position: relative;
   isolation: isolate;
   /* lamplight from the upper left, the room darkening toward the corners */
@@ -131,40 +130,6 @@ body {
     var(--grain-paper),
     var(--paper);
   background-attachment: fixed;
-}
-
-/* Dust drifting in the lamplight. Purely decorative, behind everything. */
-body::before {
-  content: '';
-  position: fixed;
-  inset: -20% 0 0;
-  z-index: -1;
-  pointer-events: none;
-  background-image:
-    radial-gradient(circle, var(--dust) 0 1px, transparent 1.6px),
-    radial-gradient(circle, var(--dust) 0 0.7px, transparent 1.2px),
-    radial-gradient(circle, var(--dust) 0 1.3px, transparent 2px);
-  background-size:
-    190px 230px,
-    130px 170px,
-    310px 290px;
-  background-position:
-    0 0,
-    40px 60px,
-    120px 30px;
-  mask-image: radial-gradient(70% 55% at 18% 10%, #000, transparent 75%);
-  -webkit-mask-image: radial-gradient(70% 55% at 18% 10%, #000, transparent 75%);
-  opacity: 0.8;
-  animation: dust-drift 90s linear infinite;
-}
-
-@keyframes dust-drift {
-  to {
-    background-position:
-      60px -230px,
-      -40px -170px,
-      180px -290px;
-  }
 }
 
 h1,

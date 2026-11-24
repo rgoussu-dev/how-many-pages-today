@@ -1,24 +1,48 @@
 name: Verify & deploy to GitHub Pages
 
-# Pull requests are verified, never published. GitHub Pages is deployed only from `main`:
-# on a push to it, or a manual run of this workflow on it.
+# The site has two copies, published together as one GitHub Pages site:
+# - production, at the site root: always built from `main`, published on every push to it;
+# - staging, under staging/: published automatically on every push to any other branch —
+#   the latest push wins. Once the staged branch is merged into main or deleted, the next
+#   deploy takes staging down.
+# Pull requests are never published: their branch's pushes already stage and check it
+# (forks, which cannot publish, are verified on the pull request itself).
+# A production deploy rebuilds the staged commit (recorded in staging/STAGING_REF on the
+# live site), so staging survives it. Run workflow does the same by hand: a branch to
+# staging, main to production, or "unstage".
 on:
   push:
-    branches: [main]
+    branches: ['**']
   pull_request:
+  delete:
   workflow_dispatch:
+    inputs:
+      target:
+        description: 'Publish this branch to…'
+        type: choice
+        options: [staging, production, unstage]
+        default: staging
 
 # Every action is pinned to a full commit SHA (the tag it was taken from is in the comment):
 # a tag can be moved, a SHA cannot.
 permissions:
   contents: read
 
+# A newer push to the same branch supersedes an older run (deletions never supersede each other).
 concurrency:
-  group: pages-${{ github.ref }}
+  group: pages-${{ github.ref }}-${{ inputs.target || github.event_name }}-${{ github.event_name == 'delete' && github.run_id || 'latest' }}
   cancel-in-progress: true
 
 jobs:
   verify:
+    # Every pushed commit is verified. A pull request from this repository is already
+    # verified by its branch's push (the checks show on the pull request); a fork's is not.
+    # Taking staging down publishes nothing new: nothing to verify.
+    if: >-
+      github.event_name == 'push' ||
+      (github.event_name == 'workflow_dispatch' && inputs.target != 'unstage') ||
+      (github.event_name == 'pull_request' &&
+        github.event.pull_request.head.repo.full_name != github.repository)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -39,21 +63,195 @@ jobs:
         run: npx playwright install --with-deps chromium
       - name: End-to-end (real browser, production build, offline included)
         run: npm run e2e
-      - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
-        if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main'
-        with:
-          path: application/pwa/dist
 
-  deploy:
-    needs: verify
-    if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main'
+  # A branch was deleted: was it the one on staging?
+  deleted:
+    if: github.event_name == 'delete' && github.event.ref_type == 'branch'
     runs-on: ubuntu-latest
+    outputs:
+      staged: ${{ steps.check.outputs.staged }}
+    steps:
+      - id: check
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          OWNER: ${{ github.repository_owner }}
+          DELETED: ${{ github.event.ref }}
+        run: |
+          site=$(gh api "repos/$REPO/pages" --jq .html_url 2>/dev/null || true)
+          [ -n "$site" ] || site="https://${OWNER,,}.github.io/${REPO#*/}/"
+          ref=$(curl -fsSL "${site%/}/staging/STAGING_REF?run=$GITHUB_RUN_ID" 2>/dev/null | sed -n 's/^ref=//p' || true)
+          echo "staged=$([ "$ref" = "$DELETED" ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
+
+  # Builds the whole site — production from `main`, plus whatever is staged — and publishes it.
+  deploy:
+    needs: [verify, deleted]
+    if: >-
+      always() && !cancelled() &&
+      (needs.verify.result == 'success' || needs.verify.result == 'skipped') &&
+      (github.event_name == 'push' || github.event_name == 'workflow_dispatch' ||
+        (github.event_name == 'delete' && needs.deleted.outputs.staged == 'true'))
+    runs-on: ubuntu-latest
+    # One deploy at a time, never cancelled half-way: each reads what the last one staged.
+    concurrency:
+      group: pages-deploy
+      cancel-in-progress: false
     permissions:
+      contents: read
       pages: write
       id-token: write
     environment:
       name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+      url: ${{ steps.deployment.outputs.page_url || steps.deployment-retry.outputs.page_url }}
     steps:
+      - name: Decide what to publish
+        id: plan
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EVENT: ${{ github.event_name }}
+          # A push to a branch stages it; a push to main, or a deletion, publishes production.
+          TARGET: ${{ inputs.target || (github.event_name == 'push' && github.ref != 'refs/heads/main' && 'staging') || 'production' }}
+          REF: ${{ github.ref }}
+          REF_NAME: ${{ github.ref_name }}
+          SHA: ${{ github.sha }}
+          REPO: ${{ github.repository }}
+          OWNER: ${{ github.repository_owner }}
+        run: |
+          set -euo pipefail
+          if [ "$TARGET" = production ] && [ "$REF" != refs/heads/main ]; then
+            echo "::error::Production is published from main only. To try $REF_NAME, run the workflow with target 'staging'."
+            exit 1
+          fi
+
+          # Where the site lives (a custom domain changes it): its path is the production base.
+          site=$(gh api "repos/$REPO/pages" --jq .html_url 2>/dev/null || true)
+          [ -n "$site" ] || site="https://${OWNER,,}.github.io/${REPO#*/}/"
+          site="${site%/}/"
+          base=$(printf '%s' "$site" | sed -E 's#^https?://[^/]+##')
+          [ -n "$base" ] || base=/
+
+          # Production: the pushed commit on main, else main's tip.
+          if [ "$REF" = refs/heads/main ]; then prod="$SHA"; else prod=main; fi
+
+          # Staging: this branch, nothing, or whatever the live site has staged.
+          stage_sha=; stage_ref=
+          case "$TARGET" in
+            staging) stage_sha="$SHA"; stage_ref="$REF_NAME" ;;
+            unstage) ;;
+            production)
+              if staged=$(curl -fsSL "${site}staging/STAGING_REF?run=$GITHUB_RUN_ID" 2>/dev/null); then
+                stage_sha=$(printf '%s\n' "$staged" | sed -n 's/^sha=//p')
+                stage_ref=$(printf '%s\n' "$staged" | sed -n 's/^ref=//p')
+              fi ;;
+          esac
+
+          # Staging follows a live branch: once it is deleted, or merged into main, it goes.
+          # (If GitHub cannot be asked, staging stays.)
+          if [ "$TARGET" = production ] && [ -n "$stage_sha" ]; then
+            code=$(curl -s -o /dev/null -w '%{http_code}' -H "Authorization: Bearer $GH_TOKEN" \
+              "$GITHUB_API_URL/repos/$REPO/git/ref/heads/$stage_ref" || true)
+            merged=$(gh api "repos/$REPO/compare/$stage_sha...$prod" --jq .status 2>/dev/null || true)
+            if [ "$code" = 404 ]; then
+              echo "::notice::Staging taken down: $stage_ref no longer exists."
+              stage_sha=; stage_ref=
+            elif [ "$merged" = ahead ] || [ "$merged" = identical ]; then
+              echo "::notice::Staging taken down: $stage_ref is merged into main."
+              stage_sha=; stage_ref=
+            fi
+          fi
+
+          {
+            echo "site=$site"
+            echo "base=$base"
+            echo "prod=$prod"
+            echo "stage_sha=$stage_sha"
+            echo "stage_ref=$stage_ref"
+            # A re-staged commit that no longer builds is dropped rather than block production.
+            echo "stage_optional=$([ "$TARGET" = staging ] && echo false || echo true)"
+          } >> "$GITHUB_OUTPUT"
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ steps.plan.outputs.prod }}
+          path: production
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        id: stage-checkout
+        if: steps.plan.outputs.stage_sha != ''
+        continue-on-error: ${{ steps.plan.outputs.stage_optional == 'true' }}
+        with:
+          ref: ${{ steps.plan.outputs.stage_sha }}
+          path: staging
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 26
+          cache: npm
+          cache-dependency-path: '*/package-lock.json'
+
+      - name: Build production (main)
+        working-directory: production
+        env:
+          BASE_PATH: ${{ steps.plan.outputs.base }}
+        run: |
+          npm ci
+          npm run build
+          mkdir -p "$GITHUB_WORKSPACE/site"
+          cp -R application/pwa/dist/. "$GITHUB_WORKSPACE/site/"
+
+      - name: Build staging (${{ steps.plan.outputs.stage_ref }})
+        id: stage-build
+        if: steps.stage-checkout.outcome == 'success'
+        continue-on-error: ${{ steps.plan.outputs.stage_optional == 'true' }}
+        working-directory: staging
+        env:
+          BASE_PATH: ${{ steps.plan.outputs.base }}staging/
+          VITE_STAGE: staging
+          STAGE_SHA: ${{ steps.plan.outputs.stage_sha }}
+          STAGE_REF: ${{ steps.plan.outputs.stage_ref }}
+        run: |
+          set -euo pipefail
+          # Without it, a staged copy would share the real app's database and offline cache.
+          if ! grep -q VITE_STAGE application/pwa/vite.config.ts; then
+            echo "::error::$STAGE_REF predates staging support (no VITE_STAGE in vite.config.ts): merge main into it first."
+            exit 1
+          fi
+          npm ci
+          npm run build
+          mkdir -p "$GITHUB_WORKSPACE/site/staging"
+          cp -R application/pwa/dist/. "$GITHUB_WORKSPACE/site/staging/"
+          printf 'sha=%s\nref=%s\nbuilt=%s\n' "$STAGE_SHA" "$STAGE_REF" "$(date -u +%FT%TZ)" \
+            > "$GITHUB_WORKSPACE/site/staging/STAGING_REF"
+
+      - name: Summary
+        env:
+          SITE: ${{ steps.plan.outputs.site }}
+          PROD: ${{ steps.plan.outputs.prod }}
+          STAGE_REF: ${{ steps.plan.outputs.stage_ref }}
+          STAGE_SHA: ${{ steps.plan.outputs.stage_sha }}
+          STAGED: ${{ steps.stage-build.outcome == 'success' }}
+        run: |
+          {
+            echo "### Publishing"
+            echo "- **Production** — \`main\` @ \`${PROD:0:7}\` → $SITE"
+            if [ "$STAGED" = true ]; then
+              echo "- **Staging** — \`$STAGE_REF\` @ \`${STAGE_SHA:0:7}\` → ${SITE}staging/"
+            elif [ -n "$STAGE_SHA" ]; then
+              echo "- **Staging** — dropped: \`$STAGE_REF\` @ \`${STAGE_SHA:0:7}\` no longer builds"
+            else
+              echo "- **Staging** — none"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+        with:
+          path: site
+
+      # The artifact just uploaded can take a moment to be listed: on a miss, wait and try again.
       - id: deployment
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1
+        continue-on-error: true
+      - name: Wait for the artifact to be listed
+        if: steps.deployment.outcome == 'failure'
+        run: sleep 20
+      - id: deployment-retry
+        if: steps.deployment.outcome == 'failure'
         uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1
