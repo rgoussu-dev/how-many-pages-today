@@ -396,6 +396,18 @@ test.describe('with motion', () => {
     await expect(book.locator('[data-message]')).not.toBeEmpty();
     await expect(book.locator('.tome-inner')).toHaveJSProperty('inert', true);
 
+    // Reopening it later: the closing rewound, onto today's page; closing it again, replayed.
+    await book.getByRole('button', { name: 'Open the book' }).click();
+    await expect(book).toHaveAttribute('data-closing', 'reopen');
+    await expect(book).not.toHaveAttribute('data-closing', { timeout: 6000 });
+    await expect(book.locator('.tome-inner')).toHaveJSProperty('inert', false);
+    await expect(book.getByRole('button', { name: 'Close the book' })).toBeFocused();
+    await book.getByRole('button', { name: 'Close the book' }).click();
+    await expect(book).toHaveAttribute('data-closing', 'again');
+    await expect(book).not.toHaveAttribute('data-closing', { timeout: 6000 });
+    await expect(book.locator('.tome-back-face')).toBeVisible();
+    await expect(book.getByRole('button', { name: 'Open the book' })).toBeFocused();
+
     await page.reload();
     await expect(book.locator('[data-pages]')).toHaveText(goal ?? '');
     await page.waitForTimeout(500);

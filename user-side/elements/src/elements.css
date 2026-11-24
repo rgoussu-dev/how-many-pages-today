@@ -1382,7 +1382,7 @@ hmpt-today-card[data-reveal='opening'] .tome {
 }
 
 hmpt-today-card[data-closing] .tome {
-  animation: depth-close 4400ms linear both;
+  animation: depth-close var(--closing-time) linear both;
 }
 
 @keyframes depth-open {
@@ -1994,6 +1994,7 @@ hmpt-today-card .tome-back {
 }
 
 hmpt-today-card[data-done]:not([data-peek]) .tome-back,
+hmpt-today-card[data-closing] .tome-back,
 hmpt-today-card:is([data-reveal='closed'], [data-reveal='opening']) .tome-back {
   display: block;
 }
@@ -2334,19 +2335,19 @@ hmpt-today-card[data-reveal='landed'] .tome-number {
    2.4–4.4s the camera follows it over and pushes in on the back cover, then the seal is pressed and the note
    appears. */
 hmpt-today-card[data-closing] .tome-cover {
-  animation: cover-close 4400ms linear both;
+  animation: cover-close var(--closing-time) linear both;
 }
 
 hmpt-today-card[data-closing] :is(.tome-inner, .tome-solid-right) {
-  animation: half-close 4400ms linear both;
+  animation: half-close var(--closing-time) linear both;
 }
 
 hmpt-today-card[data-closing] .tome-back {
-  animation: back-close 4400ms linear both;
+  animation: back-close var(--closing-time) linear both;
 }
 
 hmpt-today-card[data-closing] .tome-camera {
-  animation: camera-close 4400ms both;
+  animation: camera-close var(--closing-time) both;
 }
 
 @keyframes cover-close {
@@ -2438,7 +2439,7 @@ hmpt-today-card[data-closing] .tome-inner {
 }
 
 hmpt-today-card[data-closing] .tome-boards {
-  animation: boards-leave 4400ms linear both;
+  animation: boards-leave var(--closing-time) linear both;
 }
 
 @keyframes boards-leave {
@@ -2476,4 +2477,24 @@ hmpt-today-card[data-closing] .tome-back-face > :not(.tome-back-seal) {
     opacity: 0;
     transform: translateY(0.4rem);
   }
+}
+
+/* — after the day is read: closing it again after a look inside, and reopening it —
+   The same closing, quicker; reopening plays it rewound. The seal is already pressed and the
+   note already written: they simply ride along on the back board. */
+hmpt-today-card {
+  --closing-time: 4400ms;
+}
+
+hmpt-today-card:is([data-closing='again'], [data-closing='reopen']) {
+  --closing-time: 3000ms;
+}
+
+hmpt-today-card[data-closing='reopen'] :is(.tome, .tome-cover, .tome-inner, .tome-solid-right, .tome-back, .tome-camera, .tome-boards) {
+  animation-direction: reverse;
+}
+
+hmpt-today-card:is([data-closing='again'], [data-closing='reopen']) .tome-back-seal,
+hmpt-today-card:is([data-closing='again'], [data-closing='reopen']) .tome-back-face > :not(.tome-back-seal) {
+  animation: none;
 }

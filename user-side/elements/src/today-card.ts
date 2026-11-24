@@ -105,6 +105,7 @@ export class TodayCard extends PortBoundElement {
   /** The day whose card is waiting, closed, to be opened. */
   #closedDay: string | null = null;
   #playing = false;
+  #turning: ReturnType<typeof setTimeout> | undefined;
   /** The last day and status rendered, to tell a fresh validation from a reload. */
   #seen: { day: string; done: boolean } | null = null;
 
@@ -207,15 +208,15 @@ export class TodayCard extends PortBoundElement {
         void this.#open();
       }
     });
+    // Reopening after the day is read: the closing, rewound; closing it again: the closing,
+    // replayed. Both a little quicker than the first time, and the seal is not pressed twice.
     this.$('[data-open-book]').addEventListener('click', () => {
       this.setAttribute('data-peek', '');
-      this.#syncInert();
-      this.$<HTMLElement>('[data-close-book]').focus();
+      this.#turn('reopen', () => this.$<HTMLElement>('[data-close-book]').focus());
     });
     this.$('[data-close-book]').addEventListener('click', () => {
       this.removeAttribute('data-peek');
-      this.#syncInert();
-      this.$<HTMLElement>('[data-open-book]').focus();
+      this.#turn('again', () => this.$<HTMLElement>('[data-open-book]').focus());
     });
 
     const log = this.$<HTMLFormElement>('[data-log-form]');
@@ -335,15 +336,29 @@ export class TodayCard extends PortBoundElement {
   /** The day is logged: the camera pulls back, today's page turns, the book is turned over. */
   #closeBook(): void {
     this.removeAttribute('data-peek');
-    if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    this.#turn('first');
+  }
+
+  /**
+   * Plays the closing: the first time (with the seal pressed and the note appearing), again
+   * (closing it after a look inside), or rewound (reopening it onto today's page). The state
+   * it ends in is already set; `then` runs once the book is at rest.
+   */
+  #turn(kind: 'first' | 'again' | 'reopen', then?: () => void): void {
+    clearTimeout(this.#turning);
+    const settle = () => {
+      this.removeAttribute('data-closing');
+      this.#syncInert();
+      then?.();
+    };
+    if (matchMedia('(prefers-reduced-motion: reduce)').matches) return settle();
     this.$('[data-cover-back]').replaceChildren(verso()); // the left half, as the book closes
     this.removeAttribute('data-closing');
     void this.offsetWidth;
-    this.setAttribute('data-closing', '');
-    setTimeout(() => {
-      this.removeAttribute('data-closing');
-      this.#syncInert();
-    }, 4650); // the note has appeared on the back cover
+    this.setAttribute('data-closing', kind === 'first' ? '' : kind);
+    this.#syncInert();
+    // The first time, until the note has appeared on the back cover; after, the quicker turn.
+    this.#turning = setTimeout(settle, kind === 'first' ? 4650 : 3050);
   }
 
   #render(snapshot: ReadingSnapshot): void {

@@ -21,7 +21,7 @@ dusty shelves, lamplight, pillows and a blanket — and, after dusk, the same ro
   pulls back, the book closes up onto its spine, tips over onto its other side, and the camera
   pushes in on its back cover — sealed in wax, with a warm note from the librarian (by chance,
   but the same all day: a goal met, gone beyond, a short day, a book finished) and the streak
-  or any bookplate earned. "Open the book" turns back to the page to add pages read later.
+  or any bookplate earned. "Open the book" plays the closing rewound — up off the back cover, onto the spine, open, and in to today's page — to add pages read later; "Close the book" plays it again (both a little quicker, the seal not pressed twice).
   Instant with reduced motion.
 - **Log what you actually read.** One tap logs the day's goal; or enter the real count —
   more or fewer pages. Any reading keeps the streak alive (every page counts); the goal is
