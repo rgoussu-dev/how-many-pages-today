@@ -38,11 +38,12 @@ dusty shelves, lamplight, pillows and a blanket — and, after dusk, the same ro
 - **A bookmark.** Say which page you are at when you put a book on the nightstand (and, if
   you like, how many pages it has). The day's card then tells you the page to read up to —
   your bookmark plus the day's goal, stopping at the last page — and every page you log moves
-  the bookmark on. The bookmark is a real one: a slim card painted with its own forest
-  (autumn at dusk, pines in the mist, or woods under the moon), the page inked on a label,
-  a silk tassel on a cord. It lies along the left of the day's page and sticks out of the
-  top of the book — closed, open, and at the other edge once the book is turned over. The nightstand shows where it sits and how far into the book that is; it
-  can be moved by hand. Reach the last page and the card offers to put the book on the shelf.
+  the bookmark on. The bookmark is a real one: a slim card painted with its own autumn
+  forest in red, orange and gold (at dusk, in a golden mist, or under a harvest moon), the
+  page inked on a label, a silk tassel on a cord. It runs the length of the day's page along
+  its left and sticks out of the top of the book — closed, open, and at the other edge once
+  the book is turned over. The nightstand shows where it sits and how far into the book that
+  is; it can be moved by hand. Reach the last page and the card offers to put the book on the shelf.
 - **English and French.** The reading room speaks the language of your browser (French
   for a French browser, English otherwise), or the one you pick under *You → Language* — or
   at the door, on a first visit. Dates and numbers follow; so does the reminder notification.

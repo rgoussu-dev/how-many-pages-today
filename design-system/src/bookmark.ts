@@ -1,8 +1,8 @@
 import { between, n, pick, seeded, type Rng } from './paint';
 
 /*
- * A bookmark: a slim card painted with a forest — autumn at dusk, pines in the morning
- * mist, or woods under the moon — framed in gilt, with a notched tail and a silk tassel
+ * A bookmark: a slim card painted with an autumn forest all in red, orange and gold — at
+ * dusk, in a golden morning mist, or under a harvest moon — framed in gilt, with a notched tail and a silk tassel
  * on a cord through an eyelet at the top. Pure string output, like the card scenes: the
  * same seed paints the same bookmark, so each book keeps its own.
  *
@@ -12,7 +12,7 @@ import { between, n, pick, seeded, type Rng } from './paint';
  * TASSEL_Y up.
  */
 
-export const BOOKMARK_WOODS = ['autumn', 'mist', 'moonlit'] as const;
+export const BOOKMARK_WOODS = ['dusk', 'golden-mist', 'harvest-moon'] as const;
 export type BookmarkWood = (typeof BOOKMARK_WOODS)[number];
 
 export interface BookmarkPainting {
@@ -40,35 +40,35 @@ interface Palette {
 }
 
 const PALETTES: Record<BookmarkWood, Palette> = {
-  autumn: {
-    sky: ['#f6d79a', '#e8a06a', '#a9563e'],
-    light: '#fdeab2',
-    far: '#bd7a58',
-    rows: ['#9f5a3b', '#743923', '#45210f'],
-    leaves: ['#dd8a2c', '#bb4b29', '#e6b43f', '#9c2f1f'],
-    ground: '#34190c',
-    silk: '#8e1f1a',
-    silkDark: '#4f0d0a',
+  dusk: {
+    sky: ['#ffd98a', '#f59a4e', '#c2452c'],
+    light: '#fff0b8',
+    far: '#c8693f',
+    rows: ['#c0602e', '#8f3419', '#4e170b'],
+    leaves: ['#e8401f', '#f07a1a', '#f5b51e', '#c42a1b', '#ffcf3a'],
+    ground: '#5a1e0c',
+    silk: '#b3261a',
+    silkDark: '#5e0f08',
   },
-  mist: {
-    sky: ['#efe9d3', '#d4dcc5', '#a7baa3'],
-    light: '#fbf6e2',
-    far: '#a5b8a1',
-    rows: ['#7a957a', '#4f6e55', '#2d4533'],
-    leaves: ['#c99d48', '#a8582b', '#7f9150'],
-    ground: '#223326',
-    silk: '#2f4a32',
-    silkDark: '#14261a',
+  'golden-mist': {
+    sky: ['#fff1cf', '#f8d79a', '#eba86a'],
+    light: '#fff8e2',
+    far: '#e2a873',
+    rows: ['#d58a4a', '#a9522a', '#6a2a14'],
+    leaves: ['#f2b02a', '#ec7d22', '#d8461f', '#ffd34d', '#b83a1c'],
+    ground: '#6b2e14',
+    silk: '#d07a1a',
+    silkDark: '#7a3f0a',
   },
-  moonlit: {
-    sky: ['#1a2140', '#2b3259', '#4b4468'],
-    light: '#f3e8c6',
-    far: '#3b3c5e',
-    rows: ['#30365a', '#202642', '#13172a'],
-    leaves: ['#7b4b3a', '#9e6c3a', '#5c6b4b'],
-    ground: '#0c0e1d',
-    silk: '#b98a32',
-    silkDark: '#6e4f18',
+  'harvest-moon': {
+    sky: ['#2a1630', '#5a2238', '#a3402e'],
+    light: '#ffb347',
+    far: '#6e2a2a',
+    rows: ['#8a3020', '#5e1d14', '#2e0d08'],
+    leaves: ['#d9431f', '#ef7f1f', '#f2b632', '#a8261a'],
+    ground: '#240a06',
+    silk: '#e0a030',
+    silkDark: '#7a5210',
   },
 };
 
@@ -101,23 +101,29 @@ function pine(x: number, base: number, height: number, width: number, color: str
 
 function broadleaf(x: number, base: number, height: number, width: number, trunk: string, crown: string): string {
   const cy = base - height * 0.62;
+  // The light catches the top of the crown.
+  const lit = mix(crown, '#fff3c4', 0.3);
   return (
     `<rect x="${n(x - 0.9)}" y="${n(cy)}" width="1.8" height="${n(base - cy)}" fill="${trunk}"/>` +
     `<ellipse cx="${n(x)}" cy="${n(cy)}" rx="${n(width / 2)}" ry="${n(height * 0.36)}" fill="${crown}"/>` +
-    `<ellipse cx="${n(x - width * 0.18)}" cy="${n(cy - height * 0.12)}" rx="${n(width * 0.28)}" ry="${n(height * 0.2)}" fill="${crown}"/>`
+    `<ellipse cx="${n(x - width * 0.18)}" cy="${n(cy - height * 0.12)}" rx="${n(width * 0.28)}" ry="${n(height * 0.2)}" fill="${crown}"/>` +
+    `<ellipse cx="${n(x + width * 0.12)}" cy="${n(cy - height * 0.2)}" rx="${n(width * 0.18)}" ry="${n(height * 0.1)}" fill="${lit}" opacity=".8"/>`
   );
 }
 
-/** A row of trees standing on `base`, of roughly `height`; foliage only in some rows. */
-function row(rng: Rng, base: number, height: number, color: string, palette: Palette, leafy: boolean, length: number): string {
+/**
+ * A row of trees standing on `base`, of roughly `height`: mostly broadleaves in their autumn
+ * colours, a few russet pines. `haze` (0 near … 1 far) pales the far rows' crowns into the air.
+ */
+function row(rng: Rng, base: number, height: number, color: string, palette: Palette, haze: number, length: number): string {
   const trees: string[] = [];
   for (let x = between(rng, -6, 2); x < CARD_W + 8; x += between(rng, 7, 13)) {
     const h = height * between(rng, 0.75, 1.2);
     // Taller trees grow slender, not broader: a card is only 60 wide.
     const w = Math.min(h * between(rng, 0.42, 0.55), between(rng, 18, 24));
     trees.push(
-      leafy && rng() < 0.4
-        ? broadleaf(x, base, h, w, color, pick(rng, palette.leaves))
+      rng() < 0.75
+        ? broadleaf(x, base, h, w, color, mix(pick(rng, palette.leaves), palette.far, haze))
         : pine(x, base, h, w, color),
     );
   }
@@ -141,14 +147,19 @@ function sky(rng: Rng, wood: BookmarkWood, palette: Palette, id: string, length:
   const cx = between(rng, 18, 42);
   // Low in the sky, over the hills: a long card keeps its sun or moon near the woods.
   const cy = horizon - between(rng, 38, 56);
-  if (wood === 'moonlit') {
+  if (wood === 'harvest-moon') {
     const stars = Math.round(14 * (horizon / 120));
     for (let i = 0; i < stars; i++) {
       parts.push(`<circle cx="${n(between(rng, 3, 57))}" cy="${n(between(rng, 44, horizon))}" r="${n(between(rng, 0.3, 0.8))}" fill="#fff6dc" opacity="${n(between(rng, 0.5, 1))}"/>`);
     }
-    parts.push(`<circle cx="${n(cx)}" cy="${n(cy)}" r="8" fill="${palette.light}"/><circle cx="${n(cx + 3)}" cy="${n(cy - 2)}" r="7" fill="${palette.sky[0]}" opacity=".9"/>`);
+    // A big orange harvest moon, glowing over the woods.
+    parts.push(
+      `<circle cx="${n(cx)}" cy="${n(cy)}" r="16" fill="${palette.light}" opacity=".18"/>` +
+        `<circle cx="${n(cx)}" cy="${n(cy)}" r="11" fill="${palette.light}"/>` +
+        `<circle cx="${n(cx - 3)}" cy="${n(cy - 2)}" r="2.2" fill="#e08a2a" opacity=".5"/><circle cx="${n(cx + 3)}" cy="${n(cy + 3)}" r="1.6" fill="#e08a2a" opacity=".45"/>`,
+    );
   } else {
-    parts.push(`<circle cx="${n(cx)}" cy="${n(cy)}" r="${wood === 'mist' ? 11 : 9}" fill="${palette.light}" opacity="${wood === 'mist' ? 0.75 : 0.95}"/>`);
+    parts.push(`<circle cx="${n(cx)}" cy="${n(cy)}" r="${wood === 'golden-mist' ? 11 : 9}" fill="${palette.light}" opacity="${wood === 'golden-mist' ? 0.8 : 0.95}"/>`);
     // Birds on the wing.
     const birds = Math.max(3, Math.round(3 * (horizon / 120)));
     for (let i = 0; i < birds; i++) {
@@ -160,27 +171,35 @@ function sky(rng: Rng, wood: BookmarkWood, palette: Palette, id: string, length:
   return parts.join('');
 }
 
-/** Leaves on their way down, in autumn; motes of mist and fireflies otherwise. */
+/** Leaves on their way down the length of the card; a golden mist among the far trees. */
 function drift(rng: Rng, wood: BookmarkWood, palette: Palette, length: number): string {
   const parts: string[] = [];
-  // Leaves fall the length of a long card; fireflies keep to the woods.
-  const top = wood === 'autumn' ? Math.max(120, length * 0.35) : length - woodsDepth(length);
-  const count = wood === 'autumn' ? Math.max(6, Math.round(length / 40)) : 6;
+  const top = Math.max(110, length * 0.3);
+  const count = Math.max(8, Math.round(length / 34));
   for (let i = 0; i < count; i++) {
     const x = between(rng, 6, 54);
     const y = between(rng, top, length - 40);
-    if (wood === 'autumn') {
-      parts.push(`<ellipse cx="${n(x)}" cy="${n(y)}" rx="1.6" ry=".8" transform="rotate(${n(between(rng, 0, 180))} ${n(x)} ${n(y)})" fill="${pick(rng, palette.leaves)}"/>`);
-    } else if (wood === 'moonlit') {
-      parts.push(`<circle cx="${n(x)}" cy="${n(y)}" r=".7" fill="#f6dc7a" opacity=".85"/>`);
-    }
+    const size = between(rng, 1.3, 2.1);
+    parts.push(`<ellipse cx="${n(x)}" cy="${n(y)}" rx="${n(size)}" ry="${n(size / 2)}" transform="rotate(${n(between(rng, 0, 180))} ${n(x)} ${n(y)})" fill="${pick(rng, palette.leaves)}"/>`);
   }
-  if (wood === 'mist') {
+  if (wood === 'golden-mist') {
     const depth = woodsDepth(length);
     for (const at of [0.85, 0.62, 0.4]) {
       const y = length - depth * at;
-      parts.push(`<rect x="-2" y="${n(y + between(rng, -4, 4))}" width="${CARD_W + 4}" height="${n(between(rng, 6, 10))}" fill="#f3efe0" opacity=".35"/>`);
+      parts.push(`<rect x="-2" y="${n(y + between(rng, -4, 4))}" width="${CARD_W + 4}" height="${n(between(rng, 6, 10))}" fill="#fff3d6" opacity=".35"/>`);
     }
+  }
+  return parts.join('');
+}
+
+/** The forest floor: a carpet of fallen leaves at the foot of the card. */
+function carpet(rng: Rng, palette: Palette, length: number): string {
+  const parts = [`<rect x="-2" y="${n(length - 14)}" width="${CARD_W + 4}" height="20" fill="${palette.ground}"/>`];
+  for (let i = 0; i < 26; i++) {
+    const x = between(rng, -1, 61);
+    const y = between(rng, length - 14, length - 2);
+    const size = between(rng, 1.4, 2.4);
+    parts.push(`<ellipse cx="${n(x)}" cy="${n(y)}" rx="${n(size)}" ry="${n(size * 0.55)}" transform="rotate(${n(between(rng, -40, 40))} ${n(x)} ${n(y)})" fill="${pick(rng, palette.leaves)}"/>`);
   }
   return parts.join('');
 }
@@ -206,7 +225,7 @@ export function renderBookmark(seed: number, length: number = CARD_H): BookmarkP
   // Taller trees on a longer card, so the woods keep their weight on it.
   const k = Math.min(2.2, Math.sqrt(L / CARD_H));
   const rng = seeded(seed);
-  const wood = BOOKMARK_WOODS[Math.floor(rng() * BOOKMARK_WOODS.length)] ?? 'autumn';
+  const wood = BOOKMARK_WOODS[Math.floor(rng() * BOOKMARK_WOODS.length)] ?? 'dusk';
   const palette = PALETTES[wood];
   const id = `bookmark-${seed >>> 0}-${L}`;
   const [top, middle, bottom] = palette.sky;
@@ -223,7 +242,7 @@ export function renderBookmark(seed: number, length: number = CARD_H): BookmarkP
     const t = count === 1 ? 1 : i / (count - 1); // 0 far … 1 near
     const base = L - 18 - (depth - 46) * (1 - t) * 0.82;
     const color = t < 0.5 ? mix(palette.rows[0], palette.rows[1], t * 2) : mix(palette.rows[1], palette.rows[2], (t - 0.5) * 2);
-    rows.push(row(rng, base, (26 + 18 * t) * k, color, palette, i > 0, L));
+    rows.push(row(rng, base, (26 + 18 * t) * k, color, palette, (1 - t) * 0.45, L));
     if (i === count - 2) rows.push(drift(rng, wood, palette, L));
   }
   const painting = [
@@ -231,7 +250,7 @@ export function renderBookmark(seed: number, length: number = CARD_H): BookmarkP
     L > CARD_H * 1.5 ? hills(rng, L - depth - 6, palette.far, L, 2.4 * k, 0.55) : '',
     hills(rng, L - depth + 12, palette.far, L),
     ...rows,
-    `<rect x="-2" y="${n(L - 14)}" width="${CARD_W + 4}" height="20" fill="${palette.ground}"/>`,
+    carpet(rng, palette, L),
     `<rect width="${CARD_W}" height="${n(L)}" fill="url(#${id}-sheen)"/>`,
   ].join('');
   const frame =
