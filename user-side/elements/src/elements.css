@@ -246,8 +246,8 @@ hmpt-today-card .tome-back-bookmark {
   color: color-mix(in srgb, var(--gilt-light) 85%, #fff);
 }
 
-/* The bookmark: a painted card lying on today's page along its left, its top standing out of
-   the book, tassel and all. It belongs to the right half of the book (see "the book of the
+/* The bookmark: a painted card lying the length of today's page along its left, its top
+   standing out of the book, tassel and all. It belongs to the right half of the book (see "the book of the
    day" below): its holder spans that half, hinged at the spine, and takes the same turn as
    the page — so it lies under the front cover while the book waits closed, sticks out of the
    head as the book stands on its spine, and stays under the leaves until they riffle over.
@@ -272,11 +272,14 @@ hmpt-today-card .tome-marker {
   pointer-events: none;
 }
 
+/* The whole length of the page: from well above the head down to just short of the tail. */
 hmpt-today-card .tome-bookmark {
   --bookmark-width: inherit;
   position: absolute;
   top: calc(0px - var(--bookmark-out) - var(--bookmark-width) * 24 / 60);
+  bottom: 0.6rem;
   left: calc(var(--bookmark-inset) - var(--bookmark-width) * 40 / 60);
+  height: auto;
 }
 
 hmpt-today-card .tome-bookmark[side='right'] {

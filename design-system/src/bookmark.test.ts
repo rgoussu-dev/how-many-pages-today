@@ -20,8 +20,17 @@ describe('bookmarks', () => {
     }
   });
 
+  it('runs as long as it is asked, never shorter than a bookmark, its woods unchanged', () => {
+    const long = renderBookmark(42, 800);
+    expect(long.svg).toContain('viewBox="-40 -24 100 824"');
+    expect(long.svg).not.toMatch(/NaN|undefined|Infinity/);
+    expect(long.wood).toBe(renderBookmark(42).wood);
+    expect(renderBookmark(42, 100).svg).toBe(renderBookmark(42).svg); // 240 at the least
+  });
+
   it('keeps its ids to itself, so two bookmarks on a page never share a gradient', () => {
-    expect(renderBookmark(1).svg).toContain('bookmark-1-sky');
+    expect(renderBookmark(1).svg).toContain('bookmark-1-240-sky');
     expect(renderBookmark(2).svg).not.toContain('bookmark-1-');
+    expect(renderBookmark(1, 600).svg).not.toContain('bookmark-1-240-');
   });
 });

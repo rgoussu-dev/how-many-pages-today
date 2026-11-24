@@ -13,4 +13,5 @@ Domain-blind presentation for an old library on an autumn afternoon.
   painted with a forest (autumn, mist or moonlit — the seed picks), a gilt frame and
   swallowtail, `mark` on a parchment label, a silk cord and tassel spilling out to its
   left. Size it with `--bookmark-width`; `side="right"` mirrors the tassel for a book lying
-  on its back. `renderBookmark(seed)` is pure.
+  on its back. Give it any height and it runs that long (it measures itself): more sky,
+  deeper woods, taller trees — never stretched. `renderBookmark(seed, length?)` is pure.
