@@ -12,13 +12,13 @@ dusty shelves, lamplight, pillows and a blanket — and, after dusk, the same ro
   lamp, a window seat of pillows, a wingback armchair, a rainy windowsill, a candlelit
   still life) painted from a seed, so the same day always shows the same card, online or not.
 - **The book of the day.** The day's card waits on the table as a closed book — a leather
-  cover, the date, a gilt emblem — until it is tapped. Then the camera pulls back as the cover
-  swings open and slips beneath the first pages: the open book shows the two days before
-  (their plates and what was read; a new book shows its Ex libris and "Chapter One"), and
+  cover, the date, a gilt emblem — until it is tapped. Then the camera pulls back to the
+  closed book, which falls open at the middle on the two days before (their plates and what was
+  read; a new book shows its Ex libris and "Chapter One"), recentring on its spine, and
   pushes in again while yesterday's page turns, landing on today's page — a printed page with
   a running head, the illustration as a captioned plate, the number in ink, a folio at its foot.
-  Once the reading is logged the camera pulls back, today's page turns to the marbled inside
-  of the back board, and the book is turned over onto its back cover as the camera pushes in:
+  Once the reading is logged the camera pulls back, today's page turns to the leaf-strewn
+  endpaper inside the back board, and the book is turned over onto its back cover as the camera pushes in:
   sealed in wax, with a warm note from the librarian (by chance, but the same all day: a goal
   met, gone beyond, a short day, a book finished) and the streak or any bookplate earned.
   "Open the book" turns back to the page to add pages read later. Instant with reduced motion.

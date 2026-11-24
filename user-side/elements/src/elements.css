@@ -1302,13 +1302,8 @@ hmpt-today-card {
     transparent 20% 25%
   );
   --board: var(--grain-leather), radial-gradient(120% 90% at 30% 15%, var(--leather-light), var(--leather) 55%, var(--leather-deep));
-  /* Turkish 'stone' marbling: drops of colour floated on a combed ground */
-  --marbled:
-    radial-gradient(ellipse 13px 8px at 30% 40%, rgb(150 55 40 / 0.6) 0 62%, transparent 66%) 0 0 / 46px 34px,
-    radial-gradient(ellipse 11px 7px at 70% 60%, rgb(40 70 110 / 0.55) 0 62%, transparent 66%) 13px 9px / 52px 38px,
-    radial-gradient(ellipse 8px 6px at 50% 50%, rgb(190 150 60 / 0.6) 0 62%, transparent 66%) 21px 16px / 38px 30px,
-    radial-gradient(ellipse 10px 6px at 40% 30%, rgb(60 100 70 / 0.5) 0 62%, transparent 66%) 6px 21px / 60px 44px,
-    repeating-linear-gradient(115deg, #efe2c4 0 5px, #e5d2ab 5px 8px);
+  /* endpapers: autumn leaves, in keeping with the room */
+  --endpaper: var(--pattern-leaves) 0 0 / 140px 140px, #efe3c6;
 }
 
 /* The camera: the whole book moves; the real page is its right-hand page. */
@@ -1317,8 +1312,8 @@ hmpt-today-card .tome {
   perspective: 2400px;
 }
 
-/* Stacking, bottom to top: the boards; the front cover once it has swung open; the pages;
-   the leaf that turns; the closed front cover. */
+/* Stacking, bottom to top: the boards; the pages (and the half that has fallen open, which
+   becomes the left-hand page); the leaf that turns; the closed book. */
 hmpt-today-card .tome-inner {
   z-index: 2;
 }
@@ -1332,7 +1327,7 @@ hmpt-today-card .tome-leaf {
   position: absolute;
 }
 
-hmpt-today-card[data-reveal='opening'] :is(.tome-boards, .tome-left, .tome-leaf),
+hmpt-today-card[data-reveal='opening'] :is(.tome-boards, .tome-leaf),
 hmpt-today-card[data-closing] :is(.tome-boards, .tome-left) {
   display: block;
 }
@@ -1531,15 +1526,16 @@ hmpt-today-card .tome-cover:focus-visible {
   outline-offset: 3px;
 }
 
-hmpt-today-card .tome-cover::before {
-  /* the marbled endpaper inside the front board */
-  content: '';
+/* The inside of the half that falls open: the day before yesterday's page. */
+hmpt-today-card .tome-cover-back {
   position: absolute;
   inset: 0;
-  border-radius: 0.7rem 0.3rem 0.3rem 0.7rem;
+  overflow: hidden;
   transform: rotateY(180deg);
   backface-visibility: hidden;
-  background: var(--marbled);
+  border-radius: 0.6rem 0.2rem 0.2rem 0.6rem;
+  background: var(--paper-left);
+  text-align: start;
 }
 
 hmpt-today-card .tome-cover-face {
@@ -1658,13 +1654,13 @@ hmpt-today-card .tome-back-face::before {
   pointer-events: none;
 }
 
-/* The inside of the back board: marbled endpaper, seen when today's page has turned. */
+/* The inside of the back board: leaf-strewn endpaper, seen when today's page has turned. */
 hmpt-today-card .tome-back-inside {
   transform: rotateY(180deg);
   border-radius: 0.2rem 0.6rem 0.6rem 0.2rem;
   background:
     linear-gradient(90deg, rgb(60 35 15 / 0.3), transparent 2rem),
-    var(--marbled);
+    var(--endpaper);
 }
 
 /* The wax seal, pressed onto the back board. */
@@ -1751,8 +1747,13 @@ hmpt-today-card .tome-back-open {
   0% {
     transform: translate(0, 0) scale(1) translate(0, 0);
   }
-  30%,
-  56% {
+  22% {
+    /* pulled back: the closed book, centred */
+    transform: translate(25%, 25%) scale(0.5) translate(0, 0);
+  }
+  48%,
+  60% {
+    /* fallen open at the middle: the spread, centred on its spine */
     transform: translate(0, 25%) scale(0.5) translate(100%, 0);
   }
   100% {
@@ -1789,26 +1790,40 @@ hmpt-today-card[data-reveal='closed'] .tome {
   }
 }
 
-/* Opening (≈2.6s): the cover lifts as the camera pulls back to the two days before;
-   yesterday's page turns as it pushes in on today's. */
+/* Opening (≈2.9s): the camera pulls back to the closed book; it falls open at the middle on
+   the two days before; yesterday's page turns as the camera pushes in on today's. */
 hmpt-today-card[data-reveal='opening'] .tome {
-  animation: camera-open 2600ms cubic-bezier(0.45, 0, 0.25, 1) both;
+  animation: camera-open 2900ms cubic-bezier(0.45, 0, 0.25, 1) both;
 }
 
 hmpt-today-card[data-reveal='opening'] .tome-cover {
-  animation: cover-lift 820ms linear both; /* easing lives in the keyframes, either side of upright */
+  animation: cover-lift 780ms linear 620ms both; /* easing lives in the keyframes, either side of upright */
+}
+
+/* The left board exists only once the book has fallen open: it unfolds with the left half. */
+hmpt-today-card[data-reveal='opening'] .tome-boards {
+  animation: boards-unfold 420ms cubic-bezier(0.2, 0.5, 0.35, 1) 990ms both;
+}
+
+@keyframes boards-unfold {
+  from {
+    clip-path: inset(0 0 0 50%);
+  }
+  to {
+    clip-path: inset(-2rem -2rem -2rem -2rem);
+  }
 }
 
 hmpt-today-card[data-reveal='opening'] .tome-leaf {
-  animation: leaf-over 900ms cubic-bezier(0.45, 0, 0.3, 1) 1250ms both;
+  animation: leaf-over 860ms cubic-bezier(0.45, 0, 0.3, 1) 1680ms both;
 }
 
 hmpt-today-card[data-reveal='landed'] .tome-number {
   animation: page-found 600ms cubic-bezier(0.2, 1.4, 0.4, 1);
 }
 
-/* The cover swings open on its spine; past upright it passes beneath the first pages and
-   comes to rest under the left-hand page, only its edge showing around it. */
+/* The left half swings over on the spine; past upright it becomes the left-hand page —
+   beneath the leaf that will turn onto it. */
 @keyframes cover-lift {
   0% {
     transform: rotateY(0);
@@ -1820,12 +1835,12 @@ hmpt-today-card[data-reveal='landed'] .tome-number {
   }
   50% {
     transform: rotateY(-90deg); /* on edge, exactly when it passes beneath the pages */
-    z-index: 1;
+    z-index: 2;
     animation-timing-function: cubic-bezier(0.2, 0.5, 0.35, 1); /* settling down on the left */
   }
   100% {
     transform: rotateY(-180deg);
-    z-index: 1;
+    z-index: 2;
   }
 }
 

@@ -89,9 +89,9 @@ function backCoverExtra(streak: number, achievements: ReadingSnapshot['achieveme
 /**
  * `<hmpt-today-card>` — the day's card, bound as a book.
  *
- * Closed, it waits for a tap. Opening, the camera pulls back to the whole open book — the
- * two days before, side by side — then pushes in while the last of them turns over, and
- * lands on today's page. Logged, the camera pulls back again, today's page turns, and the
+ * Closed, it waits for a tap. Opening, the camera pulls back to the closed book, which falls
+ * open at the middle — the two days before, side by side — then pushes in while the last
+ * of them turns over, and lands on today's page. Logged, the camera pulls back again, today's page turns, and the
  * book is turned over onto its back cover, sealed, with a note from the librarian.
  *
  * The real page is the right-hand page of that book: the camera (a transform on `.tome`)
@@ -161,14 +161,16 @@ export class TodayCard extends PortBoundElement {
           <div class="tome-leaf-front" data-leaf></div>
           <div class="tome-leaf-back"></div>
         </div>
-        <button type="button" class="tome-cover" data-open-cover aria-label="Open today’s card">
+        <div class="tome-cover" data-open-cover role="button" tabindex="0" aria-label="Open today’s card">
           <span class="tome-cover-face">
             <span class="tome-cover-eyebrow">Today’s card</span>
             <svg class="tome-cover-emblem" viewBox="0 0 64 44" aria-hidden="true"><path d="M32 8C26 4 18 3 6 4v32c12-1 20 0 26 4 6-4 14-5 26-4V4C46 3 38 4 32 8zM32 8v32M11 12c6-.5 11 .5 15 2.5M11 18c6-.5 11 .5 15 2.5M11 24c6-.5 11 .5 15 2.5M38 14.5c4-2 9-3 15-2.5M38 20.5c4-2 9-3 15-2.5M38 26.5c4-2 9-3 15-2.5"/></svg>
             <span class="tome-cover-date" data-cover-date></span>
             <span class="tome-cover-hint">Tap to open</span>
           </span>
-        </button>
+          <!-- The book falls open at the middle: this half carries the day before yesterday's page. -->
+          <div class="tome-cover-back" aria-hidden="true" data-cover-back></div>
+        </div>
         <div class="tome-back" data-back>
           <div class="tome-back-face" role="group" aria-label="Today, read and sealed">
             <span class="tome-back-seal" aria-hidden="true"><span>✓</span></span>
@@ -185,7 +187,14 @@ export class TodayCard extends PortBoundElement {
 
   protected override setup(): void {
     this.$('[data-complete]').addEventListener('click', () => void this.#run((port) => port.complete()));
-    this.$('[data-open-cover]').addEventListener('click', () => void this.#open());
+    const cover = this.$('[data-open-cover]');
+    cover.addEventListener('click', () => void this.#open());
+    cover.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        void this.#open();
+      }
+    });
     this.$('[data-open-book]').addEventListener('click', () => {
       this.setAttribute('data-peek', '');
       this.#syncInert();
@@ -273,7 +282,7 @@ export class TodayCard extends PortBoundElement {
     const before = addDays(today.day, -2);
     const yesterday = addDays(today.day, -1);
     const fresh = !history.some((c) => c.day < today.day);
-    this.$('[data-left]').replaceChildren(
+    this.$('[data-cover-back]').replaceChildren(
       fresh ? frontMatter('ex-libris', profile?.displayName ?? null) : pastPage(before, byDay.get(before)),
     );
     this.$('[data-leaf]').replaceChildren(fresh ? frontMatter('chapter-one', null) : pastPage(yesterday, byDay.get(yesterday)));
@@ -295,7 +304,7 @@ export class TodayCard extends PortBoundElement {
       show(1);
       this.setAttribute('data-reveal', 'opening');
       this.#syncInert();
-      await wait(1750); // the cover lifts, the camera pulls back, yesterday's page begins to turn
+      await wait(2050); // pull back, fall open at the middle, yesterday's page begins to turn
       await countUp(show, target, 800); // …and the count runs up as the camera pushes in
       this.setAttribute('data-reveal', 'landed');
       await wait(550);
