@@ -1353,7 +1353,7 @@ hmpt-today-card {
   --cam-back: translate(0, 25%) scale(0.5) translate(100%, 0); /* pulled back, the spine at the centre */
   /* closer in on the book standing on its spine (the spine still at the centre: for scale s,
      translate((0.5 - s) * 100%, (0.5 - s / 2) * 100%) scale(s) translate(100%, 0)) */
-  --cam-stand: translate(-12%, 19%) scale(0.62) translate(100%, 0);
+  --cam-stand: translate(-22%, 14%) scale(0.72) translate(100%, 0);
 }
 
 /* The camera moves the whole book. It lives on a plain wrapper outside the 3D scene: with the
@@ -1388,7 +1388,7 @@ hmpt-today-card[data-closing] .tome {
 @keyframes depth-open {
   0%,
   75.4% {
-    perspective: 1500px;
+    perspective: 2400px;
   }
   75.5%,
   100% {
@@ -1403,7 +1403,7 @@ hmpt-today-card[data-closing] .tome {
   }
   18.2%,
   73.4% {
-    perspective: 1500px;
+    perspective: 2400px;
   }
   73.5%,
   100% {
@@ -1861,6 +1861,89 @@ hmpt-today-card .tome-board-tail {
   transform: rotateX(90deg) rotateY(180deg);
 }
 
+/* The rounded corners at the fore-edge, each edged by three short segments (30° apiece) set
+   around the corner's centre, so the board's edge runs right round them. A segment's anchor is
+   the corner's centre; it is turned to its mid angle, pushed out to the chord, and folded down
+   into the board like the other edges. */
+hmpt-today-card .tome-board-arc {
+  width: var(--board-t);
+  height: calc(var(--board-r) * 0.518); /* the chord of 30° */
+  transform-origin: 0 0;
+  transform: rotateZ(var(--a)) translate(calc(var(--board-r) * 0.966), calc(var(--board-r) * -0.259)) rotateY(90deg);
+}
+
+hmpt-today-card .tome-cover .tome-board-arc-0 {
+  --a: -75deg;
+  left: calc(100% - var(--board-r));
+  top: var(--board-r);
+}
+
+hmpt-today-card .tome-cover .tome-board-arc-1 {
+  --a: -45deg;
+  left: calc(100% - var(--board-r));
+  top: var(--board-r);
+}
+
+hmpt-today-card .tome-cover .tome-board-arc-2 {
+  --a: -15deg;
+  left: calc(100% - var(--board-r));
+  top: var(--board-r);
+}
+
+hmpt-today-card .tome-cover .tome-board-arc-3 {
+  --a: 15deg;
+  left: calc(100% - var(--board-r));
+  top: calc(100% - var(--board-r));
+}
+
+hmpt-today-card .tome-cover .tome-board-arc-4 {
+  --a: 45deg;
+  left: calc(100% - var(--board-r));
+  top: calc(100% - var(--board-r));
+}
+
+hmpt-today-card .tome-cover .tome-board-arc-5 {
+  --a: 75deg;
+  left: calc(100% - var(--board-r));
+  top: calc(100% - var(--board-r));
+}
+
+hmpt-today-card .tome-back .tome-board-arc-0 {
+  --a: -105deg;
+  left: var(--board-r);
+  top: var(--board-r);
+}
+
+hmpt-today-card .tome-back .tome-board-arc-1 {
+  --a: -135deg;
+  left: var(--board-r);
+  top: var(--board-r);
+}
+
+hmpt-today-card .tome-back .tome-board-arc-2 {
+  --a: -165deg;
+  left: var(--board-r);
+  top: var(--board-r);
+}
+
+hmpt-today-card .tome-back .tome-board-arc-3 {
+  --a: 105deg;
+  left: var(--board-r);
+  top: calc(100% - var(--board-r));
+}
+
+hmpt-today-card .tome-back .tome-board-arc-4 {
+  --a: 135deg;
+  left: var(--board-r);
+  top: calc(100% - var(--board-r));
+}
+
+hmpt-today-card .tome-back .tome-board-arc-5 {
+  --a: 165deg;
+  left: var(--board-r);
+  top: calc(100% - var(--board-r));
+}
+
 /* The front board: on top of the left half's block, the spine on its left. */
 hmpt-today-card .tome-cover .tome-board {
   inset: calc(var(--over) * -1) calc(var(--over) * -1) calc(var(--over-tail) * -1) 0;
@@ -2079,11 +2162,11 @@ hmpt-today-card[data-reveal='opening'] .tome-camera {
     animation-timing-function: cubic-bezier(0.65, 0, 0.35, 1);
   }
   16.7% {
-    transform: translateZ(0px) rotateY(-84deg); /* standing on the spine, leaning toward you */
+    transform: translateZ(0px) rotateY(-86deg); /* standing on the spine, leaning toward you */
     animation-timing-function: cubic-bezier(0.37, 0, 0.63, 1);
   }
   35.4% {
-    transform: translateZ(0px) rotateY(-87deg); /* …a breath, leaning a touch further, before it falls open */
+    transform: translateZ(0px) rotateY(-88.5deg); /* …a breath, leaning a touch further, before it falls open */
     animation-timing-function: cubic-bezier(0.45, 0, 0.3, 1);
   }
   52%,
@@ -2099,11 +2182,11 @@ hmpt-today-card[data-reveal='opening'] .tome-camera {
     animation-timing-function: cubic-bezier(0.65, 0, 0.35, 1);
   }
   16.7% {
-    transform: translateZ(0px) rotateY(-84deg);
+    transform: translateZ(0px) rotateY(-86deg);
     animation-timing-function: cubic-bezier(0.37, 0, 0.63, 1);
   }
   35.4% {
-    transform: translateZ(0px) rotateY(-87deg);
+    transform: translateZ(0px) rotateY(-88.5deg);
     animation-timing-function: cubic-bezier(0.55, 0, 0.8, 0.4);
   }
   49% {
@@ -2122,11 +2205,11 @@ hmpt-today-card[data-reveal='opening'] .tome-camera {
     animation-timing-function: cubic-bezier(0.65, 0, 0.35, 1);
   }
   16.7% {
-    transform: translateZ(0px) rotateY(-84deg) translateZ(0.5px);
+    transform: translateZ(0px) rotateY(-86deg) translateZ(0.5px);
     animation-timing-function: cubic-bezier(0.37, 0, 0.63, 1);
   }
   35.4% {
-    transform: translateZ(0px) rotateY(-87deg) translateZ(0.5px);
+    transform: translateZ(0px) rotateY(-88.5deg) translateZ(0.5px);
     animation-timing-function: cubic-bezier(0.55, 0, 0.8, 0.4);
   }
   49% {
@@ -2146,11 +2229,11 @@ hmpt-today-card[data-reveal='opening'] .tome-camera {
     animation-timing-function: cubic-bezier(0.65, 0, 0.35, 1);
   }
   16.7% {
-    transform: translateZ(0px) rotateY(-84deg) translateZ(-30px) translateX(100%) rotateY(180deg);
+    transform: translateZ(0px) rotateY(-86deg) translateZ(-30px) translateX(100%) rotateY(180deg);
     animation-timing-function: cubic-bezier(0.37, 0, 0.63, 1);
   }
   35.4% {
-    transform: translateZ(0px) rotateY(-87deg) translateZ(-30px) translateX(100%) rotateY(180deg);
+    transform: translateZ(0px) rotateY(-88.5deg) translateZ(-30px) translateX(100%) rotateY(180deg);
     animation-timing-function: cubic-bezier(0.55, 0, 0.8, 0.4);
   }
   49% {
@@ -2265,11 +2348,11 @@ hmpt-today-card[data-closing] .tome-camera {
     animation-timing-function: cubic-bezier(0.65, 0, 0.35, 1);
   }
   38.6% {
-    transform: translateZ(0px) rotateY(-96deg); /* closed up, standing on the spine */
+    transform: translateZ(0px) rotateY(-94deg); /* closed up, standing on the spine */
     animation-timing-function: cubic-bezier(0.37, 0, 0.63, 1);
   }
   54.5% {
-    transform: translateZ(0px) rotateY(-93deg); /* a breath, then it tips over */
+    transform: translateZ(0px) rotateY(-91.5deg); /* a breath, then it tips over */
     animation-timing-function: cubic-bezier(0.5, 0, 0.8, 0.45);
   }
   72.7%,
@@ -2285,11 +2368,11 @@ hmpt-today-card[data-closing] .tome-camera {
     animation-timing-function: cubic-bezier(0.65, 0, 0.35, 1);
   }
   38.6% {
-    transform: translateZ(0px) rotateY(-96deg); /* standing on the spine, leaning the other way */
+    transform: translateZ(0px) rotateY(-94deg); /* standing on the spine, leaning the other way */
     animation-timing-function: cubic-bezier(0.37, 0, 0.63, 1);
   }
   54.5% {
-    transform: translateZ(0px) rotateY(-93deg);
+    transform: translateZ(0px) rotateY(-91.5deg);
     animation-timing-function: cubic-bezier(0.5, 0, 0.8, 0.45);
   }
   72.7%,
@@ -2307,11 +2390,11 @@ hmpt-today-card[data-closing] .tome-camera {
     animation-timing-function: cubic-bezier(0.65, 0, 0.35, 1);
   }
   38.6% {
-    transform: translateZ(0px) rotateY(-96deg) translateZ(-30px) translateX(100%) rotateY(180deg); /* standing on the spine, leaning the other way */
+    transform: translateZ(0px) rotateY(-94deg) translateZ(-30px) translateX(100%) rotateY(180deg); /* standing on the spine, leaning the other way */
     animation-timing-function: cubic-bezier(0.37, 0, 0.63, 1);
   }
   54.5% {
-    transform: translateZ(0px) rotateY(-93deg) translateZ(-30px) translateX(100%) rotateY(180deg);
+    transform: translateZ(0px) rotateY(-91.5deg) translateZ(-30px) translateX(100%) rotateY(180deg);
     animation-timing-function: cubic-bezier(0.5, 0, 0.8, 0.45);
   }
   72.7%,
