@@ -10,3 +10,7 @@
   `data-tour="<order>"`, `data-tour-title` and `data-tour-text`. Keep the copy in the
   librarian's voice, and update the e2e test that walks the tour when stops change.
 - `createBrowserInstaller()` runs first thing in `main.ts`, before any `await`.
+- A staging copy shares production's origin. Anything that persists on the device (a new
+  database, cache or storage key) must be named through `src/stage.ts`, so staging never
+  touches the real reader's data; production's `sw.ts` must never serve navigations under
+  `staging/`.

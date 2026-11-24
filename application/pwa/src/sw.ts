@@ -10,6 +10,7 @@ import { REMINDER_SYNC_TAG, RegistrationNotifier } from '@hmpt/infra-reminders-b
 import { openReadingDatabase } from '@hmpt/infra-storage-indexeddb';
 import { cleanupOutdatedCaches, createHandlerBoundToURL, precacheAndRoute } from 'workbox-precaching';
 import { NavigationRoute, registerRoute } from 'workbox-routing';
+import { databaseName } from './stage';
 
 declare const self: ServiceWorkerGlobalScope & {
   __WB_MANIFEST: Array<{ url: string; revision: string | null } | string>;
@@ -27,10 +28,13 @@ self.addEventListener('activate', (event) => event.waitUntil(self.clients.claim(
 
 precacheAndRoute(self.__WB_MANIFEST);
 cleanupOutdatedCaches();
-registerRoute(new NavigationRoute(createHandlerBoundToURL('index.html')));
+// A staging copy lives under staging/ with its own service worker: never answer its pages
+// with this app's shell.
+const staging = new RegExp(`^${new URL('staging/', scope).pathname.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`);
+registerRoute(new NavigationRoute(createHandlerBoundToURL('index.html'), { denylist: [staging] }));
 
 async function checkReminder(): Promise<void> {
-  const storage = await openReadingDatabase();
+  const storage = await openReadingDatabase(databaseName);
   try {
     const check = createReminderCheck({
       history: storage.history,

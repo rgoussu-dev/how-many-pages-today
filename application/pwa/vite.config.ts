@@ -3,6 +3,9 @@ import { VitePWA } from 'vite-plugin-pwa';
 
 /** GitHub Pages serves the repository at /<repo>/. Override with BASE_PATH for other hosts. */
 const base = process.env.BASE_PATH ?? '/how-many-pages-today/';
+/** VITE_STAGE=staging builds the staging copy: its own name, so it installs beside the real one. */
+const stage = process.env.VITE_STAGE;
+const suffix = stage ? ` (${stage})` : '';
 
 export default defineConfig({
   base,
@@ -23,8 +26,8 @@ export default defineConfig({
       // public/licenses/*.txt (font licences) ship with the site but need not be precached.
       manifest: {
         id: base,
-        name: 'How Many Pages Today',
-        short_name: 'Pages Today',
+        name: `How Many Pages Today${suffix}`,
+        short_name: `Pages Today${suffix}`,
         description: 'A daily reading challenge: one card, one picture, a number of pages. Works offline.',
         lang: 'en',
         start_url: base,
