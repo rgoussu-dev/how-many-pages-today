@@ -110,9 +110,15 @@ test('logging fewer pages keeps the streak, earns encouragement, and more can be
   await expect(summary.locator('[data-streak]')).toHaveText('1');
   await expect(summary.locator('[data-pages]')).toHaveText('3');
 
+  // The book closed on the day: the back cover carries the note; open it to add more.
+  await expect(card(page).locator('[data-message]')).not.toBeEmpty();
+  await card(page).getByRole('button', { name: 'Open the book' }).click();
   await card(page).getByText('Read some more today?').click();
   await card(page).getByLabel('Pages to add').fill(String(goal + 10));
   await card(page).getByRole('button', { name: 'Add pages' }).click();
+  await expect(card(page).locator('[data-read-page]')).toHaveText(`${goal + 13} of ${goal} pages — 13 pages beyond the goal.`);
+  await card(page).getByRole('button', { name: 'Close the book' }).click();
+  await expect(card(page).locator('[data-read]')).toBeVisible();
   await expect(card(page).locator('[data-read]')).toHaveText(`${goal + 13} of ${goal} pages — 13 pages beyond the goal.`);
 
   await tab(page, 'Progress').click();
@@ -352,7 +358,7 @@ test('welcome: where the browser offers to install, the librarian hands over the
 test.describe('with motion', () => {
   test.use({ contextOptions: { reducedMotion: 'no-preference' } });
 
-  test('welcome: the day’s card waits closed, then arrives, opens and riffles to its page — once', async ({ page }) => {
+  test('welcome: the day’s card waits closed, opens and riffles to its page — once — and closes on its back cover when read', async ({ page }) => {
     const book = card(page);
     const goal = await book.locator('[data-pages]').textContent();
     // Behind the librarian, the card stays closed.
@@ -368,9 +374,19 @@ test.describe('with motion', () => {
     await expect(book.locator('.tome-inner')).toHaveJSProperty('inert', false);
     await expect(book.getByRole('button', { name: /^I read/ })).toBeEnabled();
 
+    // Reading the pages closes the book on its back cover, sealed, with a note.
+    await book.getByRole('button', { name: /^I read/ }).click();
+    await expect(book).toHaveAttribute('data-closing', '');
+    await expect(book.locator('.tome-back')).toBeVisible();
+    await expect(book.locator('[data-message]')).not.toBeEmpty();
+    await expect(book.locator('.tome-inner')).toHaveJSProperty('inert', true);
+    await expect(book).not.toHaveAttribute('data-closing', { timeout: 4000 });
+
     await page.reload();
     await expect(book.locator('[data-pages]')).toHaveText(goal ?? '');
     await page.waitForTimeout(500);
-    await expect(book).not.toHaveAttribute('data-reveal');
+    await expect(book).not.toHaveAttribute('data-reveal'); // opened once a day
+    await expect(book).not.toHaveAttribute('data-closing'); // closes once, when read
+    await expect(book.locator('.tome-back')).toBeVisible(); // and stays closed
   });
 });

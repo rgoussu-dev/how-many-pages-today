@@ -104,8 +104,11 @@ export class Welcome extends PortBoundElement {
     this.#profile = this.request(readingContexts.profile);
     this.#shelf = this.request(readingContexts.bookshelf);
     this.#view = this.request(readingContexts.view);
+    // Hold the rest of the room (the day's card waits closed) until we know whether to speak.
+    if (!this.#running) document.documentElement.dataset.welcoming = 'deciding';
     void this.#welcome.needed().then((needed) => {
       if (needed) void this.#start();
+      else if (!this.#running) delete document.documentElement.dataset.welcoming;
     });
     return [
       this.#view.onEvent((event) => {
@@ -161,7 +164,7 @@ export class Welcome extends PortBoundElement {
 
   #open(): void {
     this.$('[data-root]').hidden = false;
-    document.documentElement.dataset.welcoming = '';
+    document.documentElement.dataset.welcoming = 'speaking';
     // Everything else on the page is out of reach while the librarian speaks.
     this.#inerted = [...document.body.children].filter((el) => el !== this && !(el as HTMLElement).inert);
     for (const el of this.#inerted) (el as HTMLElement).inert = true;

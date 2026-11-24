@@ -11,10 +11,15 @@ dusty shelves, lamplight, pillows and a blanket — and, after dusk, the same ro
   in steps of ten. The plate is one of six cosy library scenes (dusty shelves, a banker's
   lamp, a window seat of pillows, a wingback armchair, a rainy windowsill, a candlelit
   still life) painted from a seed, so the same day always shows the same card, online or not.
-- **A little ceremony each morning.** The day's card arrives closed — a leather cover, the
-  date, a gilt emblem — drops onto the table, swings open, and its pages riffle until they
-  land on the day's page count. Once a day, the first time the card comes into view (after
-  the first-visit walkthrough, on a first visit); instantly open with reduced motion.
+- **A little ceremony each day.** The day's card arrives closed — a leather cover, the date,
+  a gilt emblem — drops onto the table, swings open, and its pages riffle until they land on
+  the day's page: a printed page with a running head, the illustration as a captioned plate,
+  the number set in ink and a folio at its foot. Once the reading is logged the book closes
+  on its back cover, sealed in wax, with a warm note from the librarian (chosen by chance,
+  the same all day: for a goal met, gone beyond, a short day, a book finished), the streak or
+  any bookplate earned. "Open the book" turns back to the page to add pages read later.
+  Plays once a day, the first time the card is on screen and never behind the walkthrough;
+  instant with reduced motion.
 - **Log what you actually read.** One tap logs the day's goal; or enter the real count —
   more or fewer pages. Any reading keeps the streak alive (every page counts); the goal is
   met at the goal or beyond, or by finishing a book. A day read stays read — there is no

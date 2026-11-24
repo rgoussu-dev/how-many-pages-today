@@ -44,13 +44,16 @@ hmpt-greeting cite {
   font-style: italic;
 }
 
-/* — today's card: a leather-bound book — */
+/* — today's card: an open book — leather boards around a printed page — */
 
 hmpt-today-card .tome {
   position: relative;
   display: block;
-  /* the spine on the left, a fore-edge of pages peeking out on the right */
+  padding: 0.4rem 0.4rem 0.45rem 1.1rem; /* the boards peeking out around the page; the spine on the left */
   border-radius: 0.3rem 0.7rem 0.7rem 0.3rem;
+  background:
+    var(--grain-leather),
+    radial-gradient(120% 90% at 30% 15%, var(--leather-light), var(--leather) 55%, var(--leather-deep));
   box-shadow:
     4px 0 0 -1px #efe0bf,
     5px 1px 0 -1px #d8c296,
@@ -72,97 +75,64 @@ hmpt-today-card .tome::before {
   pointer-events: none;
 }
 
+/* The page: paper by day, a warm dark page by lamplight; the gutter shadow at the spine. */
+hmpt-today-card .tome-inner {
+  background:
+    linear-gradient(90deg, rgb(60 35 15 / 0.28), rgb(60 35 15 / 0.06) 1.4rem, transparent 3rem),
+    var(--grain-paper),
+    linear-gradient(180deg, color-mix(in srgb, var(--surface) 94%, #fff), var(--surface));
+}
+
 hmpt-today-card .tome-inner {
   position: relative;
   display: grid;
   gap: var(--s-1);
-  margin: 0 0 0 1.1rem;
-  padding: var(--s1) var(--s1) calc(var(--s1) + 0.25rem);
+  padding: var(--s0) var(--s1) var(--s0) calc(var(--s1) + 0.25rem);
+  border-radius: 0.15rem 0.45rem 0.45rem 0.15rem;
+  color: var(--ink);
+  box-shadow: inset 0 0 30px -10px color-mix(in srgb, var(--gilt-dark) 40%, transparent);
 }
 
-hmpt-today-card .tome-inner::before {
-  /* gilt tooling: a double rule inset from the edge of the board */
-  content: '';
-  position: absolute;
-  inset: 0.55rem;
-  border: 1px solid color-mix(in srgb, var(--gilt) 80%, transparent);
-  outline: 1px solid color-mix(in srgb, var(--gilt) 45%, transparent);
-  outline-offset: -5px;
-  border-radius: 0.2rem;
-  pointer-events: none;
-}
-
+/* Running head: the date in small capitals over a printer's rule. */
 hmpt-today-card .tome-date {
-  position: relative;
+  padding-bottom: 0.35rem;
+  border-bottom: 1px solid var(--line);
   text-align: center;
   font-family: var(--font-caps);
   font-size: 1.05rem;
   letter-spacing: 0.08em;
-  color: var(--gilt-light);
+  color: var(--ink-soft);
 }
 
+/* The plate, printed on the page with a thin keyline. */
 hmpt-today-card .tome-plate {
   position: relative;
-  padding: 0.35rem;
-  background: linear-gradient(180deg, #f3e6c6, #e4cf9f);
+  padding: 0.3rem;
+  background: color-mix(in srgb, var(--surface) 70%, #fff);
   box-shadow:
-    inset 0 0 0 1px var(--gilt-dark),
-    0 0 0 2px var(--gilt),
-    0 6px 14px -4px rgb(0 0 0 / 0.6);
+    inset 0 0 0 1px color-mix(in srgb, var(--ink) 35%, transparent),
+    0 1px 2px rgb(60 35 15 / 0.2);
 }
 
 hmpt-today-card frame-pk {
   display: block;
-  box-shadow: inset 0 0 0 1px rgb(60 30 10 / 0.4);
+  box-shadow: inset 0 0 0 1px rgb(30 15 5 / 0.45);
 }
 
-/* The wax seal, pressed on once the pages are read. */
-hmpt-today-card .tome-seal {
-  position: absolute;
-  right: -0.4rem;
-  bottom: -0.9rem;
-  display: grid;
-  place-items: center;
-  width: 4.6rem;
-  height: 4.6rem;
-  border-radius: 47% 53% 50% 50% / 52% 46% 54% 48%;
-  background: radial-gradient(circle at 38% 32%, #c0453a, var(--wax) 55%, #4f0d0a);
-  box-shadow:
-    0 3px 6px rgb(0 0 0 / 0.45),
-    inset 0 -3px 6px rgb(0 0 0 / 0.35),
-    inset 0 2px 3px rgb(255 160 140 / 0.35);
-  transform: rotate(-14deg) scale(1.6);
-  opacity: 0;
-  transition:
-    transform 320ms cubic-bezier(0.2, 1.4, 0.4, 1),
-    opacity 160ms ease;
+hmpt-today-card .tome-caption {
+  text-align: center;
+  font-style: italic;
+  font-size: 0.95rem;
+  color: var(--ink-faint);
 }
 
-hmpt-today-card .tome-seal > span {
-  display: grid;
-  place-items: center;
-  width: 3.1rem;
-  height: 3.1rem;
-  border-radius: 50%;
-  border: 2px solid rgb(60 5 3 / 0.55);
-  box-shadow: 0 1px 0 rgb(255 150 130 / 0.35);
-  color: #4f0d0a;
-  font-size: 1.7rem;
-  text-shadow: 0 1px 0 rgb(255 150 130 / 0.45);
-}
-
-hmpt-today-card[data-done] .tome-seal {
-  opacity: 1;
-  transform: rotate(-14deg) scale(1);
-}
-
+/* The day's number, set like a chapter opening: printed ink, a touch of letterpress. */
 hmpt-today-card .tome-pages {
-  position: relative;
   display: flex;
   align-items: baseline;
   justify-content: center;
   gap: 0.45rem;
-  margin-block-start: var(--s-1);
+  margin-block-start: var(--s-2);
   line-height: 0.9;
 }
 
@@ -172,31 +142,31 @@ hmpt-today-card .tome-number {
   font-size: clamp(4.25rem, 22vw, 5.5rem);
   font-variant-numeric: lining-nums;
   letter-spacing: -0.02em;
-  filter: drop-shadow(0 1px 0 rgb(0 0 0 / 0.55)) drop-shadow(0 -1px 0 rgb(255 230 170 / 0.15));
+  color: var(--ink);
 }
 
 hmpt-today-card .tome-unit {
   font-family: var(--font-display);
   font-style: italic;
   font-size: 1.6rem;
-  color: var(--gilt-light);
+  color: var(--ink-soft);
 }
 
-hmpt-today-card .tome-hint {
-  position: relative;
+hmpt-today-card .tome-hint,
+hmpt-today-card .tome-read {
   text-align: center;
   font-style: italic;
-  color: color-mix(in srgb, var(--gilt-light) 85%, #fff);
-  opacity: 0.9;
+  color: var(--ink-soft);
 }
 
-hmpt-today-card .tome-done {
-  position: relative;
+/* The folio: the page number, printed at the foot of the page. */
+hmpt-today-card .tome-folio {
+  margin-block-start: var(--s-2);
   text-align: center;
-  font-family: var(--font-caps);
-  font-size: 1.15rem;
-  letter-spacing: 0.06em;
-  color: var(--gilt-light);
+  font-family: var(--font-display);
+  font-size: 0.95rem;
+  letter-spacing: 0.1em;
+  color: var(--ink-faint);
 }
 
 hmpt-today-card .btn,
@@ -209,60 +179,195 @@ hmpt-today-card .tome-actions {
   gap: var(--s-1);
 }
 
-hmpt-today-card .tome-read {
-  text-align: center;
-  font-style: italic;
-  color: var(--gilt-light);
-}
-
-/* The reading log, written on the leather in gilt. */
+/* The reading log, written on the page. */
 hmpt-today-card .tome-log > summary {
   justify-self: center;
   text-align: center;
-  color: var(--gilt-light);
-  opacity: 0.9;
 }
 
 hmpt-today-card .tome-log form {
   display: grid;
   gap: var(--s-1);
   margin-block-start: var(--s-1);
-  padding: var(--s-1) var(--s0) var(--s0);
-  border-top: 1px solid color-mix(in srgb, var(--gilt) 45%, transparent);
-}
-
-hmpt-today-card .tome-log .field > span {
-  color: var(--gilt-light);
-}
-
-hmpt-today-card .tome-log .field input {
-  color: #fbf0d6;
-  border-bottom-color: color-mix(in srgb, var(--gilt) 60%, transparent);
-}
-
-hmpt-today-card .tome-log .field input::placeholder {
-  color: color-mix(in srgb, var(--gilt-light) 55%, transparent);
-}
-
-hmpt-today-card .tome-log .field-error {
-  color: #ffc2a8;
+  padding-top: var(--s-1);
+  border-top: 1px solid var(--line);
 }
 
 hmpt-today-card .tome-check {
   display: flex;
   align-items: center;
   gap: 0.6rem;
-  color: var(--gilt-light);
   font-family: var(--font-caps);
   font-size: 1.05rem;
+  color: var(--ink-soft);
   cursor: pointer;
 }
 
 hmpt-today-card .tome-check input {
   width: 1.25rem;
   height: 1.25rem;
-  accent-color: var(--gilt);
+  accent-color: var(--leather);
 }
+
+/* — the back cover: the book closed on a day well read — */
+
+hmpt-today-card .tome-back {
+  display: none;
+  position: absolute;
+  inset: 0 0 0 1.1rem;
+  z-index: 3;
+  border-radius: 0 0.7rem 0.7rem 0;
+  transform-origin: 0 50%;
+  box-shadow: inset 6px 0 10px -6px rgb(0 0 0 / 0.6);
+}
+
+hmpt-today-card[data-done]:not([data-peek]) .tome-back {
+  display: block;
+}
+
+hmpt-today-card .tome-back-face {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 0.75rem;
+  padding: 2rem 1.75rem;
+  text-align: center;
+}
+
+hmpt-today-card .tome-back-face::before {
+  content: '';
+  position: absolute;
+  inset: 0.55rem;
+  border: 1px solid color-mix(in srgb, var(--gilt) 80%, transparent);
+  outline: 1px solid color-mix(in srgb, var(--gilt) 45%, transparent);
+  outline-offset: -5px;
+  border-radius: 0.2rem;
+  pointer-events: none;
+}
+
+/* The wax seal, pressed onto the back board. */
+hmpt-today-card .tome-back-seal {
+  display: grid;
+  place-items: center;
+  width: 5rem;
+  height: 5rem;
+  border-radius: 47% 53% 50% 50% / 52% 46% 54% 48%;
+  background: radial-gradient(circle at 38% 32%, #c0453a, var(--wax) 55%, #4f0d0a);
+  box-shadow:
+    0 3px 6px rgb(0 0 0 / 0.5),
+    inset 0 -3px 6px rgb(0 0 0 / 0.35),
+    inset 0 2px 3px rgb(255 160 140 / 0.35);
+  transform: rotate(-14deg);
+}
+
+hmpt-today-card .tome-back-seal > span {
+  display: grid;
+  place-items: center;
+  width: 3.4rem;
+  height: 3.4rem;
+  border-radius: 50%;
+  border: 2px solid rgb(60 5 3 / 0.55);
+  color: #4f0d0a;
+  font-size: 1.8rem;
+  text-shadow: 0 1px 0 rgb(255 150 130 / 0.45);
+}
+
+hmpt-today-card .tome-back-eyebrow {
+  font-family: var(--font-caps);
+  font-size: 1.15rem;
+  letter-spacing: 0.08em;
+  color: var(--gilt-light);
+}
+
+hmpt-today-card .tome-back-message {
+  max-width: 18rem;
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 1.5rem;
+  line-height: 1.25;
+  color: #fbeed2;
+  text-shadow: 0 1px 0 rgb(0 0 0 / 0.5);
+}
+
+hmpt-today-card .tome-back-summary,
+hmpt-today-card .tome-back-extra {
+  max-width: 18rem;
+  font-style: italic;
+  color: color-mix(in srgb, var(--gilt-light) 85%, #fff);
+}
+
+hmpt-today-card .tome-back-extra {
+  font-style: normal;
+  font-family: var(--font-caps);
+  letter-spacing: 0.04em;
+}
+
+hmpt-today-card .tome-back-extra:empty {
+  display: none;
+}
+
+hmpt-today-card .tome-back-open {
+  position: relative;
+  margin-block-start: 0.5rem;
+  min-height: 2.75rem;
+  padding: 0 1rem;
+  border: 0;
+  background: none;
+  color: var(--gilt-light);
+  font-family: var(--font-caps);
+  font-size: 1.05rem;
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, var(--gilt) 60%, transparent);
+  text-underline-offset: 0.25em;
+  cursor: pointer;
+}
+
+/* The book closing: the back board swings over the page, the seal is pressed, the note appears. */
+hmpt-today-card[data-closing] .tome-back {
+  animation: back-close 900ms cubic-bezier(0.55, 0, 0.25, 1) both;
+}
+
+hmpt-today-card[data-closing] .tome-back-seal {
+  animation: seal-press 460ms cubic-bezier(0.2, 1.4, 0.4, 1) 900ms both;
+}
+
+hmpt-today-card[data-closing] .tome-back-face > :not(.tome-back-seal) {
+  animation: note-appear 600ms ease-out 1150ms both;
+}
+
+@keyframes back-close {
+  from {
+    transform: rotateY(-172deg);
+    opacity: 0;
+  }
+  15% {
+    opacity: 1;
+  }
+  to {
+    transform: rotateY(0);
+  }
+}
+
+@keyframes seal-press {
+  from {
+    opacity: 0;
+    transform: rotate(-14deg) scale(1.8);
+  }
+  to {
+    opacity: 1;
+    transform: rotate(-14deg) scale(1);
+  }
+}
+
+@keyframes note-appear {
+  from {
+    opacity: 0;
+    transform: translateY(0.4rem);
+  }
+}
+
 
 /* — streak & ledger — */
 
@@ -1449,10 +1554,15 @@ hmpt-today-card .tome-leaves > span {
   inset: 0.45rem 0.45rem 0.45rem 0;
   border-radius: 0 0.4rem 0.4rem 0;
   transform-origin: 0 50%;
-  background:
-    repeating-linear-gradient(180deg, transparent 0 1.1rem, rgb(110 90 60 / 0.16) 1.1rem calc(1.1rem + 1px)) 1.4rem 2rem /
-      calc(100% - 2.8rem) calc(100% - 4rem) no-repeat,
-    linear-gradient(90deg, #d9c69e, #f4e9cf 12%, #f7eed8 70%, #eadbb9);
+  /* the same paper as the page they land on, with lines of text printed on it */
+  background-image:
+    repeating-linear-gradient(180deg, transparent 0 1.1rem, color-mix(in srgb, var(--ink) 14%, transparent) 1.1rem calc(1.1rem + 1px)),
+    linear-gradient(90deg, rgb(60 35 15 / 0.28), rgb(60 35 15 / 0.06) 1.4rem, transparent 3rem),
+    var(--grain-paper),
+    linear-gradient(180deg, color-mix(in srgb, var(--surface) 94%, #fff), var(--surface));
+  background-size: calc(100% - 2.8rem) calc(100% - 4rem), auto, auto, auto;
+  background-position: 1.4rem 2rem, 0 0, 0 0, 0 0;
+  background-repeat: no-repeat, no-repeat, repeat, no-repeat;
   box-shadow: inset 8px 0 12px -8px rgb(60 35 15 / 0.45), 1px 1px 2px rgb(0 0 0 / 0.25);
 }
 
