@@ -38,16 +38,23 @@ describe('IndexedDB storage', () => {
     await storage.history.save({ ...card('2026-11-24', 30), status: 'completed', completedAt: '2026-11-24T19:00:00.000Z' });
     await storage.profiles.save({ displayName: 'Ada', avatar: '🦉', favouriteGenre: '', readerSince: '2026-11-24' });
     await storage.shelves.save({
-      current: { title: 'Middlemarch', startedOn: '2026-11-21' },
+      current: { title: 'Middlemarch', startedOn: '2026-11-21', bookmark: 112, totalPages: 880 },
       finished: [{ title: 'Persuasion', startedOn: '2026-11-02', finishedOn: '2026-11-20' }, { title: null, finishedOn: '2026-11-22' }],
     });
     await storage.preferences.saveRange({ min: 5, max: 50, step: 5 });
     await storage.preferences.saveReminder({ enabled: true, time: '21:30' });
     await storage.preferences.saveWelcome({ completedOn: '2026-11-24' });
+    await storage.preferences.saveLanguage('fr');
 
     const reopened = await open('round-trip');
     expect(await reopened.history.byDay('2026-11-24')).toMatchObject({ status: 'completed', pages: 30 });
     expect((await reopened.profiles.load())?.displayName).toBe('Ada');
+    expect((await reopened.shelves.load())?.current).toEqual({
+      title: 'Middlemarch',
+      startedOn: '2026-11-21',
+      bookmark: 112,
+      totalPages: 880,
+    });
     expect((await reopened.shelves.load())?.finished).toEqual([
       { title: 'Persuasion', startedOn: '2026-11-02', finishedOn: '2026-11-20' },
       { title: null, finishedOn: '2026-11-22' },
@@ -55,6 +62,7 @@ describe('IndexedDB storage', () => {
     expect(await reopened.preferences.loadRange()).toEqual({ min: 5, max: 50, step: 5 });
     expect(await reopened.preferences.loadReminder()).toEqual({ enabled: true, time: '21:30' });
     expect(await reopened.preferences.loadWelcome()).toEqual({ completedOn: '2026-11-24' });
+    expect(await reopened.preferences.loadLanguage()).toBe('fr');
   });
 
   it('never overwrites the first unlock date of an achievement', async () => {

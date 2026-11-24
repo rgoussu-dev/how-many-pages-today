@@ -1,20 +1,13 @@
-import type { ReadingSnapshot, ReminderError, ReminderPort } from '@hmpt/domain-contract';
+import type { ReadingSnapshot, ReadingView, ReminderPort } from '@hmpt/domain-contract';
 import { dailyReminderInvite } from './calendar-invite';
 import { readingContexts } from './contexts';
+import { deviceSpeech, speech } from './i18n';
 import { PortBoundElement } from './port-bound';
-
-const ERRORS: Record<ReminderError, string> = {
-  'invalid-time': 'Pick a time, like 20:30.',
-  'permission-denied':
-    'Notifications are blocked for this app. Allow them in your browser or phone settings, then try again.',
-  unsupported:
-    'This browser cannot show notifications here. On iPhone and iPad, add the app to your Home Screen first. The calendar reminder below works everywhere.',
-  'delivery-failed': 'The notification could not be shown on this device. The calendar reminder below works everywhere.',
-};
 
 /** `<hmpt-reminder-form>` — a daily notification at a fixed hour, plus a calendar fallback. */
 export class ReminderForm extends PortBoundElement {
   #reminder?: ReminderPort;
+  #view?: ReadingView;
   #dirty = false;
 
   protected markup(): string {
@@ -24,21 +17,21 @@ export class ReminderForm extends PortBoundElement {
           <form novalidate>
             <stack-pk space="var(--s0)">
               <div>
-                <h2 id="reminder-title">Daily reminder</h2>
-                <p class="muted">A nudge at the same hour every day, until you have read your pages.</p>
+                <h2 id="reminder-title" data-t="reminder.heading"></h2>
+                <p class="muted" data-t="reminder.intro"></p>
               </div>
-              <label class="switch"><span>Remind me every day</span><input type="checkbox" name="enabled" role="switch"></label>
-              <label class="field"><span>At</span><input type="time" name="time" required></label>
+              <label class="switch"><span data-t="reminder.everyDay"></span><input type="checkbox" name="enabled" role="switch"></label>
+              <label class="field"><span data-t="reminder.at"></span><input type="time" name="time" required></label>
               <cluster-pk space="var(--s-1)" align="center">
-                <button class="btn btn-primary" type="submit">Save reminder</button>
-                <button class="btn" type="button" data-test>Send a test</button>
+                <button class="btn btn-primary" type="submit" data-t="reminder.save"></button>
+                <button class="btn" type="button" data-test data-t="reminder.test"></button>
               </cluster-pk>
               <p class="status" role="status" data-status></p>
               <details class="reminder-help">
-                <summary>Want a reminder that never misses?</summary>
+                <summary data-t="reminder.neverMisses"></summary>
                 <stack-pk space="var(--s-1)">
-                  <p class="muted">This app runs entirely on your phone, with no server. Android (Chrome) can wake it in the background — at roughly the hour you chose. iPhone only shows reminders while the app is open. For a reminder that rings on the dot, add it to your calendar:</p>
-                  <button class="btn" type="button" data-ics>📅 Add to my calendar</button>
+                  <p class="muted" data-t="reminder.help"></p>
+                  <button class="btn" type="button" data-ics data-t="reminder.calendar"></button>
                 </stack-pk>
               </details>
             </stack-pk>
@@ -54,30 +47,37 @@ export class ReminderForm extends PortBoundElement {
       event.preventDefault();
       if (!this.#reminder) return;
       const result = await this.#reminder.configure(this.#read());
-      if (!result.ok) return this.#status(ERRORS[result.error], 'warn');
+      const { t } = this.#words();
+      if (!result.ok) return this.#status(t.reminder.errors[result.error], 'warn');
       this.#dirty = false;
       const { settings, delivery } = result.value;
       this.#status(
         !settings.enabled
-          ? 'Reminder off.'
+          ? t.reminder.off
           : delivery === 'background'
-            ? `Saved ✓ — you will be nudged around ${settings.time}, even with the app closed.`
-            : `Saved ✓ — you will be nudged at ${settings.time} while the app is open. Add it to your calendar for a sure thing.`,
+            ? t.reminder.background(settings.time)
+            : t.reminder.whileOpen(settings.time),
         'ok',
       );
     });
     this.$('[data-test]').addEventListener('click', async () => {
       if (!this.#reminder) return;
       const result = await this.#reminder.sendTest();
-      this.#status(result.ok ? 'Test sent — check your notifications.' : ERRORS[result.error], result.ok ? 'ok' : 'warn');
+      const { t } = this.#words();
+      this.#status(result.ok ? t.reminder.testSent : t.reminder.errors[result.error], result.ok ? 'ok' : 'warn');
     });
     this.$('[data-ics]').addEventListener('click', () => this.#downloadInvite());
   }
 
   protected connect() {
     this.#reminder = this.request(readingContexts.reminder);
-    const view = this.request(readingContexts.view);
-    return [view.subscribe((snapshot) => this.#render(snapshot))];
+    this.#view = this.request(readingContexts.view);
+    return [this.#view.subscribe((snapshot) => this.#render(snapshot))];
+  }
+
+  #words() {
+    const language = this.#view?.current()?.language;
+    return language ? speech(language) : deviceSpeech();
   }
 
   #read(): { enabled: boolean; time: string } {
@@ -97,15 +97,18 @@ export class ReminderForm extends PortBoundElement {
   #downloadInvite(): void {
     const { time } = this.#read();
     const appUrl = `${location.origin}${location.pathname}`;
-    const blob = new Blob([dailyReminderInvite(time || '20:00', appUrl)], { type: 'text/calendar;charset=utf-8' });
+    const { invite } = this.#words().t.reminder;
+    const wording = { summary: invite.summary, description: invite.description(appUrl), alarm: invite.alarm };
+    const blob = new Blob([dailyReminderInvite(time || '20:00', appUrl, wording)], { type: 'text/calendar;charset=utf-8' });
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
-    link.download = 'daily-reading-reminder.ics';
+    link.download = invite.file;
     link.click();
     setTimeout(() => URL.revokeObjectURL(link.href), 10_000);
   }
 
-  #render({ reminder }: ReadingSnapshot): void {
+  #render({ reminder, language }: ReadingSnapshot): void {
+    this.speak(language);
     if (this.#dirty) return;
     const form = this.$<HTMLFormElement>('form');
     (form.elements.namedItem('enabled') as HTMLInputElement).checked = reminder.enabled;

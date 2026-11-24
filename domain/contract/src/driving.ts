@@ -5,6 +5,8 @@ import type {
   FinishedBook,
   InstallAvailability,
   InstallOutcome,
+  LanguageChoice,
+  LanguageSetting,
   PageRange,
   Profile,
   ProfileInput,
@@ -41,18 +43,54 @@ export interface DailyChallengePort {
   addPages(pages: number): Promise<Result<DailyChallenge, ChallengeError>>;
 }
 
+/** What is wrong with a field — a closed union the UI words in the reader's language. */
+export type FieldProblem =
+  /** Left blank, and it may not be. */
+  | 'required'
+  /** Longer than `max` characters. */
+  | 'too-long'
+  /** Not a whole number. */
+  | 'not-whole'
+  /** Outside `min` … `max`. */
+  | 'out-of-range'
+  /** A range's maximum below its minimum. */
+  | 'below-minimum'
+  /** A bookmark past the book's last page (`max`). */
+  | 'past-the-end'
+  /** There is no book in hand to change. */
+  | 'no-book';
+
 export interface FieldError {
   readonly field: string;
-  readonly message: string;
+  readonly problem: FieldProblem;
+  readonly min?: number;
+  readonly max?: number;
 }
 
 export interface ProfilePort {
   save(input: ProfileInput): Promise<Result<Profile, readonly FieldError[]>>;
 }
 
+export interface BookStart {
+  readonly title: string;
+  /** The page the reader has reached; 0 (the beginning) when omitted. */
+  readonly bookmark?: number;
+  /** How many pages the book has, if known. */
+  readonly totalPages?: number;
+}
+
+export interface BookUpdate {
+  /** Moves the bookmark to this page. */
+  readonly bookmark?: number;
+  /** Sets the book's length; null forgets it. */
+  readonly totalPages?: number | null;
+}
+
 export interface BookshelfPort {
-  /** Puts a book in hand (replacing any unfinished one). */
-  startReading(title: string): Promise<Result<Bookshelf, readonly FieldError[]>>;
+  /** Puts a book in hand (replacing any unfinished one), the bookmark where the reader is. */
+  startReading(book: BookStart): Promise<Result<Bookshelf, readonly FieldError[]>>;
+  /** Moves the bookmark in the book in hand, or sets its length. */
+  updateBook(update: BookUpdate): Promise<Result<Bookshelf, readonly FieldError[]>>;
   /**
    * Shelves a book as finished today: the book in hand, or — with nothing in hand — a book
    * named here, or an untitled one. A given title overrides the one in hand.
@@ -107,6 +145,13 @@ export interface WelcomePort {
   finish(): Promise<void>;
   /** Asks for the walkthrough again (announced as a `welcome-requested` event). */
   replay(): Promise<void>;
+}
+
+export type LanguageError = 'unsupported-language';
+
+/** The language the app speaks — the reader's pick, or the device's. */
+export interface LanguagePort {
+  choose(choice: LanguageChoice): Promise<Result<LanguageSetting, LanguageError>>;
 }
 
 /** The read model. Reactivity lives here, not in the wiring. */

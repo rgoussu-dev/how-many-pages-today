@@ -12,7 +12,14 @@ const floating = (d: Date) =>
   `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}T${pad(d.getHours())}${pad(d.getMinutes())}00`;
 const escapeText = (s: string) => s.replace(/[\;,]/g, (c) => `\\${c}`).replace(/\n/g, '\\n');
 
-export function dailyReminderInvite(time: string, appUrl: string, now: Date = new Date()): string {
+/** The invitation's words, in the reader's language. */
+export interface InviteWording {
+  readonly summary: string;
+  readonly description: string;
+  readonly alarm: string;
+}
+
+export function dailyReminderInvite(time: string, appUrl: string, wording: InviteWording, now: Date = new Date()): string {
   const [hours = 20, minutes = 0] = time.split(':').map(Number);
   const start = new Date(now.getFullYear(), now.getMonth(), now.getDate(), hours, minutes);
   if (start <= now) start.setDate(start.getDate() + 1);
@@ -28,13 +35,13 @@ export function dailyReminderInvite(time: string, appUrl: string, now: Date = ne
     `DTSTART:${floating(start)}`,
     'DURATION:PT15M',
     'RRULE:FREQ=DAILY',
-    `SUMMARY:${escapeText('📖 How many pages today?')}`,
-    `DESCRIPTION:${escapeText(`Your reading card is waiting: ${appUrl}`)}`,
+    `SUMMARY:${escapeText(wording.summary)}`,
+    `DESCRIPTION:${escapeText(wording.description)}`,
     `URL:${appUrl}`,
     'TRANSP:TRANSPARENT',
     'BEGIN:VALARM',
     'ACTION:DISPLAY',
-    `DESCRIPTION:${escapeText('Time for your daily pages')}`,
+    `DESCRIPTION:${escapeText(wording.alarm)}`,
     'TRIGGER:PT0M',
     'END:VALARM',
     'END:VEVENT',

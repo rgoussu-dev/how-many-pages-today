@@ -39,32 +39,20 @@ export function bestStreak(completedDays: ReadonlySet<DayKey>): number {
   return best;
 }
 
-/** Cumulative pages needed to reach each rank. */
-const LEVELS: readonly { readonly from: number; readonly title: string }[] = [
-  { from: 0, title: 'Page turner' },
-  { from: 100, title: 'Apprentice reader' },
-  { from: 300, title: 'Bookish' },
-  { from: 600, title: 'Avid reader' },
-  { from: 1000, title: 'Bibliophile' },
-  { from: 1500, title: 'Scholar' },
-  { from: 2500, title: 'Sage' },
-  { from: 4000, title: 'Librarian' },
-  { from: 6000, title: 'Archivist' },
-  { from: 10000, title: 'Living legend' },
-];
+/** Cumulative pages needed to reach each rank (the UI names the ranks). */
+const LEVELS: readonly number[] = [0, 100, 300, 600, 1000, 1500, 2500, 4000, 6000, 10000];
 
 export function levelFor(totalPages: number): ReaderLevel {
   let index = 0;
-  LEVELS.forEach((level, i) => {
-    if (totalPages >= level.from) index = i;
+  LEVELS.forEach((from, i) => {
+    if (totalPages >= from) index = i;
   });
-  const level = LEVELS[index]!;
+  const from = LEVELS[index]!;
   const next = LEVELS[index + 1];
   return {
     rank: index + 1,
-    title: level.title,
-    pagesIntoLevel: totalPages - level.from,
-    pagesForLevel: next ? next.from - level.from : null,
+    pagesIntoLevel: totalPages - from,
+    pagesForLevel: next === undefined ? null : next - from,
   };
 }
 

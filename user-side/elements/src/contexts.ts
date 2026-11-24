@@ -2,6 +2,7 @@ import { createContext } from '@hmpt/kernel/context';
 import type {
   BookshelfPort,
   DailyChallengePort,
+  LanguagePort,
   OverviewPort,
   PageRangePort,
   ProfilePort,
@@ -22,5 +23,6 @@ export const readingContexts = {
   range: createContext<PageRangePort>('hmpt.reading.range'),
   reminder: createContext<ReminderPort>('hmpt.reading.reminder'),
   welcome: createContext<WelcomePort>('hmpt.reading.welcome'),
+  language: createContext<LanguagePort>('hmpt.reading.language'),
   view: createContext<ReadingView>('hmpt.reading.view'),
 } as const;

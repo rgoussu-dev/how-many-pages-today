@@ -1,4 +1,5 @@
-import type { PageRange, PageRangePort, ReadingSnapshot } from '@hmpt/domain-contract';
+import type { PageRange, PageRangePort, ReadingSnapshot, ReadingView } from '@hmpt/domain-contract';
+import { deviceSpeech, speech } from './i18n';
 import { readingContexts } from './contexts';
 import { showFieldErrors } from './forms';
 import { PortBoundElement } from './port-bound';
@@ -8,6 +9,7 @@ const MAX_CHIPS = 12;
 /** `<hmpt-range-form>` — the minimum, maximum and step the daily page count is drawn from. */
 export class RangeForm extends PortBoundElement {
   #range?: PageRangePort;
+  #view?: ReadingView;
   #dirty = false;
 
   protected markup(): string {
@@ -17,23 +19,23 @@ export class RangeForm extends PortBoundElement {
           <form novalidate>
             <stack-pk space="var(--s0)">
               <div>
-                <h2 id="range-title">Daily challenge</h2>
-                <p class="muted">Each day's card draws a page count from this range.</p>
+                <h2 id="range-title" data-t="range.heading"></h2>
+                <p class="muted" data-t="range.intro"></p>
               </div>
               <switcher-pk threshold="18rem" space="var(--s-1)" class="range-fields">
-                <label class="field"><span>Minimum</span><input name="min" type="number" inputmode="numeric" min="1" max="1000" step="1" required></label>
-                <label class="field"><span>Maximum</span><input name="max" type="number" inputmode="numeric" min="1" max="1000" step="1" required></label>
-                <label class="field"><span>Step</span><input name="step" type="number" inputmode="numeric" min="1" max="1000" step="1" required></label>
+                <label class="field"><span data-t="range.min"></span><input name="min" type="number" inputmode="numeric" min="1" max="1000" step="1" required></label>
+                <label class="field"><span data-t="range.max"></span><input name="max" type="number" inputmode="numeric" min="1" max="1000" step="1" required></label>
+                <label class="field"><span data-t="range.step"></span><input name="step" type="number" inputmode="numeric" min="1" max="1000" step="1" required></label>
               </switcher-pk>
               <p class="field-error" data-error="min"></p>
               <p class="field-error" data-error="max"></p>
               <p class="field-error" data-error="step"></p>
               <div>
-                <p class="eyebrow">Possible cards</p>
+                <p class="eyebrow" data-t="range.possible"></p>
                 <cluster-pk space="var(--s-2)" class="range-preview" data-preview></cluster-pk>
               </div>
               <cluster-pk space="var(--s0)" align="center">
-                <button class="btn btn-primary" type="submit">Save range</button>
+                <button class="btn btn-primary" type="submit" data-t="range.save"></button>
                 <p class="status" role="status" data-status></p>
               </cluster-pk>
             </stack-pk>
@@ -53,22 +55,24 @@ export class RangeForm extends PortBoundElement {
       event.preventDefault();
       if (!this.#range) return;
       const result = await this.#range.update(this.#read());
-      showFieldErrors(this, result.ok ? [] : result.error);
+      const { t } = this.#words();
+      showFieldErrors(this, result.ok ? [] : result.error, t);
       const status = this.$('[data-status]');
       status.dataset.tone = result.ok ? 'ok' : 'warn';
-      status.textContent = !result.ok
-        ? 'That range does not work yet.'
-        : result.value.todayRedrawn
-          ? "Saved ✓ — today's card was redrawn to fit."
-          : 'Saved ✓ — applies from the next card.';
+      status.textContent = !result.ok ? t.range.invalid : result.value.todayRedrawn ? t.range.redrawn : t.range.fromNext;
       if (result.ok) this.#dirty = false;
     });
   }
 
   protected connect() {
     this.#range = this.request(readingContexts.range);
-    const view = this.request(readingContexts.view);
-    return [view.subscribe((snapshot) => this.#render(snapshot))];
+    this.#view = this.request(readingContexts.view);
+    return [this.#view.subscribe((snapshot) => this.#render(snapshot))];
+  }
+
+  #words() {
+    const language = this.#view?.current()?.language;
+    return language ? speech(language) : deviceSpeech();
   }
 
   #read(): PageRange {
@@ -80,7 +84,8 @@ export class RangeForm extends PortBoundElement {
   #preview(): void {
     if (!this.#range) return;
     const result = this.#range.preview(this.#read());
-    showFieldErrors(this, result.ok ? [] : result.error);
+    const words = this.#words();
+    showFieldErrors(this, result.ok ? [] : result.error, words.t);
     const chips: HTMLElement[] = [];
     if (result.ok) {
       const values = result.value;
@@ -88,15 +93,16 @@ export class RangeForm extends PortBoundElement {
       for (const value of shown) {
         const chip = document.createElement('span');
         chip.className = 'chip';
-        chip.textContent = value === null ? `… ${values.length - (MAX_CHIPS - 1)} more` : String(value);
+        chip.textContent = value === null ? words.t.range.more(values.length - (MAX_CHIPS - 1)) : words.num(value);
         chips.push(chip);
       }
     }
     this.$('[data-preview]').replaceChildren(...chips);
   }
 
-  #render({ range }: ReadingSnapshot): void {
-    if (this.#dirty) return;
+  #render({ range, language }: ReadingSnapshot): void {
+    this.speak(language);
+    if (this.#dirty) return this.#preview(); // re-word the preview, keep what is typed
     const form = this.$<HTMLFormElement>('form');
     for (const key of ['min', 'max', 'step'] as const) {
       (form.elements.namedItem(key) as HTMLInputElement).value = String(range[key]);

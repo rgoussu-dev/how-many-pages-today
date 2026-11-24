@@ -16,6 +16,12 @@ describe('card scenes', () => {
     expect(renderScene(42, 'lamp')).toEqual(renderScene(42, 'lamp'));
   });
 
+  it('describes itself in the language asked for, English otherwise', () => {
+    expect(renderScene(42, 'lamp', 'fr-CA').label).toMatch(/^Une lampe de banquier/);
+    expect(renderScene(42, 'lamp', 'de').label).toMatch(/^A green banker's lamp/);
+    expect(renderScene(42, 'lamp', 'fr').svg).toBe(renderScene(42, 'lamp').svg);
+  });
+
   it('produces well-formed, self-contained SVG with no NaN coordinates', () => {
     for (let seed = 0; seed < 300; seed++) {
       const { svg } = renderScene(seed * 7919);

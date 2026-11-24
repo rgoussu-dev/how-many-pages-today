@@ -6,12 +6,10 @@ export function validateRange(range: PageRange): Result<PageRange, FieldError[]>
   const { lowest, highest } = PAGE_RANGE_LIMITS;
   for (const field of ['min', 'max', 'step'] as const) {
     const value = range[field];
-    if (!Number.isInteger(value)) errors.push({ field, message: 'Use a whole number.' });
-    else if (value < lowest || value > highest)
-      errors.push({ field, message: `Pick a number between ${lowest} and ${highest}.` });
+    if (!Number.isInteger(value)) errors.push({ field, problem: 'not-whole' });
+    else if (value < lowest || value > highest) errors.push({ field, problem: 'out-of-range', min: lowest, max: highest });
   }
-  if (errors.length === 0 && range.max < range.min)
-    errors.push({ field: 'max', message: 'The maximum cannot be below the minimum.' });
+  if (errors.length === 0 && range.max < range.min) errors.push({ field: 'max', problem: 'below-minimum' });
   return errors.length === 0 ? ok({ min: range.min, max: range.max, step: range.step }) : err(errors);
 }
 

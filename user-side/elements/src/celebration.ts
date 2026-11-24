@@ -1,6 +1,6 @@
 import type { ReadingEvent } from '@hmpt/domain-contract';
 import { readingContexts } from './contexts';
-import { plural } from './format';
+import { deviceSpeech, speech, type Messages } from './i18n';
 import { PortBoundElement } from './port-bound';
 
 const CONFETTI = ['🍂', '🍁', '✨', '📖', '🍂', '🔖'];
@@ -22,38 +22,42 @@ export class Celebration extends PortBoundElement {
 
   protected connect() {
     const view = this.request(readingContexts.view);
-    return [view.onEvent((event) => this.#on(event))];
+    return [
+      view.onEvent((event) => {
+        const language = view.current()?.language;
+        this.#on(event, (language ? speech(language) : deviceSpeech()).t);
+      }),
+    ];
   }
 
-  #on(event: ReadingEvent): void {
+  #on(event: ReadingEvent, t: Messages): void {
+    const say = t.celebration;
     switch (event.type) {
       case 'challenge-completed': {
         const { pages, pagesRead = pages, goalMet } = event.challenge;
         this.#burst();
         this.#toast(
           pagesRead > pages
-            ? `✨ ${pagesRead - pages} pages beyond the goal. Splendid.`
+            ? say.beyond(pagesRead - pages)
             : goalMet === false
-              ? `🐢 ${plural(pagesRead, 'page')} read. Every page counts — the candle stays lit.`
+              ? say.short(pagesRead)
               : event.streak > 1
-                ? `🕯️ ${plural(event.streak, 'day')} in a row. Splendid.`
-                : `${plural(pagesRead, 'page')} read. Well done.`,
+                ? say.streak(event.streak)
+                : say.read(pagesRead),
         );
         break;
       }
       case 'pages-added':
-        this.#toast(`📖 ${plural(event.added, 'more page')} — ${event.challenge.pagesRead} today.`);
+        this.#toast(say.added(event.added, event.challenge.pagesRead ?? event.challenge.pages));
         break;
       case 'book-finished':
         this.#burst();
         this.#toast(
-          event.book.title
-            ? `📕 “${event.book.title}” joins your shelf — book number ${event.booksRead}.`
-            : `📕 Another book on your shelf — number ${event.booksRead}.`,
+          event.book.title ? say.shelved(event.book.title, event.booksRead) : say.shelvedUntitled(event.booksRead),
         );
         break;
       case 'achievement-unlocked':
-        this.#toast(`${event.achievement.icon} Achievement unlocked: ${event.achievement.title}`);
+        this.#toast(say.achievement(event.achievement.icon, t.achievements.list[event.achievement.id].title));
         break;
     }
   }
