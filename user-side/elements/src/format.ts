@@ -1,5 +1,6 @@
-/** Presentation helpers. Calendar maths is duplicated from the domain on purpose: the
- *  elements may not import the core, and a few lines of date code are cheaper than a seam. */
+/** Calendar helpers. Calendar maths is duplicated from the domain on purpose: the elements
+ *  may not import the core, and a few lines of date code are cheaper than a seam. Words,
+ *  dates and numbers as the reader reads them live in `./i18n`. */
 
 const pad = (n: number) => String(n).padStart(2, '0');
 
@@ -16,12 +17,3 @@ export const addDays = (day: string, count: number): string => {
   date.setDate(date.getDate() + count);
   return dayKeyOf(date);
 };
-
-export const longDate = (day: string): string =>
-  new Intl.DateTimeFormat(undefined, { weekday: 'long', day: 'numeric', month: 'long' }).format(dateOf(day));
-
-export const shortDate = (day: string): string =>
-  new Intl.DateTimeFormat(undefined, { day: 'numeric', month: 'short', year: 'numeric' }).format(dateOf(day));
-
-export const plural = (count: number, one: string, many = `${one}s`): string =>
-  `${count.toLocaleString()} ${count === 1 ? one : many}`;

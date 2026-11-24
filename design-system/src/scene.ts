@@ -18,13 +18,32 @@ export interface Scene {
 const W = 400;
 const H = 300;
 const KINDS: readonly SceneKind[] = SCENE_KINDS;
-const LABELS: Record<SceneKind, string> = {
-  shelves: 'Dusty bookshelves in a beam of afternoon light',
-  lamp: "A green banker's lamp over an open book and a cup of tea",
-  nook: 'A window seat piled with pillows and a knitted blanket, autumn outside',
-  armchair: 'A leather armchair with a blanket, beside a glowing lamp',
-  window: 'Books and a candle on a windowsill, an autumn evening outside',
-  'still-life': 'A stack of old leather books with a candle',
+/** The languages a scene can be described in; anything else is described in English. */
+export const SCENE_LANGUAGES = ['en', 'fr'] as const;
+export type SceneLanguage = (typeof SCENE_LANGUAGES)[number];
+
+const LABELS: Record<SceneLanguage, Record<SceneKind, string>> = {
+  en: {
+    shelves: 'Dusty bookshelves in a beam of afternoon light',
+    lamp: "A green banker's lamp over an open book and a cup of tea",
+    nook: 'A window seat piled with pillows and a knitted blanket, autumn outside',
+    armchair: 'A leather armchair with a blanket, beside a glowing lamp',
+    window: 'Books and a candle on a windowsill, an autumn evening outside',
+    'still-life': 'A stack of old leather books with a candle',
+  },
+  fr: {
+    shelves: 'Des rayonnages poussiéreux dans un rayon de soleil d’après-midi',
+    lamp: 'Une lampe de banquier verte au-dessus d’un livre ouvert et d’une tasse de thé',
+    nook: 'Une banquette sous la fenêtre, couverte de coussins et d’un plaid tricoté, l’automne au-dehors',
+    armchair: 'Un fauteuil de cuir et sa couverture, près d’une lampe allumée',
+    window: 'Des livres et une bougie sur un rebord de fenêtre, un soir d’automne au-dehors',
+    'still-life': 'Une pile de vieux livres reliés de cuir, avec une bougie',
+  },
+};
+
+const sceneLanguage = (lang: string | undefined): SceneLanguage => {
+  const base = (lang ?? '').toLowerCase().split('-')[0];
+  return (SCENE_LANGUAGES as readonly string[]).includes(base ?? '') ? (base as SceneLanguage) : 'en';
 };
 
 type Rng = () => number;
@@ -508,12 +527,13 @@ const PAINTERS: Record<SceneKind, (rng: Rng, id: string) => string> = {
 };
 
 /** Paints the scene a seed picks — or, given `only`, that scene, still varied by the seed. */
-export function renderScene(seed: number, only?: SceneKind): Scene {
+/** Paints the scene for a seed; `lang` (a BCP 47 tag) picks the language of its description. */
+export function renderScene(seed: number, only?: SceneKind, lang?: string): Scene {
   const rng = seeded(seed);
   const drawn = KINDS[Math.floor(rng() * KINDS.length)] ?? 'shelves';
   const kind = only ?? drawn;
   const id = `scene-${seed >>> 0}`;
   const body = PAINTERS[kind](rng, id);
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false"><defs>${defs(id)}</defs>${body}${finish(id)}</svg>`;
-  return { kind, label: LABELS[kind], svg };
+  return { kind, label: LABELS[sceneLanguage(lang)][kind], svg };
 }

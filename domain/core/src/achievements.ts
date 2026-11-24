@@ -29,134 +29,96 @@ const RULES: readonly AchievementRule[] = [
   {
     id: 'first-challenge',
     icon: '📖',
-    title: 'First chapter',
-    description: 'Complete your first daily challenge.',
     earned: ({ stats }) => stats.completedCount >= 1,
   },
   {
     id: 'streak-3',
     icon: '🔥',
-    title: 'Kindling',
-    description: 'Read three days in a row.',
     earned: ({ stats }) => stats.bestStreak >= 3,
   },
   {
     id: 'streak-7',
     icon: '🕯️',
-    title: 'A week of words',
-    description: 'Read seven days in a row.',
     earned: ({ stats }) => stats.bestStreak >= 7,
   },
   {
     id: 'streak-30',
     icon: '🏅',
-    title: 'Monthly devotion',
-    description: 'Read thirty days in a row.',
     earned: ({ stats }) => stats.bestStreak >= 30,
   },
   {
     id: 'streak-100',
     icon: '👑',
-    title: 'Centurion',
-    description: 'Read one hundred days in a row.',
     earned: ({ stats }) => stats.bestStreak >= 100,
   },
   {
     id: 'book-1',
     icon: '📕',
-    title: 'The end',
-    description: 'Finish your first book.',
     earned: ({ shelf }) => shelf.finished.length >= 1,
   },
   {
     id: 'books-5',
     icon: '📚',
-    title: 'A shelf of your own',
-    description: 'Finish five books.',
     earned: ({ shelf }) => shelf.finished.length >= 5,
   },
   {
     id: 'books-12',
     icon: '🏛️',
-    title: 'A book a month',
-    description: 'Finish twelve books.',
     earned: ({ shelf }) => shelf.finished.length >= 12,
   },
   {
     id: 'pages-500',
     icon: '🧭',
-    title: 'Five hundred pages',
-    description: 'Read 500 pages in total.',
     earned: ({ stats }) => stats.totalPages >= 500,
   },
   {
     id: 'pages-1000',
     icon: '🗺️',
-    title: 'A thousand pages',
-    description: 'Read 1,000 pages in total.',
     earned: ({ stats }) => stats.totalPages >= 1000,
   },
   {
     id: 'pages-5000',
     icon: '🐛',
-    title: 'Bookworm',
-    description: 'Read 5,000 pages in total.',
     earned: ({ stats }) => stats.totalPages >= 5000,
   },
   {
     id: 'marathon',
     icon: '🏃',
-    title: 'Marathon',
-    description: 'Read 100 pages or more in a single day.',
     earned: ({ history }) => completedOnly(history).some((c) => pagesReadOf(c) >= 100),
   },
   {
     id: 'beyond-goal',
     icon: '✨',
-    title: 'Just one more chapter',
-    description: "Read more than the day's goal.",
     earned: ({ history }) => completedOnly(history).some((c) => pagesReadOf(c) > c.pages),
   },
   {
     id: 'double-goal',
     icon: '🌙',
-    title: 'Burning the midnight oil',
-    description: "Read at least twice the day's goal.",
     earned: ({ history }) => completedOnly(history).some((c) => pagesReadOf(c) >= 2 * c.pages),
   },
   {
     id: 'extra-100',
     icon: '🎁',
-    title: 'Bonus chapters',
-    description: 'Read 100 pages beyond your goals, all told.',
     earned: ({ stats }) => stats.extraPages >= 100,
   },
   {
     id: 'page-binge',
     icon: '🌀',
-    title: 'Lost in a book',
-    description: 'Read 200 pages or more in a single day.',
     earned: ({ history }) => completedOnly(history).some((c) => pagesReadOf(c) >= 200),
   },
   {
     id: 'little-by-little',
     icon: '🐢',
-    title: 'Little by little',
-    description: 'Log a day short of the goal. Every page counts.',
     earned: ({ history }) => completedOnly(history).some((c) => !goalMetOf(c) && pagesReadOf(c) > 0),
   },
   {
     id: 'final-chapter',
     icon: '🔖',
-    title: 'The final chapter',
-    description: "Finish a book on the day's reading.",
     earned: ({ history }) => completedOnly(history).some((c) => c.finishedBook === true),
   },
   {
     id: 'early-bird',
     icon: '🌅',
-    title: 'Early bird',
-    description: 'Validate a challenge before 8 a.m.',
     earned: ({ history }) =>
       completedOnly(history).some((c) => {
         const hour = completedHour(c);
@@ -166,8 +128,6 @@ const RULES: readonly AchievementRule[] = [
   {
     id: 'night-owl',
     icon: '🦉',
-    title: 'Night owl',
-    description: 'Validate a challenge after 10 p.m.',
     earned: ({ history }) =>
       completedOnly(history).some((c) => {
         const hour = completedHour(c);
@@ -177,8 +137,6 @@ const RULES: readonly AchievementRule[] = [
   {
     id: 'weekend',
     icon: '🛋️',
-    title: 'Weekend warrior',
-    description: 'Read on both the Saturday and the Sunday of a weekend.',
     earned: ({ history }) => {
       const days = new Set(completedOnly(history).map((c) => c.day));
       return [...days].some((day) => weekdayOf(day) === SATURDAY && days.has(addDays(day, 1)));
@@ -187,8 +145,6 @@ const RULES: readonly AchievementRule[] = [
   {
     id: 'comeback',
     icon: '🌱',
-    title: 'Back on the shelf',
-    description: 'Return to reading after missing two days or more.',
     earned: ({ history }) => {
       const days = completedOnly(history)
         .map((c) => c.day)
@@ -199,8 +155,6 @@ const RULES: readonly AchievementRule[] = [
   {
     id: 'introductions',
     icon: '🪪',
-    title: 'Pleased to meet you',
-    description: 'Fill in your reader profile.',
     earned: ({ profile }) => profile !== null && profile.displayName.trim().length > 0,
   },
 ];

@@ -24,6 +24,14 @@ reference, `basic` layout, with `@rgoussu.dev/planks` for layout. Read `README.m
   lamplight). Parchment for pages, leather and gilt for what matters, wood for the shelf.
   Keep new UI in that vocabulary.
 - **Escape by construction.** User text reaches the DOM through `textContent` only.
+- **Every word in two languages.** The domain speaks in codes (field problems, achievement
+  ids, ranks); the UI words them from the phrasebooks in `user-side/elements/src/i18n/` —
+  `en.ts` is the reference, `fr.ts` must match it key for key (the compiler checks). Never
+  write user-facing English into an element or `index.html` without a phrasebook key. The
+  only words the domain says itself are the reminder notification (`domain/core/src/wording.ts`),
+  because the service worker shows it with no page open. French uses its own typography
+  (fine no-break space before ? ! ; %, no-break space before : and inside « »), *vous*, and
+  never genders the reader.
 
 ## Testing
 

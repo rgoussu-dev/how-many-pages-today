@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Default implementations of the ubiquitous ports: the system clock and Math.random.",
+  "description": "Default implementations of the ubiquitous ports: the system clock, Math.random and the device's languages.",
   "exports": { ".": "./src/index.ts" },
   "dependencies": { "@hmpt/kernel": "0.1.0" }
 }

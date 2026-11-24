@@ -1,5 +1,5 @@
 import { err, ok, type Result } from '@hmpt/kernel';
-import { PAGES_READ_LIMITS, type FieldError, type ProfileInput } from '@hmpt/domain-contract';
+import { BOOK_PAGE_LIMITS, PAGES_READ_LIMITS, type FieldError, type ProfileInput } from '@hmpt/domain-contract';
 
 const LIMITS = { displayName: 40, avatar: 16, favouriteGenre: 60 } as const;
 export const TITLE_LIMIT = 120;
@@ -11,19 +11,18 @@ export function validateProfile(input: ProfileInput): Result<ProfileInput, Field
     favouriteGenre: input.favouriteGenre.trim(),
   };
   const errors: FieldError[] = [];
-  if (cleaned.displayName.length === 0) errors.push({ field: 'displayName', message: 'Tell us what to call you.' });
-  if (cleaned.avatar.length === 0) errors.push({ field: 'avatar', message: 'Pick an avatar.' });
+  if (cleaned.displayName.length === 0) errors.push({ field: 'displayName', problem: 'required' });
+  if (cleaned.avatar.length === 0) errors.push({ field: 'avatar', problem: 'required' });
   for (const field of Object.keys(LIMITS) as (keyof typeof LIMITS)[]) {
-    if (cleaned[field].length > LIMITS[field])
-      errors.push({ field, message: `Keep it under ${LIMITS[field]} characters.` });
+    if (cleaned[field].length > LIMITS[field]) errors.push({ field, problem: 'too-long', max: LIMITS[field] });
   }
   return errors.length === 0 ? ok(cleaned) : err(errors);
 }
 
 export function validateTitle(title: string): Result<string, FieldError[]> {
   const cleaned = title.trim().replace(/\s+/g, ' ');
-  if (cleaned.length === 0) return err([{ field: 'title', message: 'Which book is it?' }]);
-  if (cleaned.length > TITLE_LIMIT) return err([{ field: 'title', message: `Keep it under ${TITLE_LIMIT} characters.` }]);
+  if (cleaned.length === 0) return err([{ field: 'title', problem: 'required' }]);
+  if (cleaned.length > TITLE_LIMIT) return err([{ field: 'title', problem: 'too-long', max: TITLE_LIMIT }]);
   return ok(cleaned);
 }
 
@@ -35,7 +34,16 @@ export function validateOptionalTitle(title: string | undefined): Result<string 
 
 export function validatePagesRead(pages: number, field = 'pagesRead'): Result<number, FieldError[]> {
   const { lowest, highest } = PAGES_READ_LIMITS;
-  if (!Number.isInteger(pages)) return err([{ field, message: 'Use a whole number of pages.' }]);
-  if (pages < lowest || pages > highest) return err([{ field, message: `Between ${lowest} and ${highest} pages.` }]);
+  if (!Number.isInteger(pages)) return err([{ field, problem: 'not-whole' }]);
+  if (pages < lowest || pages > highest) return err([{ field, problem: 'out-of-range', min: lowest, max: highest }]);
   return ok(pages);
+}
+
+/** A page of a book — where a bookmark sits (0: not yet begun), or how many pages it has (from 1). */
+export function validateBookPage(page: number, field: 'bookmark' | 'totalPages'): Result<number, FieldError[]> {
+  const lowest = field === 'bookmark' ? 0 : 1;
+  const { highest } = BOOK_PAGE_LIMITS;
+  if (!Number.isInteger(page)) return err([{ field, problem: 'not-whole' }]);
+  if (page < lowest || page > highest) return err([{ field, problem: 'out-of-range', min: lowest, max: highest }]);
+  return ok(page);
 }

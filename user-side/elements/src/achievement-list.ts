@@ -1,6 +1,5 @@
 import type { ReadingSnapshot } from '@hmpt/domain-contract';
 import { readingContexts } from './contexts';
-import { shortDate } from './format';
 import { PortBoundElement } from './port-bound';
 
 /** `<hmpt-achievement-list>` — every badge, earned ones in colour. */
@@ -10,7 +9,7 @@ export class AchievementList extends PortBoundElement {
       <section class="achievements" aria-labelledby="achievements-title">
         <stack-pk space="var(--s0)">
           <div class="achievements-head">
-            <h2 id="achievements-title">Achievements</h2>
+            <h2 id="achievements-title" data-t="achievements.heading"></h2>
             <span class="chip" data-count>0 / 0</span>
           </div>
           <grid-pk min="9.5rem" space="var(--s-1)" data-list role="list"></grid-pk>
@@ -23,9 +22,11 @@ export class AchievementList extends PortBoundElement {
     return [view.subscribe((snapshot) => this.#render(snapshot))];
   }
 
-  #render({ achievements }: ReadingSnapshot): void {
+  #render({ achievements, language }: ReadingSnapshot): void {
+    const words = this.speak(language);
+    const { t } = words;
     const earned = achievements.filter((a) => a.unlockedOn).length;
-    this.$('[data-count]').textContent = `${earned} / ${achievements.length}`;
+    this.$('[data-count]').textContent = t.achievements.tally(earned, achievements.length);
     const ordered = [...achievements].sort((a, b) => Number(!a.unlockedOn) - Number(!b.unlockedOn));
     const tiles = ordered.map((achievement) => {
       const tile = document.createElement('div');
@@ -36,14 +37,17 @@ export class AchievementList extends PortBoundElement {
       icon.className = 'badge-icon';
       icon.setAttribute('aria-hidden', 'true');
       icon.textContent = achievement.unlockedOn ? achievement.icon : '🔒';
+      const wording = t.achievements.list[achievement.id];
       const title = document.createElement('strong');
-      title.textContent = achievement.title;
+      title.textContent = wording.title;
       const description = document.createElement('span');
       description.className = 'badge-text';
-      description.textContent = achievement.description;
+      description.textContent = wording.description;
       const when = document.createElement('span');
       when.className = 'badge-when';
-      when.textContent = achievement.unlockedOn ? `Earned ${shortDate(achievement.unlockedOn)}` : 'Locked';
+      when.textContent = achievement.unlockedOn
+        ? t.achievements.earned(words.shortDate(achievement.unlockedOn))
+        : t.achievements.locked;
       tile.append(icon, title, description, when);
       return tile;
     });

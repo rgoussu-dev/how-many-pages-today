@@ -204,6 +204,48 @@ hmpt-today-card .tome-check input {
   accent-color: var(--leather);
 }
 
+/* The bookmark: a silk ribbon, and the page today's reading leads to. */
+hmpt-today-card .tome-until {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 1.15rem;
+  color: var(--ink-soft);
+}
+
+hmpt-today-card [data-until] {
+  margin-block-start: calc(var(--s-2) * -0.5);
+}
+
+hmpt-today-card .tome-place {
+  justify-self: center;
+  font-style: italic;
+  font-size: 0.95rem;
+}
+
+hmpt-today-card .tome-last-page {
+  display: grid;
+  gap: var(--s-2);
+  justify-items: center;
+  padding: 0.6rem 0.8rem;
+  text-align: center;
+  font-style: italic;
+  border-left: 3px solid var(--wax);
+  background: color-mix(in srgb, var(--surface-sunk) 70%, transparent);
+}
+
+hmpt-today-card .tome-back-bookmark {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-family: var(--font-caps);
+  letter-spacing: 0.04em;
+  color: color-mix(in srgb, var(--gilt-light) 85%, #fff);
+}
+
 /* — streak & ledger — */
 
 hmpt-streak-summary .summary-streak {
@@ -520,6 +562,33 @@ hmpt-bookshelf .nightstand-title {
   font-family: var(--font-display);
   font-size: 1.45rem;
   line-height: 1.15;
+}
+
+hmpt-bookshelf .nightstand-bookmark {
+  display: grid;
+  gap: 0.35rem;
+  justify-self: stretch;
+}
+
+hmpt-bookshelf .nightstand-page {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-style: italic;
+  color: var(--ink-soft);
+}
+
+hmpt-bookshelf .nightstand-bookmark .meter {
+  max-width: 16rem;
+}
+
+hmpt-bookshelf .nightstand-end {
+  font-family: var(--font-caps);
+  color: var(--wax);
+}
+
+hmpt-bookshelf .nightstand-move {
+  justify-self: stretch;
 }
 
 hmpt-bookshelf .shelf-start {
@@ -2497,4 +2566,80 @@ hmpt-today-card[data-closing='reopen'] :is(.tome, .tome-cover, .tome-inner, .tom
 hmpt-today-card:is([data-closing='again'], [data-closing='reopen']) .tome-back-seal,
 hmpt-today-card:is([data-closing='again'], [data-closing='reopen']) .tome-back-face > :not(.tome-back-seal) {
   animation: none;
+}
+
+/* — the bookmark ribbon: a strip of red silk with a swallowtail — */
+
+.ribbon {
+  display: inline-block;
+  flex: none;
+  width: 0.6rem;
+  height: 1.15rem;
+  background: linear-gradient(90deg, #5d100c, var(--wax) 35%, #b23a30 55%, var(--wax) 75%, #5d100c);
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 76%, 0 100%);
+  filter: drop-shadow(0 1px 0 rgb(0 0 0 / 0.25));
+}
+
+/* A book's page and its length, side by side where they fit. */
+:is(hmpt-bookshelf, hmpt-welcome) .book-pages {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+  gap: var(--s-1);
+  justify-self: stretch;
+}
+
+/* — choices: a row of labels, the chosen one bound in leather — */
+
+:is(hmpt-language-form, hmpt-welcome) .choices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-2);
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+:is(hmpt-language-form, hmpt-welcome) .choice input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+:is(hmpt-language-form, hmpt-welcome) .choice span {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.75rem;
+  padding: 0.3em 1em;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface-sunk);
+  color: var(--ink-soft);
+  font-family: var(--font-caps);
+  font-size: 1.05rem;
+  cursor: pointer;
+}
+
+:is(hmpt-language-form, hmpt-welcome) .choice input:checked + span {
+  border-color: var(--leather-deep);
+  color: var(--gilt-light);
+  background:
+    var(--grain-leather),
+    linear-gradient(180deg, var(--leather-light), var(--leather) 60%, var(--leather-deep));
+  box-shadow:
+    inset 0 0 0 2px var(--leather),
+    inset 0 0 0 3px color-mix(in srgb, var(--gilt) 75%, transparent);
+}
+
+:is(hmpt-language-form, hmpt-welcome) .choice input:focus-visible + span {
+  box-shadow: var(--focus);
+}
+
+hmpt-welcome .welcome-languages {
+  justify-content: center;
+  margin-block-start: var(--s-1);
+}
+
+hmpt-welcome .welcome-languages .choice span {
+  min-height: 2.4rem;
+  font-size: 0.95rem;
 }

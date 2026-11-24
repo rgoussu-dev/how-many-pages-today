@@ -1,4 +1,5 @@
 import type {
+  BookshelfPort,
   ChallengeError,
   DailyChallenge,
   DailyChallengePort,
@@ -6,62 +7,19 @@ import type {
   ReadingView,
 } from '@hmpt/domain-contract';
 import { readingContexts } from './contexts';
-import { addDays, longDate, plural } from './format';
+import { addDays } from './format';
+import { deviceSpeech, speech, type Messages, type Speech } from './i18n';
 import { PortBoundElement } from './port-bound';
 
-const HINTS_PENDING = [
-  'Find a cosy corner. The pages will not read themselves.',
-  'A blanket, a cup of tea, and these pages.',
-  'The armchair has been waiting all day.',
-  'Phone down, book up.',
-  'Light the lamp; the rest will follow.',
-  'Every page counts. These ones especially.',
-];
-
-const ERRORS: Record<ChallengeError, string> = {
-  'already-completed': 'Today is already sealed.',
-  'not-completed': 'Log your reading first.',
-  'invalid-pages': 'A whole number of pages, please — at least one.',
-  'invalid-title': 'That title is a little long.',
-};
-
 /** What was read, in words: the goal, beyond it, short of it, or a book finished. */
-function readingSummary(day: DailyChallenge): string {
+function readingSummary(day: DailyChallenge, t: Messages): string {
   const read = day.pagesRead ?? day.pages;
   const goal = day.pages;
-  if (day.finishedBook) return `${plural(read, 'page')} — and a book finished. Bravo.`;
-  if (read > goal) return `${read} of ${goal} pages — ${plural(read - goal, 'page')} beyond the goal.`;
-  if (read < goal) return `${read} of ${goal} pages. Every page counts.`;
-  return `${plural(read, 'page')}, exactly as dealt.`;
+  if (day.finishedBook) return t.card.summary.book(read);
+  if (read > goal) return t.card.summary.beyond(read, goal);
+  if (read < goal) return t.card.summary.short(read, goal);
+  return t.card.summary.exact(read);
 }
-
-const NOTES = {
-  met: [
-    'Well read. The day is yours.',
-    'Every page accounted for. Splendid.',
-    'A quiet triumph. The lamp may rest.',
-    'That is how a habit is bound: one page at a time.',
-    'The librarian nods, approvingly, over the spectacles.',
-    'Another day written into the ledger. Bravo.',
-  ],
-  beyond: [
-    'Beyond the bookmark — the story simply would not let you go.',
-    'Just one more chapter, was it? Splendid.',
-    'You read past the goal. A very fine sign.',
-    'More than was asked. The shelves are impressed.',
-  ],
-  short: [
-    'Every page counts — and these did.',
-    'A short chapter is still a chapter. The candle stays lit.',
-    'Some days are slim volumes. Tomorrow is a new page.',
-    'A little reading is still reading. Well done for coming.',
-  ],
-  book: [
-    'The last page, turned. What a thing.',
-    'The end — and on to the next beginning.',
-    'Another book for the shelf. The librarian is delighted.',
-  ],
-} as const;
 
 const hashOf = (text: string): number => {
   let h = 2166136261;
@@ -70,20 +28,20 @@ const hashOf = (text: string): number => {
 };
 
 /** A warm note for the back cover — chosen by chance, but the same all day. */
-function backCoverNote(day: DailyChallenge, bookTitle: string | null): string {
+function backCoverNote(day: DailyChallenge, bookTitle: string | null, t: Messages): string {
   const read = day.pagesRead ?? day.pages;
   const kind = day.finishedBook ? 'book' : read > day.pages ? 'beyond' : day.goalMet === false ? 'short' : 'met';
-  const pool = NOTES[kind];
-  const note = pool[hashOf(`${day.day}:${kind}`) % pool.length] ?? pool[0];
+  const pool = t.card.notes[kind];
+  const note = pool[hashOf(`${day.day}:${kind}`) % pool.length] ?? pool[0] ?? '';
   // The summary beneath already says how many pages: the note only says how it felt.
-  return kind === 'book' && bookTitle ? `“${bookTitle}” — finished. ${note}` : note;
+  return kind === 'book' && bookTitle ? t.card.bookFinishedNote(bookTitle, note) : note;
 }
 
-function backCoverExtra(streak: number, achievements: ReadingSnapshot['achievements'], day: string): string {
-  const earned = achievements.filter((a) => a.unlockedOn === day).map((a) => a.title);
-  if (earned.length === 1) return `New bookplate: ${earned[0]}`;
-  if (earned.length > 1) return `${earned.length} new bookplates today`;
-  return streak > 1 ? `${streak} days in a row` : '';
+function backCoverExtra(streak: number, achievements: ReadingSnapshot['achievements'], day: string, t: Messages): string {
+  const earned = achievements.filter((a) => a.unlockedOn === day);
+  if (earned.length === 1) return t.card.newBookplate(t.achievements.list[earned[0]!.id].title);
+  if (earned.length > 1) return t.card.newBookplates(earned.length);
+  return streak > 1 ? t.card.inARow(streak) : '';
 }
 
 /**
@@ -101,9 +59,13 @@ function backCoverExtra(streak: number, achievements: ReadingSnapshot['achieveme
  */
 export class TodayCard extends PortBoundElement {
   #challenge?: DailyChallengePort;
+  #shelf?: BookshelfPort;
+  #view?: ReadingView;
   #busy = false;
   /** The day whose card is waiting, closed, to be opened. */
   #closedDay: string | null = null;
+  /** The day and language the closed book was laid out in. */
+  #laidOut = '';
   #playing = false;
   #turning: ReturnType<typeof setTimeout> | undefined;
   /** The last day and status rendered, to tell a fresh validation from a reload. */
@@ -120,48 +82,55 @@ export class TodayCard extends PortBoundElement {
           <i class="tome-edge tome-edge-fore"></i><i class="tome-edge tome-edge-head"></i><i class="tome-edge tome-edge-tail"></i>
         </div>
         <div class="tome-inner">
-          <p class="tome-date" data-date>Today</p>
+          <p class="tome-date" data-date></p>
           <div class="tome-plate">
             <frame-pk ratio="4:3"><hmpt-ds-scene></hmpt-ds-scene></frame-pk>
           </div>
           <p class="tome-caption" data-caption></p>
           <p class="tome-pages" id="today-pages">
             <span class="tome-number" data-pages>…</span>
-            <span class="tome-unit" data-unit>pages</span>
+            <span class="tome-unit" data-unit></span>
           </p>
+          <p class="tome-until" data-until hidden><span class="ribbon" aria-hidden="true"></span><span data-until-text></span></p>
           <p class="tome-hint" data-hint></p>
 
           <div class="tome-actions" data-pending>
-            <button type="button" class="btn btn-primary btn-block" data-complete>I read them</button>
+            <button type="button" class="btn btn-primary btn-block" data-complete></button>
+            <a class="tome-place" href="#progress" data-place hidden data-t="card.placeBookmark"></a>
             <details class="tome-log" data-log>
-              <summary>Read more, or fewer?</summary>
+              <summary data-t="card.readMore"></summary>
               <form novalidate data-log-form>
-                <label class="field"><span>Pages actually read</span>
+                <label class="field"><span data-t="card.pagesRead"></span>
                   <input name="pagesRead" type="number" inputmode="numeric" min="1" max="2000" step="1" required>
                 </label>
-                <label class="tome-check"><input type="checkbox" name="finishedBook"> <span>I finished my book</span></label>
-                <label class="field" data-title-field hidden><span>Which book? <em>(optional)</em></span>
-                  <input name="bookTitle" maxlength="120" autocomplete="off" placeholder="Title">
+                <label class="tome-check"><input type="checkbox" name="finishedBook"> <span data-t="card.finishedBook"></span></label>
+                <label class="field" data-title-field hidden><span><span data-t="card.whichBook"></span> <em data-t="common.optional"></em></span>
+                  <input name="bookTitle" maxlength="120" autocomplete="off">
                 </label>
                 <p class="field-error" data-error="log" role="alert"></p>
-                <button class="btn btn-primary" type="submit">Log my reading</button>
+                <button class="btn btn-primary" type="submit" data-t="card.logReading"></button>
               </form>
             </details>
           </div>
 
           <div class="tome-actions" data-sealed hidden>
             <p class="tome-read" data-read-page></p>
+            <p class="tome-until" data-bookmark-line hidden><span class="ribbon" aria-hidden="true"></span><span data-bookmark-text></span></p>
+            <div class="tome-last-page" data-last-page hidden>
+              <p data-last-page-text></p>
+              <button type="button" class="btn btn-primary" data-shelve data-t="card.shelveIt"></button>
+            </div>
             <details class="tome-log">
-              <summary>Read some more today?</summary>
+              <summary data-t="card.readSomeMore"></summary>
               <form novalidate data-more-form class="tome-more">
-                <label class="field"><span>Pages to add</span>
+                <label class="field"><span data-t="card.pagesToAdd"></span>
                   <input name="more" type="number" inputmode="numeric" min="1" max="2000" step="1" required>
                 </label>
-                <button class="btn btn-primary" type="submit">Add pages</button>
+                <button class="btn btn-primary" type="submit" data-t="card.addPages"></button>
                 <p class="field-error" data-error="more" role="alert"></p>
               </form>
             </details>
-            <button type="button" class="btn btn-quiet" data-close-book>Close the book</button>
+            <button type="button" class="btn btn-quiet" data-close-book data-t="card.closeBook"></button>
           </div>
           <p class="tome-folio" aria-hidden="true" data-folio></p>
         </div>
@@ -171,12 +140,12 @@ export class TodayCard extends PortBoundElement {
           <div class="tome-leaf"><div class="tome-leaf-front tome-leaf-ruled"></div><div class="tome-leaf-back"></div></div>
           <div class="tome-leaf"><div class="tome-leaf-front tome-leaf-ruled"></div><div class="tome-leaf-back"></div></div>
         </div>
-        <div class="tome-cover" data-open-cover role="button" tabindex="0" aria-label="Open today’s card">
+        <div class="tome-cover" data-open-cover role="button" tabindex="0" data-t-label="card.openCover">
           <span class="tome-cover-face">
-            <span class="tome-cover-eyebrow">Today’s card</span>
+            <span class="tome-cover-eyebrow" data-t="card.coverEyebrow"></span>
             <svg class="tome-cover-emblem" viewBox="0 0 64 44" aria-hidden="true"><path d="M32 8C26 4 18 3 6 4v32c12-1 20 0 26 4 6-4 14-5 26-4V4C46 3 38 4 32 8zM32 8v32M11 12c6-.5 11 .5 15 2.5M11 18c6-.5 11 .5 15 2.5M11 24c6-.5 11 .5 15 2.5M38 14.5c4-2 9-3 15-2.5M38 20.5c4-2 9-3 15-2.5M38 26.5c4-2 9-3 15-2.5"/></svg>
             <span class="tome-cover-date" data-cover-date></span>
-            <span class="tome-cover-hint">Tap to open</span>
+            <span class="tome-cover-hint" data-t="card.tapToOpen"></span>
           </span>
           <!-- The book falls open from the middle: this half carries the day before yesterday's page. -->
           <div class="tome-cover-back" aria-hidden="true" data-cover-back></div>
@@ -185,13 +154,14 @@ export class TodayCard extends PortBoundElement {
         </div>
         <div class="tome-back" data-back>
           <span class="tome-board" aria-hidden="true"><i class="tome-board-under"></i><i class="tome-board-fore"></i><i class="tome-board-head"></i><i class="tome-board-tail"></i><i class="tome-board-arc tome-board-arc-0"></i><i class="tome-board-arc tome-board-arc-1"></i><i class="tome-board-arc tome-board-arc-2"></i><i class="tome-board-arc tome-board-arc-3"></i><i class="tome-board-arc tome-board-arc-4"></i><i class="tome-board-arc tome-board-arc-5"></i></span>
-          <div class="tome-back-face" role="group" aria-label="Today, read and sealed">
+          <div class="tome-back-face" role="group" data-t-label="card.sealedGroup">
             <span class="tome-back-seal" aria-hidden="true"><span>✓</span></span>
-            <p class="tome-back-eyebrow tome-done" role="status">Read, and sealed.</p>
+            <p class="tome-back-eyebrow tome-done" role="status" data-t="card.sealed"></p>
             <p class="tome-back-message" data-message></p>
             <p class="tome-back-summary" data-read></p>
             <p class="tome-back-extra" data-extra></p>
-            <button type="button" class="tome-back-open" data-open-book>Open the book</button>
+            <p class="tome-back-bookmark" data-back-bookmark hidden><span class="ribbon" aria-hidden="true"></span><span data-back-bookmark-text></span></p>
+            <button type="button" class="tome-back-open" data-open-book data-t="card.openBook"></button>
           </div>
         </div>
       </article>
@@ -200,6 +170,7 @@ export class TodayCard extends PortBoundElement {
 
   protected override setup(): void {
     this.$('[data-complete]').addEventListener('click', () => void this.#run((port) => port.complete()));
+    this.$('[data-shelve]').addEventListener('click', () => void this.#shelf?.finishBook());
     const cover = this.$('[data-open-cover]');
     cover.addEventListener('click', () => void this.#open());
     cover.addEventListener('keydown', (event) => {
@@ -231,7 +202,7 @@ export class TodayCard extends PortBoundElement {
       const error = await this.#run((port) =>
         port.complete({ pagesRead, finishedBook: finished.checked, ...(bookTitle.trim() ? { bookTitle } : {}) }),
       );
-      this.$('[data-error="log"]').textContent = error ? ERRORS[error] : '';
+      this.$('[data-error="log"]').textContent = error ? this.#words().t.card.errors[error] : '';
     });
 
     const more = this.$<HTMLFormElement>('[data-more-form]');
@@ -239,7 +210,7 @@ export class TodayCard extends PortBoundElement {
       event.preventDefault();
       const input = more.elements.namedItem('more') as HTMLInputElement;
       const error = await this.#run((port) => port.addPages(input.valueAsNumber));
-      this.$('[data-error="more"]').textContent = error ? ERRORS[error] : '';
+      this.$('[data-error="more"]').textContent = error ? this.#words().t.card.errors[error] : '';
       if (!error) {
         input.value = '';
         this.$<HTMLDetailsElement>('[data-sealed] details').open = false;
@@ -249,8 +220,14 @@ export class TodayCard extends PortBoundElement {
 
   protected connect() {
     this.#challenge = this.request(readingContexts.challenge);
-    const view: ReadingView = this.request(readingContexts.view);
-    return [view.subscribe((snapshot) => this.#render(snapshot))];
+    this.#shelf = this.request(readingContexts.bookshelf);
+    this.#view = this.request(readingContexts.view);
+    return [this.#view.subscribe((snapshot) => this.#render(snapshot))];
+  }
+
+  #words(): Speech {
+    const language = this.#view?.current()?.language;
+    return language ? speech(language) : deviceSpeech();
   }
 
   /** Runs one command at a time; returns the error, if any. */
@@ -279,16 +256,19 @@ export class TodayCard extends PortBoundElement {
   // — opening: closed → the open book, the two days before → today's page ——————————————
 
   /** A card not yet opened waits closed, its spread laid out beneath the cover. */
-  #arrange({ today, history, profile }: ReadingSnapshot): void {
+  #arrange({ today, history, profile }: ReadingSnapshot, words: Speech): void {
     const waiting = today.unveiledAt === undefined && today.status === 'pending';
     if (!waiting) {
       if (!this.#playing) this.removeAttribute('data-reveal');
       this.#closedDay = null;
+      this.#laidOut = '';
       return;
     }
-    if (this.#closedDay === today.day) return;
+    const layout = `${today.day}|${words.locale}`;
+    if (this.#laidOut === layout) return;
+    this.#laidOut = layout;
     this.#closedDay = today.day;
-    this.$('[data-cover-date]').textContent = longDate(today.day);
+    this.$('[data-cover-date]').textContent = words.longDate(today.day);
     // The spread the camera pulls back to: the two days before today — or, in a brand-new
     // book, its front matter.
     const byDay = new Map(history.map((c) => [c.day, c]));
@@ -296,10 +276,12 @@ export class TodayCard extends PortBoundElement {
     const yesterday = addDays(today.day, -1);
     const fresh = !history.some((c) => c.day < today.day);
     this.$('[data-cover-back]').replaceChildren(
-      fresh ? frontMatter('ex-libris', profile?.displayName ?? null) : pastPage(before, byDay.get(before)),
+      fresh ? frontMatter('ex-libris', profile?.displayName ?? null, words) : pastPage(before, byDay.get(before), words),
     );
-    this.$('[data-leaf]').replaceChildren(fresh ? frontMatter('chapter-one', null) : pastPage(yesterday, byDay.get(yesterday)));
-    this.setAttribute('data-reveal', 'closed');
+    this.$('[data-leaf]').replaceChildren(
+      fresh ? frontMatter('chapter-one', null, words) : pastPage(yesterday, byDay.get(yesterday), words),
+    );
+    if (!this.#playing) this.setAttribute('data-reveal', 'closed');
     this.#syncInert();
   }
 
@@ -327,6 +309,7 @@ export class TodayCard extends PortBoundElement {
     this.removeAttribute('data-reveal');
     this.#playing = false;
     this.#closedDay = null;
+    this.#laidOut = '';
     this.#syncInert();
     await this.#challenge?.unveil();
   }
@@ -362,48 +345,67 @@ export class TodayCard extends PortBoundElement {
   }
 
   #render(snapshot: ReadingSnapshot): void {
-    const { today, stats, shelf, achievements } = snapshot;
-    this.#arrange(snapshot);
+    const { today, stats, shelf, achievements, readTo, language } = snapshot;
+    const words = this.speak(language);
+    const { t } = words;
+    this.#arrange(snapshot, words);
     const done = today.status === 'completed';
     this.toggleAttribute('data-done', done);
     const plate = this.$('.tome-inner hmpt-ds-scene');
+    plate.setAttribute('lang', words.language);
     plate.setAttribute('seed', String(today.artSeed));
     // The plate's caption, as in an illustrated book: the scene's own description.
     this.$('[data-caption]').textContent = plate.getAttribute('aria-label') ?? '';
-    this.$('[data-date]').textContent = longDate(today.day);
+    this.$('[data-date]').textContent = words.longDate(today.day);
     if (!this.#playing) {
       this.$('[data-pages]').textContent = String(today.pages);
       this.$('[data-folio]').textContent = `— ${today.pages} —`;
     }
-    this.$('[data-unit]').textContent = today.pages === 1 ? 'page' : 'pages';
+    this.$('[data-unit]').textContent = t.card.unit(today.pages);
     this.$('[data-hint]').textContent = done
-      ? stats.currentStreak > 1
-        ? `${plural(stats.currentStreak, 'day')} in a row. A fresh card awaits tomorrow.`
-        : 'A fresh card awaits tomorrow.'
-      : (HINTS_PENDING[today.artSeed % HINTS_PENDING.length] ?? '');
+      ? t.card.hintDone(stats.currentStreak)
+      : (t.card.hints[today.artSeed % t.card.hints.length] ?? '');
+
+    // The bookmark: the page today's reading leads to, and — once read — where it now sits.
+    const book = shelf.current;
+    const total = book?.totalPages ?? null;
+    this.$('[data-until]').hidden = readTo === null;
+    if (readTo !== null) {
+      this.$('[data-until-text]').textContent = readTo === total ? t.card.toTheEnd(readTo) : t.card.upTo(readTo);
+    }
+    this.$('[data-place]').hidden = done || !book || book.bookmark !== undefined;
+    const marked = book?.bookmark !== undefined && book.bookmark > 0;
+    const bookmarkText = marked ? t.card.bookmarkAt(book.bookmark!, total) : '';
+    this.$('[data-bookmark-line]').hidden = !done || !marked;
+    this.$('[data-bookmark-text]').textContent = bookmarkText;
+    this.$('[data-back-bookmark]').hidden = !done || !marked;
+    this.$('[data-back-bookmark-text]').textContent = bookmarkText;
+    const atTheEnd = done && book !== null && marked && total !== null && book.bookmark! >= total;
+    this.$('[data-last-page]').hidden = !atTheEnd;
+    if (atTheEnd) this.$('[data-last-page-text]').textContent = t.card.lastPage(book.title);
 
     this.$('[data-pending]').hidden = done;
     this.$('[data-sealed]').hidden = !done;
     const justSealed = done && this.#seen?.day === today.day && this.#seen.done === false;
     this.#seen = { day: today.day, done };
     if (done) {
-      const summary = readingSummary(today);
+      const summary = readingSummary(today, t);
       this.$('[data-read]').textContent = summary;
       this.$('[data-read-page]').textContent = summary;
-      this.$('[data-message]').textContent = backCoverNote(today, shelf.finished.at(-1)?.title ?? null);
-      this.$('[data-extra]').textContent = backCoverExtra(stats.currentStreak, achievements, today.day);
+      this.$('[data-message]').textContent = backCoverNote(today, shelf.finished.at(-1)?.title ?? null, t);
+      this.$('[data-extra]').textContent = backCoverExtra(stats.currentStreak, achievements, today.day, t);
       if (justSealed) this.#closeBook();
       this.#syncInert();
       return;
     }
     this.removeAttribute('data-peek');
     this.#syncInert();
-    this.$('[data-complete]').textContent = `I read ${plural(today.pages, 'page')}`;
+    this.$('[data-complete]').textContent = t.card.readThem(today.pages);
     const log = this.$<HTMLFormElement>('[data-log-form]');
     const pagesInput = log.elements.namedItem('pagesRead') as HTMLInputElement;
     if (!pagesInput.value) pagesInput.value = String(today.pages);
     const titleInput = log.elements.namedItem('bookTitle') as HTMLInputElement;
-    titleInput.placeholder = shelf.current ? shelf.current.title : 'Title';
+    titleInput.placeholder = book ? book.title : t.common.title;
   }
 }
 
@@ -436,37 +438,43 @@ const el = <K extends keyof HTMLElementTagNameMap>(tag: K, className: string, te
 };
 
 /** A past day's page, as glimpsed in the open book: its date, its plate, what was read. */
-function pastPage(day: string, card: DailyChallenge | undefined): HTMLElement {
+function pastPage(day: string, card: DailyChallenge | undefined, words: Speech): HTMLElement {
+  const { t } = words;
   const page = el('div', 'past-page');
-  page.append(el('p', 'past-head', longDate(day)));
+  page.append(el('p', 'past-head', words.longDate(day)));
   const plate = el('div', 'past-plate');
   const frame = document.createElement('frame-pk');
   frame.setAttribute('ratio', '4:3');
   const scene = document.createElement('hmpt-ds-scene');
+  scene.setAttribute('lang', words.language);
   scene.setAttribute('seed', String(card?.artSeed ?? hashOf(day)));
   frame.append(scene);
   plate.append(frame);
   page.append(plate);
   if (card?.status === 'completed') {
     const read = card.pagesRead ?? card.pages;
-    page.append(el('p', 'past-number', String(read)), el('p', 'past-note', `${plural(read, 'page')} read · sealed`));
+    page.append(el('p', 'past-number', String(read)), el('p', 'past-note', t.card.past.read(read)));
   } else if (card) {
-    page.append(el('p', 'past-number past-faint', String(card.pages)), el('p', 'past-note', 'pages dealt, left unread'));
+    page.append(el('p', 'past-number past-faint', String(card.pages)), el('p', 'past-note', t.card.past.unread));
   } else {
-    page.append(el('p', 'past-number past-faint', '—'), el('p', 'past-note', 'No card that day'));
+    page.append(el('p', 'past-number past-faint', '—'), el('p', 'past-note', t.card.past.noCard));
   }
   return page;
 }
 
 /** The front matter of a brand-new book. */
-function frontMatter(kind: 'ex-libris' | 'chapter-one', name: string | null): HTMLElement {
+function frontMatter(kind: 'ex-libris' | 'chapter-one', name: string | null, { t }: Speech): HTMLElement {
   const page = el('div', `past-page past-${kind}`);
   if (kind === 'ex-libris') {
     const plate = el('div', 'past-bookplate');
-    plate.append(el('p', 'past-bookplate-title', 'Ex libris'), el('p', 'past-bookplate-name', name ?? 'A new reader'));
+    plate.append(el('p', 'past-bookplate-title', t.card.past.exLibris), el('p', 'past-bookplate-name', name ?? t.card.past.newReader));
     page.append(plate);
   } else {
-    page.append(el('p', 'past-chapter-eyebrow', 'Chapter'), el('p', 'past-chapter-title', 'One'), el('p', 'past-ornament', '❦'));
+    page.append(
+      el('p', 'past-chapter-eyebrow', t.card.past.chapter),
+      el('p', 'past-chapter-title', t.card.past.one),
+      el('p', 'past-ornament', '❦'),
+    );
   }
   return page;
 }

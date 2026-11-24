@@ -19,30 +19,23 @@
     <!--
       The shell owns the templates and pages: it composes the module's port-bound
       elements with planks layout primitives. The elements themselves never know where
-      they are mounted.
+      they are mounted. Its own words are marked `data-t…` and put into the reader's
+      language by localize-shell.ts; the English here is what shows before the app boots.
     -->
     <div class="app" data-booting>
       <main id="main" class="app-main">
         <center-pk maxWidth="34rem" gutters="var(--s0)">
-          <section data-route="today" aria-label="Today">
+          <section data-route="today" aria-label="Today" data-t-label="shell.regions.today">
             <stack-pk space="var(--s1)">
               <hmpt-greeting></hmpt-greeting>
-              <hmpt-today-card
-                data-tour="1"
-                data-tour-title="Your daily card"
-                data-tour-text="Each day I lay a book on the table, closed. Tap it and it opens on the day’s page: a picture, and a number of pages. Read them, press the button, and I close the book and seal the day. Read more, fewer — or finished your book? Tell me under “Read more, or fewer?”. Every page counts."
-              ></hmpt-today-card>
-              <hmpt-streak-summary
-                data-tour="2"
-                data-tour-title="Keep the candle lit"
-                data-tour-text="Read a little every day and this candle keeps burning. Your pages, your books and your rank as a reader are kept here too."
-              ></hmpt-streak-summary>
+              <hmpt-today-card data-tour="1" data-tour-stop="card"></hmpt-today-card>
+              <hmpt-streak-summary data-tour="2" data-tour-stop="candle"></hmpt-streak-summary>
             </stack-pk>
           </section>
 
-          <section data-route="progress" aria-label="Progress" hidden>
+          <section data-route="progress" aria-label="Progress" data-t-label="shell.regions.progress" hidden>
             <stack-pk space="var(--s1)">
-              <h1>Your library</h1>
+              <h1 data-t="shell.headings.progress">Your library</h1>
               <hmpt-streak-summary></hmpt-streak-summary>
               <hmpt-bookshelf></hmpt-bookshelf>
               <hmpt-history-calendar></hmpt-history-calendar>
@@ -50,61 +43,44 @@
             </stack-pk>
           </section>
 
-          <section data-route="overview" aria-label="Overview" hidden>
+          <section data-route="overview" aria-label="Overview" data-t-label="shell.regions.overview" hidden>
             <stack-pk space="var(--s1)">
-              <h1>Your reading, looked back on</h1>
+              <h1 data-t="shell.headings.overview">Your reading, looked back on</h1>
               <hmpt-reading-overview></hmpt-reading-overview>
             </stack-pk>
           </section>
 
-          <section data-route="profile" aria-label="Profile and settings" hidden>
+          <section data-route="profile" aria-label="Profile and settings" data-t-label="shell.regions.profile" hidden>
             <stack-pk space="var(--s1)">
-              <h1>Your reading room</h1>
+              <h1 data-t="shell.headings.profile">Your reading room</h1>
               <hmpt-profile-form></hmpt-profile-form>
+              <hmpt-language-form></hmpt-language-form>
               <hmpt-range-form></hmpt-range-form>
               <hmpt-reminder-form></hmpt-reminder-form>
               <p class="fleuron" aria-hidden="true">❦</p>
               <center-pk intrinsic><hmpt-welcome-replay></hmpt-welcome-replay></center-pk>
-              <p class="muted app-footnote">Everything stays on this device. Clearing the browser's site data erases it.</p>
+              <p class="muted app-footnote" data-t="shell.footnote">Everything stays on this device. Clearing the browser's site data erases it.</p>
             </stack-pk>
           </section>
         </center-pk>
       </main>
 
-      <nav class="tabbar" aria-label="Sections">
+      <nav class="tabbar" aria-label="Sections" data-t-label="shell.sections">
         <a href="#today" data-tab="today">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15H6.5A2.5 2.5 0 0 0 4 20.5zM4 20.5A2.5 2.5 0 0 0 6.5 23H20v-5" /></svg>
-          <span>Today</span>
+          <span data-t="shell.tabs.today">Today</span>
         </a>
-        <a
-          href="#progress"
-          data-tab="progress"
-          data-tour="3"
-          data-tour-title="Your library"
-          data-tour-text="Your shelf of finished books, a ledger of the last six weeks, and your bookplates — the achievements you earn along the way."
-        >
+        <a href="#progress" data-tab="progress" data-tour="3" data-tour-stop="library">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0zM17 5h3v2a3 3 0 0 1-3 3M7 5H4v2a3 3 0 0 0 3 3" /></svg>
-          <span>Progress</span>
+          <span data-t="shell.tabs.progress">Progress</span>
         </a>
-        <a
-          href="#overview"
-          data-tab="overview"
-          data-tour="4"
-          data-tour-title="Looking back"
-          data-tour-text="Your months and years of reading, looked back on: pages, days, books — and your best days."
-        >
+        <a href="#overview" data-tab="overview" data-tour="4" data-tour-stop="overview">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V10M9.3 20V5M14.6 20v-8M20 20V8M3 20h18" /></svg>
-          <span>Overview</span>
+          <span data-t="shell.tabs.overview">Overview</span>
         </a>
-        <a
-          href="#profile"
-          data-tab="profile"
-          data-tour="5"
-          data-tour-title="Your reading room"
-          data-tour-text="Your reader’s card, how big the daily challenge is, and a daily reminder at the hour you choose."
-        >
+        <a href="#profile" data-tab="profile" data-tour="5" data-tour-stop="room">
           <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4" /><path d="M4 21a8 8 0 0 1 16 0" /></svg>
-          <span>You</span>
+          <span data-t="shell.tabs.profile">You</span>
         </a>
       </nav>
     </div>
@@ -112,6 +88,9 @@
     <hmpt-celebration></hmpt-celebration>
     <hmpt-welcome></hmpt-welcome>
 
-    <noscript><p class="app-fatal">This app needs JavaScript to deal your daily card.</p></noscript>
+    <noscript>
+      <p class="app-fatal" lang="en">This app needs JavaScript to deal your daily card.</p>
+      <p class="app-fatal" lang="fr">Cette application a besoin de JavaScript pour distribuer votre carte du jour.</p>
+    </noscript>
   </body>
 </html>

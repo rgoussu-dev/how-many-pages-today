@@ -45,8 +45,8 @@ describe('streaks', () => {
 
 describe('levels', () => {
   it('starts at rank 1 and tracks progress to the next rank', () => {
-    expect(levelFor(0)).toEqual({ rank: 1, title: 'Page turner', pagesIntoLevel: 0, pagesForLevel: 100 });
-    expect(levelFor(350)).toMatchObject({ rank: 3, title: 'Bookish', pagesIntoLevel: 50, pagesForLevel: 300 });
+    expect(levelFor(0)).toEqual({ rank: 1, pagesIntoLevel: 0, pagesForLevel: 100 });
+    expect(levelFor(350)).toMatchObject({ rank: 3, pagesIntoLevel: 50, pagesForLevel: 300 });
   });
 
   it('caps at the top rank', () => {

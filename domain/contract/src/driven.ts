@@ -8,6 +8,7 @@ import type {
   ReminderSettings,
   InstallAvailability,
   InstallOutcome,
+  LanguageChoice,
   UnlockedAchievement,
   WelcomeState,
 } from './model';
@@ -45,6 +46,8 @@ export interface PreferencesRepository {
   saveReminder(reminder: ReminderSettings): Promise<void>;
   loadWelcome(): Promise<WelcomeState | undefined>;
   saveWelcome(welcome: WelcomeState): Promise<void>;
+  loadLanguage(): Promise<LanguageChoice | undefined>;
+  saveLanguage(choice: LanguageChoice): Promise<void>;
 }
 
 /** Installing the app on the device's home screen. */

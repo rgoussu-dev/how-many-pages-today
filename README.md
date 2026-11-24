@@ -35,6 +35,14 @@ dusty shelves, lamplight, pillows and a blanket — and, after dusk, the same ro
 - **Your shelf.** Put a book on the nightstand, or not: a book can be marked finished from
   the shelf or from the day's card, with or without a title. Each keeps when it was started
   and finished.
+- **A bookmark.** Say which page you are at when you put a book on the nightstand (and, if
+  you like, how many pages it has). The day's card then tells you the page to read up to —
+  your bookmark plus the day's goal, stopping at the last page — and every page you log moves
+  the bookmark on. The nightstand shows where it sits and how far into the book that is; it
+  can be moved by hand. Reach the last page and the card offers to put the book on the shelf.
+- **English and French.** The reading room speaks the language of your browser (French
+  for a French browser, English otherwise), or the one you pick under *You → Language* — or
+  at the door, on a first visit. Dates and numbers follow; so does the reminder notification.
 - **Looking back.** A month or a year at a time: pages read, days read and books finished
   against the period before; a chart of pages per day (with each day's goal marked) or per
   month; the best day or month, the longest run, goals met, pages beyond the goal; and the
@@ -155,12 +163,12 @@ flowchart LR
 
 | Package | Role |
 |---|---|
-| [`platform/kernel`](platform/kernel) | `Result`, the `Clock`/`RandomSource` port types, the Context protocol |
-| [`platform/commons`](platform/commons) | System clock, `Math.random` |
+| [`platform/kernel`](platform/kernel) | `Result`, the `Clock`/`RandomSource`/`LanguageSource` port types, the Context protocol |
+| [`platform/commons`](platform/commons) | System clock, `Math.random`, the device's languages |
 | [`domain/contract`](domain/contract) | Model, driving & driven ports, domain events |
-| [`domain/core`](domain/core) | Page draws, streaks, levels, the bookshelf, achievements, the monthly/yearly overview, reminder policy; in-memory fakes |
+| [`domain/core`](domain/core) | Page draws, streaks, levels, the bookshelf and its bookmark, achievements, the monthly/yearly overview, reminder policy, the language; in-memory fakes |
 | [`design-system`](design-system) | The library theme over planks tokens, bundled fonts; `<hmpt-ds-scene>`, the seeded illustration |
-| [`user-side/elements`](user-side/elements) | Port-bound custom elements and their context keys |
+| [`user-side/elements`](user-side/elements) | Port-bound custom elements, their context keys, and the English and French phrasebooks |
 | [`infra/storage-indexeddb`](infra/storage-indexeddb) | Every repository port on one IndexedDB database |
 | [`infra/reminders-browser`](infra/reminders-browser) | Notification permission, periodic sync, notifications |
 | [`infra/install-browser`](infra/install-browser) | Installing the app: Chromium's install prompt, iOS instructions, installed detection |

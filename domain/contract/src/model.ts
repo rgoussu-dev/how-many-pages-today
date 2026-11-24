@@ -53,10 +53,21 @@ export interface Profile {
 
 export type ProfileInput = Omit<Profile, 'readerSince'>;
 
+/** The book on the nightstand, and the bookmark in it. */
 export interface BookInHand {
   readonly title: string;
   readonly startedOn: DayKey;
+  /**
+   * The page the reader has reached: 0 before the first page. Moves on with every page
+   * logged. Absent on books put on the nightstand before the app kept a bookmark.
+   */
+  readonly bookmark?: number;
+  /** How many pages the book has, when the reader said. */
+  readonly totalPages?: number;
 }
+
+/** Limits on a bookmark and on a book's length. */
+export const BOOK_PAGE_LIMITS = { highest: 20000 } as const;
 
 /**
  * A finished book. The title is optional — finishing counts even unnamed. The dates are
@@ -110,6 +121,21 @@ export type InstallAvailability =
 
 export type InstallOutcome = 'accepted' | 'dismissed' | 'unavailable';
 
+/** The languages the app speaks. */
+export const LANGUAGES = ['en', 'fr'] as const;
+export type Language = (typeof LANGUAGES)[number];
+
+/** What the reader picked: a language, or whatever the device prefers. */
+export type LanguageChoice = 'auto' | Language;
+
+export interface LanguageSetting {
+  readonly choice: LanguageChoice;
+  /** The language the app speaks now: the choice, or the device's best match (English by default). */
+  readonly language: Language;
+  /** A BCP 47 tag for dates and numbers: the device's own variant of `language` when it has one (`fr-CA`). */
+  readonly locale: string;
+}
+
 export const DEFAULT_REMINDER: ReminderSettings = { enabled: false, time: '20:00' };
 
 export type AchievementId =
@@ -137,11 +163,10 @@ export type AchievementId =
   | 'comeback'
   | 'introductions';
 
+/** A bookplate. Its name and wording belong to the UI's phrasebooks, keyed by `id`. */
 export interface Achievement {
   readonly id: AchievementId;
   readonly icon: string;
-  readonly title: string;
-  readonly description: string;
 }
 
 export interface UnlockedAchievement {
@@ -153,9 +178,9 @@ export interface AchievementStatus extends Achievement {
   readonly unlockedOn?: DayKey;
 }
 
+/** The reader's rank, 1 – 10. Its title belongs to the UI's phrasebooks, keyed by `rank`. */
 export interface ReaderLevel {
   readonly rank: number;
-  readonly title: string;
   /** Pages already read inside the current level. */
   readonly pagesIntoLevel: number;
   /** Pages the current level spans; null at the top level. */
@@ -180,8 +205,14 @@ export interface ReadingSnapshot {
   readonly history: readonly DailyChallenge[];
   readonly profile: Profile | null;
   readonly shelf: Bookshelf;
+  /**
+   * The page today's reading leads to in the book in hand: its bookmark plus the day's goal,
+   * at most its last page. Null once the day is read, or without a book or a bookmark.
+   */
+  readonly readTo: number | null;
   readonly range: PageRange;
   readonly reminder: ReminderSettings;
+  readonly language: LanguageSetting;
   readonly stats: ReadingStats;
   readonly achievements: readonly AchievementStatus[];
 }

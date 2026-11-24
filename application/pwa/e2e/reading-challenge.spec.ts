@@ -6,7 +6,15 @@ const pagesOnCard = async (page: Page) => Number(await card(page).locator('[data
 
 const welcome = (page: Page) => page.locator('hmpt-welcome');
 
+/** Words the phrasebook could not find, logged by the app — there must be none, in any language. */
+const missingPhrases = new WeakMap<Page, string[]>();
+
 test.beforeEach(async ({ page }, testInfo) => {
+  const missing: string[] = [];
+  missingPhrases.set(page, missing);
+  page.on('console', (message) => {
+    if (message.type() === 'error' && message.text().startsWith('No phrase')) missing.push(message.text());
+  });
   await page.goto('./');
   await expect(card(page).locator('[data-pages]')).not.toHaveText('…');
   // Tests of the first visit (and any tagged @fresh) start where a new reader does.
@@ -17,6 +25,10 @@ test.beforeEach(async ({ page }, testInfo) => {
   await expect(welcome(page).locator('[data-root]')).toBeHidden();
   await card(page).getByRole('button', { name: 'Open today’s card' }).click();
   await expect(card(page)).not.toHaveAttribute('data-reveal');
+});
+
+test.afterEach(async ({ page }) => {
+  expect(missingPhrases.get(page) ?? []).toEqual([]);
 });
 
 test('deals a card from the default range, with an illustration', async ({ page }) => {
@@ -442,4 +454,135 @@ test.describe('with motion', () => {
     await expect(book.locator('[data-cover-back] .past-note')).toHaveText('52 pages read · sealed');
     await expect(book.locator('[data-leaf] .past-note')).toHaveText('pages dealt, left unread');
   });
+});
+
+test.describe('in French', () => {
+  test.use({ locale: 'fr-FR' });
+
+  test('a French browser is welcomed, and read to, in French', { tag: '@fresh' }, async ({ page }) => {
+    await expect(page.locator('html')).toHaveAttribute('lang', 'fr-FR');
+    const w = welcome(page);
+    await expect(w.getByRole('heading', { name: 'La salle de lecture' })).toBeVisible();
+    await expect(page).toHaveTitle('Combien de pages aujourd’hui');
+    await w.getByRole('button', { name: 'Je connais le chemin' }).click();
+    await expect(tab(page, 'Aujourd’hui')).toBeVisible();
+
+    await card(page).getByRole('button', { name: 'Ouvrir la carte du jour' }).click();
+    const pages = await pagesOnCard(page);
+    await expect(card(page).locator('[data-date]')).toHaveText(
+      new Intl.DateTimeFormat('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })
+        .format(new Date())
+        .replace(/^./, (c) => c.toUpperCase()),
+    );
+    await expect(card(page).locator('[data-caption]')).toHaveText(/^(Des|Une|Un) /); // the plate, described in French
+    await card(page).getByRole('button', { name: `J’ai lu ${pages} pages` }).click();
+    await expect(card(page).locator('.tome-done')).toHaveText('Lu, et scellé.');
+    await expect(card(page).locator('[data-read]')).toHaveText(`${pages} pages, exactement comme prévu.`);
+
+    await tab(page, 'Progrès').click();
+    await expect(page.locator('h1:visible')).toHaveText('Votre bibliothèque');
+    await expect(page.locator('hmpt-achievement-list .badge[data-earned] strong')).toContainText(['Premier chapitre']);
+    await expect(page.locator('hmpt-history-calendar .calendar-head span').first()).toHaveText('L');
+  });
+});
+
+test('the reading room speaks the language the reader picks, and the device’s again on asking', async ({ page }) => {
+  await tab(page, 'You').click();
+  const form = page.locator('hmpt-language-form');
+  await expect(form.getByLabel('As on this device (English)')).toBeChecked();
+  await form.getByText('Français').click();
+
+  await expect(page.locator('html')).toHaveAttribute('lang', 'fr');
+  await expect(tab(page, 'Vous')).toHaveAttribute('aria-current', 'page');
+  await expect(page.locator('section[data-route="profile"] h1')).toHaveText('Votre salle de lecture');
+  await expect(page).toHaveTitle('Vous · Combien de pages aujourd’hui');
+  await expect(page.locator('hmpt-range-form').getByRole('button', { name: 'Enregistrer la fourchette' })).toBeVisible();
+  await expect(form.getByLabel('Comme sur cet appareil (English)')).not.toBeChecked();
+
+  await page.reload();
+  await tab(page, 'Aujourd’hui').click(); // the choice is kept
+  await expect(card(page).getByRole('button', { name: /^J’ai lu/ })).toBeVisible();
+
+  await tab(page, 'Vous').click();
+  await form.getByText('Comme sur cet appareil (English)').click();
+  await expect(tab(page, 'You')).toBeVisible();
+  await expect(page.locator('html')).toHaveAttribute('lang', /^en/);
+});
+
+test('welcome: the librarian can be asked, at the door, to speak French', async ({ page }) => {
+  const w = welcome(page);
+  await w.getByText('Français').click();
+  await expect(w.getByRole('heading', { name: 'La salle de lecture' })).toBeVisible();
+  await w.getByRole('button', { name: 'Entrer' }).click();
+  await expect(w.getByRole('heading', { name: 'Votre carte de lecture' })).toBeVisible();
+  await w.getByRole('button', { name: 'Signer le registre' }).click();
+  await expect(w.locator('[data-error="displayName"]')).toHaveText('Dites-nous comment vous appeler.');
+});
+
+test('welcome: the book on the nightstand keeps its bookmark, and every day says which page to read to', async ({ page }) => {
+  const w = welcome(page);
+  await w.getByRole('button', { name: 'Step inside' }).click();
+  await w.getByRole('button', { name: 'Later' }).click();
+  await w.getByLabel('The book you are reading').fill('Middlemarch');
+  await w.getByLabel(/Your bookmark is at page/).fill('112');
+  await w.getByLabel(/Pages in the book/).fill('880');
+  await w.getByRole('button', { name: 'Put it on the nightstand' }).click();
+  await expect(w.locator('[data-bubble-title]')).toHaveText('Your daily card');
+  await page.keyboard.press('Escape');
+
+  await expect(page.locator('hmpt-greeting [data-sub]')).toHaveText('On the nightstand: Middlemarch, page 112.');
+  await card(page).getByRole('button', { name: 'Open today’s card' }).click();
+  const goal = await pagesOnCard(page);
+  await expect(card(page).locator('[data-until]')).toHaveText(`up to page ${112 + goal}`);
+
+  // Reading moves the bookmark on by the pages logged.
+  await card(page).getByText('Read more, or fewer?').click();
+  await card(page).getByLabel('Pages actually read').fill('30');
+  await card(page).getByRole('button', { name: 'Log my reading' }).click();
+  await expect(card(page).locator('[data-back-bookmark]')).toHaveText('Bookmark at page 142 of 880.');
+  await expect(page.locator('hmpt-greeting [data-sub]')).toHaveText('On the nightstand: Middlemarch, page 142.');
+
+  await tab(page, 'Progress').click();
+  const shelf = page.locator('hmpt-bookshelf');
+  await expect(shelf.locator('[data-bookmark-text]')).toHaveText('Page 142 of 880');
+  await expect(shelf.locator('[data-progress]')).toHaveAttribute('aria-valuenow', '16');
+
+  // Pages read later the same day move it too.
+  await tab(page, 'Today').click();
+  await card(page).getByRole('button', { name: 'Open the book' }).click();
+  await card(page).getByText('Read some more today?').click();
+  await card(page).getByLabel('Pages to add').fill('8');
+  await card(page).getByRole('button', { name: 'Add pages' }).click();
+  await expect(card(page).locator('[data-bookmark-line]')).toHaveText('Bookmark at page 150 of 880.');
+});
+
+test('the bookmark can be moved by hand, and the last page offers to shelve the book', async ({ page }) => {
+  await tab(page, 'Progress').click();
+  const shelf = page.locator('hmpt-bookshelf');
+  await shelf.getByLabel('What are you reading?').fill('Piranesi');
+  await shelf.getByRole('button', { name: 'Start reading' }).click();
+  await expect(shelf.locator('[data-bookmark-text]')).toHaveText('Bookmark at page 0');
+
+  const goal = await pagesOnCard(page);
+  await shelf.getByText('Move the bookmark').click();
+  await shelf.locator('[data-move-form]').getByLabel('On page').fill('240');
+  await shelf.locator('[data-move-form]').getByLabel(/Pages in the book/).fill('100');
+  await shelf.locator('[data-move-form]').getByRole('button', { name: 'Save' }).click();
+  await expect(shelf.locator('[data-move-form] [data-error="bookmark"]')).toHaveText('The book ends at page 100.');
+  await shelf.locator('[data-move-form]').getByLabel(/Pages in the book/).fill(String(240 + goal));
+  await shelf.locator('[data-move-form]').getByRole('button', { name: 'Save' }).click();
+  await expect(shelf.locator('[data-move-status]')).toHaveText('Saved ✓');
+  await expect(shelf.locator('[data-bookmark-text]')).toHaveText(`Page 240 of ${240 + goal}`);
+
+  await tab(page, 'Today').click();
+  await expect(card(page).locator('[data-until]')).toHaveText(`to the end of the book — page ${240 + goal}`);
+  await card(page).getByRole('button', { name: /^I read/ }).click();
+  await card(page).getByRole('button', { name: 'Open the book' }).click();
+  await expect(card(page).locator('[data-last-page]')).toContainText('The last page of “Piranesi”. Finished?');
+  await card(page).getByRole('button', { name: 'Put it on the shelf' }).click();
+  await expect(card(page).locator('[data-last-page]')).toBeHidden();
+
+  await tab(page, 'Progress').click();
+  await expect(shelf.locator('.spine')).toHaveAttribute('aria-label', /^Piranesi, finished /);
+  await expect(shelf.locator('[data-nightstand]')).toBeHidden();
 });

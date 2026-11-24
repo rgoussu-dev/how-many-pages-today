@@ -4,10 +4,12 @@ import type {
   OverviewPort,
   PeriodTotals,
   ReadingSnapshot,
+  ReadingView,
   YearOverview,
 } from '@hmpt/domain-contract';
 import { readingContexts } from './contexts';
-import { dateOf, plural } from './format';
+import { dateOf } from './format';
+import { deviceSpeech, speech, type Speech } from './i18n';
 import { PortBoundElement } from './port-bound';
 
 type Scale = 'month' | 'year';
@@ -24,18 +26,6 @@ interface Column {
   readonly short: boolean;
 }
 
-const monthName = (year: number, month: number, style: 'long' | 'short' = 'long'): string =>
-  new Intl.DateTimeFormat(undefined, { month: style, ...(style === 'long' ? { year: 'numeric' } : {}) }).format(
-    new Date(year, month - 1, 1),
-  );
-
-/** "19 Nov" — the period title already says which year. */
-const dayMonth = (day: string): string =>
-  new Intl.DateTimeFormat(undefined, { day: 'numeric', month: 'short' }).format(dateOf(day));
-
-const dayLabel = (day: string): string =>
-  new Intl.DateTimeFormat(undefined, { weekday: 'short', day: 'numeric', month: 'short' }).format(dateOf(day));
-
 const dateUtc = (day: string): number => {
   const date = dateOf(day);
   return Date.UTC(date.getFullYear(), date.getMonth(), date.getDate());
@@ -49,11 +39,11 @@ function niceMax(value: number): number {
   return 10 * power;
 }
 
-function delta(now: number, before: number, period: string): string {
-  if (before === 0) return now === 0 ? `None in ${period} either.` : `None in ${period}.`;
+function delta(now: number, before: number, period: string, { t }: Speech): string {
+  if (before === 0) return now === 0 ? t.overview.noneEither(period) : t.overview.none(period);
   const diff = now - before;
-  if (diff === 0) return `Same as ${period}.`;
-  return `${diff > 0 ? '↑' : '↓'} ${Math.abs(diff).toLocaleString()} on ${period}.`;
+  if (diff === 0) return t.overview.same(period);
+  return t.overview.change(diff > 0, Math.abs(diff), period);
 }
 
 /**
@@ -62,6 +52,7 @@ function delta(now: number, before: number, period: string): string {
  */
 export class ReadingOverview extends PortBoundElement {
   #overview?: OverviewPort;
+  #view?: ReadingView;
   #scale: Scale = 'month';
   #year = 0;
   #month = 0;
@@ -73,26 +64,26 @@ export class ReadingOverview extends PortBoundElement {
       <section class="surface overview" aria-labelledby="overview-title">
         <box-pk padding="var(--s1)">
           <stack-pk space="var(--s0)">
-            <div class="ov-scale" role="group" aria-label="Look back by">
-              <button type="button" class="ov-scale-btn" data-scale="month" aria-pressed="true">Month</button>
-              <button type="button" class="ov-scale-btn" data-scale="year" aria-pressed="false">Year</button>
+            <div class="ov-scale" role="group" data-t-label="overview.lookBackBy">
+              <button type="button" class="ov-scale-btn" data-scale="month" aria-pressed="true" data-t="overview.month"></button>
+              <button type="button" class="ov-scale-btn" data-scale="year" aria-pressed="false" data-t="overview.year"></button>
             </div>
             <div class="ov-nav">
-              <button type="button" class="ov-step" data-step="-1" aria-label="Previous">‹</button>
+              <button type="button" class="ov-step" data-step="-1">‹</button>
               <h2 id="overview-title" data-title aria-live="polite">…</h2>
-              <button type="button" class="ov-step" data-step="1" aria-label="Next">›</button>
+              <button type="button" class="ov-step" data-step="1">›</button>
             </div>
 
             <grid-pk min="5.5rem" space="var(--s-1)" class="ov-stats">
-              <div><p class="ov-value" data-pages>0</p><p class="eyebrow">Pages read</p><p class="ov-delta" data-pages-delta></p></div>
-              <div><p class="ov-value" data-days>0</p><p class="eyebrow">Days read</p><p class="ov-delta" data-days-note></p></div>
-              <div><p class="ov-value" data-books>0</p><p class="eyebrow">Books finished</p><p class="ov-delta" data-books-delta></p></div>
+              <div><p class="ov-value" data-pages>0</p><p class="eyebrow" data-t="overview.pagesRead"></p><p class="ov-delta" data-pages-delta></p></div>
+              <div><p class="ov-value" data-days>0</p><p class="eyebrow" data-t="overview.daysRead"></p><p class="ov-delta" data-days-note></p></div>
+              <div><p class="ov-value" data-books>0</p><p class="eyebrow" data-t="overview.booksFinished"></p><p class="ov-delta" data-books-delta></p></div>
             </grid-pk>
 
             <figure class="ov-chart">
               <figcaption class="ov-caption">
-                <span data-caption>Pages read each day</span>
-                <span class="ov-key" data-goal-key><i class="ov-key-goal" aria-hidden="true"></i> the day's goal</span>
+                <span data-caption></span>
+                <span class="ov-key" data-goal-key><i class="ov-key-goal" aria-hidden="true"></i> <span data-t="overview.goalKey"></span></span>
               </figcaption>
               <div class="ov-plot" data-plot>
                 <div class="ov-grid" aria-hidden="true">
@@ -106,9 +97,9 @@ export class ReadingOverview extends PortBoundElement {
             </figure>
 
             <details class="ov-table">
-              <summary>Show as a table</summary>
+              <summary data-t="overview.showTable"></summary>
               <table>
-                <thead><tr><th scope="col" data-table-unit>Day</th><th scope="col">Pages read</th><th scope="col" data-table-goal>Goal</th></tr></thead>
+                <thead><tr><th scope="col" data-table-unit></th><th scope="col" data-t="overview.pagesRead"></th><th scope="col" data-table-goal data-t="overview.goal"></th></tr></thead>
                 <tbody data-table></tbody>
               </table>
             </details>
@@ -117,7 +108,7 @@ export class ReadingOverview extends PortBoundElement {
 
             <p class="fleuron" aria-hidden="true">❦</p>
             <div class="ov-books">
-              <h3 data-books-title>Books finished</h3>
+              <h3 data-books-title></h3>
               <ol class="ov-book-list" data-book-list></ol>
               <p class="muted ov-empty" data-books-empty></p>
             </div>
@@ -158,11 +149,17 @@ export class ReadingOverview extends PortBoundElement {
 
   protected connect() {
     this.#overview = this.request(readingContexts.overview);
-    const view = this.request(readingContexts.view);
-    return [view.subscribe((snapshot) => this.#onSnapshot(snapshot))];
+    this.#view = this.request(readingContexts.view);
+    return [this.#view.subscribe((snapshot) => this.#onSnapshot(snapshot))];
   }
 
-  #onSnapshot({ today }: ReadingSnapshot): void {
+  #words(): Speech {
+    const language = this.#view?.current()?.language;
+    return language ? speech(language) : deviceSpeech();
+  }
+
+  #onSnapshot({ today, language }: ReadingSnapshot): void {
+    this.speak(language);
     if (!this.#today) {
       const date = dateOf(today.day);
       this.#year = date.getFullYear();
@@ -188,80 +185,92 @@ export class ReadingOverview extends PortBoundElement {
   }
 
   #renderMonth(o: MonthOverview): void {
-    const previous = monthName(o.month === 1 ? o.year - 1 : o.year, o.month === 1 ? 12 : o.month - 1, 'short');
-    this.#renderFrame(monthName(o.year, o.month), o.hasEarlier, o.hasLater, 'month');
+    const words = this.#words();
+    const { t } = words;
+    const previous = words.month(o.month === 1 ? 12 : o.month - 1, 'short');
+    this.#renderFrame(words.monthYear(o.year, o.month), o.hasEarlier, o.hasLater, 'month', words);
     const elapsed = o.hasLater ? o.days.length : o.days.filter((d) => d.day <= this.#today).length;
-    this.#renderTotals(o.totals, o.previous, previous, elapsed, !o.hasLater);
+    this.#renderTotals(o.totals, o.previous, previous, elapsed, !o.hasLater, words);
     const columns: Column[] = o.days.map((d, i) => ({
       tick: [0, 7, 14, 21, 28].includes(i) ? String(i + 1) : '',
       value: d.pagesRead,
       goal: d.goal,
-      valueText: d.pagesRead ? plural(d.pagesRead, 'page') : d.goal === null ? 'No card' : 'Not read',
-      label: `${dayLabel(d.day)}${d.goal !== null ? ` · goal ${d.goal}` : ''}${d.finishedBook ? ' · book finished' : ''}`,
+      valueText: d.pagesRead ? t.overview.pages(d.pagesRead) : d.goal === null ? t.overview.noCard : t.overview.notRead,
+      label: t.overview.dayDetail(words.dayLabel(d.day), d.goal, d.finishedBook),
       books: d.finishedBook ? 1 : 0,
       short: d.pagesRead > 0 && !d.goalMet,
     }));
-    this.#renderChart(columns, 'Pages read each day', true);
-    this.#renderTable(columns, 'Day', true);
+    this.#renderChart(columns, t.overview.perDay, true, words);
+    this.#renderTable(columns, t.overview.day, true, words);
     this.#renderHighlights([
-      o.bestDay ? `Best day: ${dayMonth(o.bestDay.day)}, ${plural(o.bestDay.pagesRead, 'page')}.` : null,
-      o.longestStreak > 1 ? `Longest run: ${plural(o.longestStreak, 'day')} in a row.` : null,
-      o.totals.daysRead ? `Goal met on ${o.totals.goalsMet} of ${plural(o.totals.daysRead, 'reading day')}.` : null,
-      o.totals.extraPages ? `${plural(o.totals.extraPages, 'page')} beyond the goal.` : null,
-      o.totals.daysRead ? `${Math.round(o.totals.pagesRead / o.totals.daysRead)} pages a reading day, on average.` : null,
+      o.bestDay ? t.overview.bestDay(words.dayMonth(o.bestDay.day), o.bestDay.pagesRead) : null,
+      o.longestStreak > 1 ? t.overview.longestRun(o.longestStreak) : null,
+      o.totals.daysRead ? t.overview.goalsMet(o.totals.goalsMet, o.totals.daysRead) : null,
+      o.totals.extraPages ? t.overview.beyond(o.totals.extraPages) : null,
+      o.totals.daysRead ? t.overview.average(Math.round(o.totals.pagesRead / o.totals.daysRead)) : null,
     ]);
-    this.#renderBooks(o.books, 'Books finished', `No book finished in ${monthName(o.year, o.month, 'short')} — yet.`, false);
+    this.#renderBooks(o.books, t.overview.booksFinished, t.overview.noBookMonth(words.month(o.month, 'short')), false, words);
   }
 
   #renderYear(o: YearOverview): void {
-    this.#renderFrame(String(o.year), o.hasEarlier, o.hasLater, 'year');
+    const words = this.#words();
+    const { t } = words;
+    this.#renderFrame(String(o.year), o.hasEarlier, o.hasLater, 'year', words);
     const start = Date.UTC(o.year, 0, 1);
     const end = o.hasLater ? Date.UTC(o.year + 1, 0, 1) : dateUtc(this.#today) + 86_400_000;
-    this.#renderTotals(o.totals, o.previous, String(o.year - 1), Math.round((end - start) / 86_400_000), !o.hasLater);
+    this.#renderTotals(o.totals, o.previous, String(o.year - 1), Math.round((end - start) / 86_400_000), !o.hasLater, words);
     const columns: Column[] = o.months.map((m) => ({
-      tick: monthName(o.year, m.month, 'short').slice(0, 1),
+      tick: words.month(m.month, 'short').charAt(0).toLocaleUpperCase(),
       value: m.totals.pagesRead,
       goal: null,
-      valueText: plural(m.totals.pagesRead, 'page'),
-      label: `${monthName(o.year, m.month)} · ${plural(m.totals.daysRead, 'day')} read${m.totals.booksFinished ? ` · ${plural(m.totals.booksFinished, 'book')}` : ''}`,
+      valueText: t.overview.pages(m.totals.pagesRead),
+      label: t.overview.monthDetail(words.monthYear(o.year, m.month), m.totals.daysRead, m.totals.booksFinished),
       books: m.totals.booksFinished,
       short: false,
     }));
-    this.#renderChart(columns, 'Pages read each month', false);
-    this.#renderTable(columns, 'Month', false);
+    this.#renderChart(columns, t.overview.perMonth, false, words);
+    this.#renderTable(columns, t.overview.monthColumn, false, words);
     this.#renderHighlights([
-      o.bestMonth ? `Best month: ${monthName(o.year, o.bestMonth.month)}, ${plural(o.bestMonth.totals.pagesRead, 'page')}.` : null,
-      o.longestStreak > 1 ? `Longest run: ${plural(o.longestStreak, 'day')} in a row.` : null,
-      o.totals.daysRead ? `Goal met on ${o.totals.goalsMet} of ${plural(o.totals.daysRead, 'reading day')}.` : null,
-      o.totals.extraPages ? `${plural(o.totals.extraPages, 'page')} beyond the goal.` : null,
+      o.bestMonth ? t.overview.bestMonth(words.month(o.bestMonth.month), o.bestMonth.totals.pagesRead) : null,
+      o.longestStreak > 1 ? t.overview.longestRun(o.longestStreak) : null,
+      o.totals.daysRead ? t.overview.goalsMet(o.totals.goalsMet, o.totals.daysRead) : null,
+      o.totals.extraPages ? t.overview.beyond(o.totals.extraPages) : null,
     ]);
-    this.#renderBooks(o.books, `Books finished in ${o.year}`, `No book finished in ${o.year} — yet.`, true);
+    this.#renderBooks(o.books, t.overview.booksIn(o.year), t.overview.noBookYear(o.year), true, words);
   }
 
-  #renderFrame(title: string, hasEarlier: boolean, hasLater: boolean, unit: Scale): void {
+  #renderFrame(title: string, hasEarlier: boolean, hasLater: boolean, unit: Scale, { t }: Speech): void {
     this.$('[data-title]').textContent = title;
     const [back, forward] = this.querySelectorAll<HTMLButtonElement>('[data-step]');
     back!.disabled = !hasEarlier;
     forward!.disabled = !hasLater;
-    back!.setAttribute('aria-label', `Previous ${unit}`);
-    forward!.setAttribute('aria-label', `Next ${unit}`);
+    back!.setAttribute('aria-label', t.overview.previousOf(unit));
+    forward!.setAttribute('aria-label', t.overview.nextOf(unit));
   }
 
-  #renderTotals(totals: PeriodTotals, previous: PeriodTotals, previousName: string, span: number, ongoing: boolean): void {
-    this.$('[data-pages]').textContent = totals.pagesRead.toLocaleString();
-    this.$('[data-pages-delta]').textContent = delta(totals.pagesRead, previous.pagesRead, previousName);
-    this.$('[data-days]').textContent = totals.daysRead.toLocaleString();
-    this.$('[data-days-note]').textContent = ongoing ? `of ${span} so far` : `of ${span}`;
-    this.$('[data-books]').textContent = totals.booksFinished.toLocaleString();
-    this.$('[data-books-delta]').textContent = delta(totals.booksFinished, previous.booksFinished, previousName);
+  #renderTotals(
+    totals: PeriodTotals,
+    previous: PeriodTotals,
+    previousName: string,
+    span: number,
+    ongoing: boolean,
+    words: Speech,
+  ): void {
+    const { t, num } = words;
+    this.$('[data-pages]').textContent = num(totals.pagesRead);
+    this.$('[data-pages-delta]').textContent = delta(totals.pagesRead, previous.pagesRead, previousName, words);
+    this.$('[data-days]').textContent = num(totals.daysRead);
+    this.$('[data-days-note]').textContent = ongoing ? t.overview.ofSoFar(span) : t.overview.of(span);
+    this.$('[data-books]').textContent = num(totals.booksFinished);
+    this.$('[data-books-delta]').textContent = delta(totals.booksFinished, previous.booksFinished, previousName, words);
   }
 
-  #renderChart(columns: readonly Column[], caption: string, withGoals: boolean): void {
+  #renderChart(columns: readonly Column[], caption: string, withGoals: boolean, { num }: Speech): void {
     this.$('[data-caption]').textContent = caption;
     this.$('[data-goal-key]').hidden = !withGoals;
     const max = niceMax(Math.max(0, ...columns.map((c) => Math.max(c.value, c.goal ?? 0))));
-    this.$('[data-grid-max]').textContent = max.toLocaleString();
-    this.$('[data-grid-half]').textContent = (max / 2).toLocaleString();
+    this.$('[data-grid-max]').textContent = num(max);
+    this.$('[data-grid-half]').textContent = num(max / 2);
     const best = columns.reduce((top, c, i) => (c.value > (columns[top]?.value ?? 0) ? i : top), -1);
     const list = this.$('[data-columns]');
     list.style.setProperty('--count', String(columns.length));
@@ -286,7 +295,7 @@ export class ReadingOverview extends PortBoundElement {
             const value = document.createElement('span');
             value.className = 'ov-bar-value';
             value.style.setProperty('--h', `${((c.value / max) * 100).toFixed(2)}%`);
-            value.textContent = c.value.toLocaleString();
+            value.textContent = num(c.value);
             plot.append(value);
           }
         }
@@ -320,13 +329,13 @@ export class ReadingOverview extends PortBoundElement {
     tip.style.left = `${Math.min(Math.max(centre, half), plot.width - half)}px`;
   }
 
-  #renderTable(columns: readonly Column[], unit: string, withGoals: boolean): void {
+  #renderTable(columns: readonly Column[], unit: string, withGoals: boolean, { num }: Speech): void {
     this.$('[data-table-unit]').textContent = unit;
     this.$('[data-table-goal]').hidden = !withGoals;
     this.$('[data-table]').replaceChildren(
       ...columns.map((c) => {
         const row = document.createElement('tr');
-        const cells = [c.label.split(' · ')[0] ?? '', c.value.toLocaleString(), ...(withGoals ? [c.goal?.toString() ?? '—'] : [])];
+        const cells = [c.label.split(' · ')[0] ?? '', num(c.value), ...(withGoals ? [c.goal === null ? '—' : num(c.goal)] : [])];
         cells.forEach((text, i) => {
           const cell = document.createElement(i === 0 ? 'th' : 'td');
           if (i === 0) cell.setAttribute('scope', 'row');
@@ -347,14 +356,15 @@ export class ReadingOverview extends PortBoundElement {
     this.$('[data-highlights]').replaceChildren(...items);
   }
 
-  #renderBooks(books: readonly FinishedBook[], title: string, empty: string, byMonth: boolean): void {
+  #renderBooks(books: readonly FinishedBook[], title: string, empty: string, byMonth: boolean, words: Speech): void {
+    const { t } = words;
     this.$('[data-books-title]').textContent = title;
     this.$('[data-books-empty]').textContent = books.length ? '' : empty;
     this.$('[data-books-empty]').hidden = books.length > 0;
     let lastMonth = '';
     const items: HTMLElement[] = [];
     for (const book of books) {
-      const month = new Intl.DateTimeFormat(undefined, { month: 'long' }).format(dateOf(book.finishedOn));
+      const month = words.month(dateOf(book.finishedOn).getMonth() + 1);
       if (byMonth && month !== lastMonth) {
         const heading = document.createElement('li');
         heading.className = 'ov-book-month eyebrow';
@@ -365,13 +375,13 @@ export class ReadingOverview extends PortBoundElement {
       const item = document.createElement('li');
       item.className = 'ov-book';
       const name = document.createElement('cite');
-      name.textContent = book.title ?? 'A book';
+      name.textContent = book.title ?? t.common.aBook;
       if (book.title === null) name.dataset.untitled = '';
       const when = document.createElement('span');
       when.className = 'muted';
       when.textContent = book.startedOn
-        ? ` — ${dayMonth(book.startedOn)} to ${dayMonth(book.finishedOn)}`
-        : ` — finished ${dayMonth(book.finishedOn)}`;
+        ? t.overview.span(words.dayMonth(book.startedOn), words.dayMonth(book.finishedOn))
+        : t.overview.finishedOn(words.dayMonth(book.finishedOn));
       item.append(name, when);
       items.push(item);
     }
