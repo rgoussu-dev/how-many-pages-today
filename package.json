@@ -12,6 +12,7 @@
     "user-side/elements",
     "infra/storage-indexeddb",
     "infra/reminders-browser",
+    "infra/install-browser",
     "application/pwa"
   ],
   "scripts": {

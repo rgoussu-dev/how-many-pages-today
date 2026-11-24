@@ -11,6 +11,17 @@ dusty shelves, lamplight, pillows and a blanket — and, after dusk, the same ro
   in steps of ten. The plate is one of six cosy library scenes (dusty shelves, a banker's
   lamp, a window seat of pillows, a wingback armchair, a rainy windowsill, a candlelit
   still life) painted from a seed, so the same day always shows the same card, online or not.
+- **The book of the day.** The day's card waits on the table as a closed book — a leather
+  cover, the date, a gilt emblem — until it is tapped. Then the camera pulls back as the cover
+  swings open and slips beneath the first pages: the open book shows the two days before
+  (their plates and what was read; a new book shows its Ex libris and "Chapter One"), and
+  pushes in again while yesterday's page turns, landing on today's page — a printed page with
+  a running head, the illustration as a captioned plate, the number in ink, a folio at its foot.
+  Once the reading is logged the camera pulls back, today's page turns to the marbled inside
+  of the back board, and the book is turned over onto its back cover as the camera pushes in:
+  sealed in wax, with a warm note from the librarian (by chance, but the same all day: a goal
+  met, gone beyond, a short day, a book finished) and the streak or any bookplate earned.
+  "Open the book" turns back to the page to add pages read later. Instant with reduced motion.
 - **Log what you actually read.** One tap logs the day's goal; or enter the real count —
   more or fewer pages. Any reading keeps the streak alive (every page counts); the goal is
   met at the goal or beyond, or by finishing a book. A day read stays read — there is no
@@ -22,7 +33,11 @@ dusty shelves, lamplight, pillows and a blanket — and, after dusk, the same ro
   days beyond the goal starred), and a flurry of autumn leaves when you finish.
 - **Your shelf.** Put a book on the nightstand, or not: a book can be marked finished from
   the shelf or from the day's card, with or without a title. Each keeps when it was started
-  and finished, ready for a month-by-month, year-by-year look back.
+  and finished.
+- **Looking back.** A month or a year at a time: pages read, days read and books finished
+  against the period before; a chart of pages per day (with each day's goal marked) or per
+  month; the best day or month, the longest run, goals met, pages beyond the goal; and the
+  books finished, with their dates. Every value is also in a table view.
 - **A profile that never leaves the phone.** Name, avatar, favourite genre — stored in the
   browser's IndexedDB. There is no server.
 - **Typography.** EB Garamond and IM Fell English, free fonts under the SIL Open Font
@@ -30,6 +45,12 @@ dusty shelves, lamplight, pillows and a blanket — and, after dusk, the same ro
   licences ship with the site under `/licenses/`.
 - **Daily reminder.** A notification at a fixed hour until you have read; plus a one-tap
   calendar event as the reminder that never misses (see [Reminders](#reminders)).
+- **A first visit told as a story.** The librarian greets a new reader at the door, takes
+  down their reader's card, asks what is on their nightstand, shows them round the room
+  with a lamplit spotlight on the real interface, offers a key to the room (installing the
+  app: the browser's own prompt where there is one, illustrated *Share → Add to Home Screen*
+  steps on iPhone and iPad), and hands them their first card. Skippable at any point
+  (Escape works), shown once, and replayable from the reading room.
 - **Installable and offline.** Every asset is precached by the service worker.
 
 ## Run it
@@ -47,8 +68,9 @@ its Playwright version (`npx playwright install chromium`), or point
 
 ## Deploy
 
-`.github/workflows/pages.yml` verifies every push and pull request and deploys the
-repository's **default branch** to GitHub Pages. Every action is pinned to a full commit
+`.github/workflows/pages.yml` verifies every pull request and every push to `main`, and
+deploys to GitHub Pages **only from `main`** — on a push to it, or a manual run of the
+workflow on it. Pull requests are verified, never published. Every action is pinned to a full commit
 SHA, with the release tag in a comment. One-time setup: *Settings → Pages →
 Build and deployment → Source: **GitHub Actions***. The app is then served at
 `https://<owner>.github.io/how-many-pages-today/` (change `BASE_PATH` for another host).
@@ -115,11 +137,12 @@ flowchart LR
 | [`platform/kernel`](platform/kernel) | `Result`, the `Clock`/`RandomSource` port types, the Context protocol |
 | [`platform/commons`](platform/commons) | System clock, `Math.random` |
 | [`domain/contract`](domain/contract) | Model, driving & driven ports, domain events |
-| [`domain/core`](domain/core) | Page draws, streaks, levels, the bookshelf, achievements, reminder policy; in-memory fakes |
+| [`domain/core`](domain/core) | Page draws, streaks, levels, the bookshelf, achievements, the monthly/yearly overview, reminder policy; in-memory fakes |
 | [`design-system`](design-system) | The library theme over planks tokens, bundled fonts; `<hmpt-ds-scene>`, the seeded illustration |
 | [`user-side/elements`](user-side/elements) | Port-bound custom elements and their context keys |
 | [`infra/storage-indexeddb`](infra/storage-indexeddb) | Every repository port on one IndexedDB database |
 | [`infra/reminders-browser`](infra/reminders-browser) | Notification permission, periodic sync, notifications |
+| [`infra/install-browser`](infra/install-browser) | Installing the app: Chromium's install prompt, iOS instructions, installed detection |
 | [`application/pwa`](application/pwa) | `index.html` + `main.ts` + router + service worker |
 
 The walls and what enforces them:

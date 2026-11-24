@@ -26,6 +26,8 @@ export interface DailyChallenge {
   readonly status: ChallengeStatus;
   /** ISO-8601 instant. */
   readonly drawnAt: string;
+  /** ISO-8601 instant the reader first opened the card — the little ceremony plays until then. */
+  readonly unveiledAt?: string;
   /** ISO-8601 instant of the first log, present once completed. */
   readonly completedAt?: string;
   /** Pages actually read that day — more or fewer than the goal. Present once completed. */
@@ -89,6 +91,24 @@ export type ReminderDelivery =
   | 'background'
   /** Notifications fire only while the app is open or recently backgrounded. */
   | 'while-open';
+
+/** The first-visit walkthrough: whether it has been completed (or skipped). */
+export interface WelcomeState {
+  readonly completedOn?: DayKey;
+}
+
+/** How this app can be installed on this device. */
+export type InstallAvailability =
+  /** Already running as an installed app. */
+  | 'installed'
+  /** The browser offers an install prompt the app can trigger (Chromium). */
+  | 'prompt'
+  /** iOS / iPadOS Safari: Share → Add to Home Screen, by hand. */
+  | 'ios'
+  /** Some other browser: install from its own menu, if it can. */
+  | 'manual';
+
+export type InstallOutcome = 'accepted' | 'dismissed' | 'unavailable';
 
 export const DEFAULT_REMINDER: ReminderSettings = { enabled: false, time: '20:00' };
 

@@ -4,6 +4,7 @@ import {
   DEFAULT_REMINDER,
   EMPTY_SHELF,
   type AchievementLedger,
+  type AppInstaller,
   type Bookshelf,
   type BookshelfPort,
   type BookshelfRepository,
@@ -11,6 +12,7 @@ import {
   type DailyChallenge,
   type DailyChallengePort,
   type FinishedBook,
+  type OverviewPort,
   type Notifier,
   type PageRange,
   type PageRangePort,
@@ -24,11 +26,13 @@ import {
   type ReminderPort,
   type ReminderScheduler,
   type ReminderSettings,
+  type WelcomePort,
 } from '@hmpt/domain-contract';
 import { ACHIEVEMENTS, earnedAchievements } from './achievements';
 import { dayKeyOf } from './days';
 import { drawArtSeed, drawPages, possiblePages, validateRange } from './pages';
 import { validateOptionalTitle, validatePagesRead, validateProfile, validateTitle } from './profile';
+import { monthOverview, yearOverview } from './overview';
 import { nextReminderAt, parseTime, reminderInstantOn } from './reminders';
 import { computeStats, goalMetOf, pagesReadOf } from './stats';
 import { ReadingStore } from './store';
@@ -44,6 +48,7 @@ export interface ReminderCheckDeps {
 
 export interface ReadingDeps extends ReminderCheckDeps {
   readonly shelves: BookshelfRepository;
+  readonly installer: AppInstaller;
   readonly achievements: AchievementLedger;
   readonly scheduler: ReminderScheduler;
 }
@@ -52,9 +57,11 @@ export interface ReadingApp {
   readonly challenge: DailyChallengePort;
   readonly profile: ProfilePort;
   readonly bookshelf: BookshelfPort;
+  readonly overview: OverviewPort;
   readonly range: PageRangePort;
   readonly reminder: ReminderPort;
   readonly reminderCheck: ReminderCheckPort;
+  readonly welcome: WelcomePort;
   readonly view: ReadingView;
 }
 
@@ -194,6 +201,15 @@ export function createReadingApp(deps: ReadingDeps): ReadingApp {
   const challenge: DailyChallengePort = {
     open: refresh,
 
+    async unveil() {
+      const current = await ensureToday(deps);
+      if (current.unveiledAt !== undefined) return current;
+      const unveiled: DailyChallenge = { ...current, unveiledAt: deps.clock.now().toISOString() };
+      await deps.history.save(unveiled);
+      await refresh();
+      return unveiled;
+    },
+
     async complete(log = {}) {
       const current = await ensureToday(deps);
       if (current.status === 'completed') return err('already-completed');
@@ -272,6 +288,17 @@ export function createReadingApp(deps: ReadingDeps): ReadingApp {
     },
   };
 
+  const overview: OverviewPort = {
+    async month(year, month) {
+      const [history, shelf] = await Promise.all([deps.history.all(), loadShelf()]);
+      return monthOverview(history, shelf, year, month, today());
+    },
+    async year(year) {
+      const [history, shelf] = await Promise.all([deps.history.all(), loadShelf()]);
+      return yearOverview(history, shelf, year, today());
+    },
+  };
+
   const range: PageRangePort = {
     preview(candidate) {
       const valid = validateRange(candidate);
@@ -337,13 +364,31 @@ export function createReadingApp(deps: ReadingDeps): ReadingApp {
     },
   };
 
+  const welcome: WelcomePort = {
+    async needed() {
+      const [state, profile] = await Promise.all([deps.preferences.loadWelcome(), deps.profiles.load()]);
+      return state?.completedOn === undefined && profile === undefined;
+    },
+    installAvailability: () => deps.installer.availability(),
+    install: () => deps.installer.prompt(),
+    async finish() {
+      const state = (await deps.preferences.loadWelcome()) ?? {};
+      await deps.preferences.saveWelcome({ ...state, completedOn: today() });
+    },
+    async replay() {
+      store.emit({ type: 'welcome-requested' });
+    },
+  };
+
   return {
     challenge,
     profile,
     bookshelf,
+    overview,
     range,
     reminder,
     reminderCheck: createReminderCheck(deps),
+    welcome,
     view: store,
   };
 }

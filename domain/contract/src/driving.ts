@@ -3,6 +3,8 @@ import type {
   Bookshelf,
   DailyChallenge,
   FinishedBook,
+  InstallAvailability,
+  InstallOutcome,
   PageRange,
   Profile,
   ProfileInput,
@@ -31,6 +33,8 @@ export interface ReadingLog {
 export interface DailyChallengePort {
   /** Draws today's card if it does not exist yet, then refreshes the read model. Idempotent. */
   open(): Promise<DailyChallenge>;
+  /** The reader has opened today's card. Idempotent; the first opening is kept. */
+  unveil(): Promise<DailyChallenge>;
   /** Logs today's reading. Final — a day read stays read. */
   complete(log?: ReadingLog): Promise<Result<DailyChallenge, ChallengeError>>;
   /** Adds pages read later the same day. Only ever upward. */
@@ -91,6 +95,18 @@ export type ReminderCheckOutcome = 'notified' | 'disabled' | 'not-yet' | 'alread
  */
 export interface ReminderCheckPort {
   run(): Promise<ReminderCheckOutcome>;
+}
+
+/** The first-visit walkthrough. */
+export interface WelcomePort {
+  /** True on a first visit: never welcomed, and no reader's card yet. */
+  needed(): Promise<boolean>;
+  installAvailability(): Promise<InstallAvailability>;
+  install(): Promise<InstallOutcome>;
+  /** Completed or skipped — either way, not shown again unasked. */
+  finish(): Promise<void>;
+  /** Asks for the walkthrough again (announced as a `welcome-requested` event). */
+  replay(): Promise<void>;
 }
 
 /** The read model. Reactivity lives here, not in the wiring. */

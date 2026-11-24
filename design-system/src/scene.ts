@@ -4,7 +4,9 @@
  * looks the same every time it is opened, online or not.
  */
 
-export type SceneKind = 'shelves' | 'lamp' | 'nook' | 'armchair' | 'window' | 'still-life';
+export const SCENE_KINDS = ['shelves', 'lamp', 'nook', 'armchair', 'window', 'still-life'] as const;
+
+export type SceneKind = (typeof SCENE_KINDS)[number];
 
 export interface Scene {
   readonly kind: SceneKind;
@@ -15,7 +17,7 @@ export interface Scene {
 
 const W = 400;
 const H = 300;
-const KINDS: readonly SceneKind[] = ['shelves', 'lamp', 'nook', 'armchair', 'window', 'still-life'];
+const KINDS: readonly SceneKind[] = SCENE_KINDS;
 const LABELS: Record<SceneKind, string> = {
   shelves: 'Dusty bookshelves in a beam of afternoon light',
   lamp: "A green banker's lamp over an open book and a cup of tea",
@@ -505,9 +507,11 @@ const PAINTERS: Record<SceneKind, (rng: Rng, id: string) => string> = {
   'still-life': stillLife,
 };
 
-export function renderScene(seed: number): Scene {
+/** Paints the scene a seed picks — or, given `only`, that scene, still varied by the seed. */
+export function renderScene(seed: number, only?: SceneKind): Scene {
   const rng = seeded(seed);
-  const kind = KINDS[Math.floor(rng() * KINDS.length)] ?? 'shelves';
+  const drawn = KINDS[Math.floor(rng() * KINDS.length)] ?? 'shelves';
+  const kind = only ?? drawn;
   const id = `scene-${seed >>> 0}`;
   const body = PAINTERS[kind](rng, id);
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false"><defs>${defs(id)}</defs>${body}${finish(id)}</svg>`;

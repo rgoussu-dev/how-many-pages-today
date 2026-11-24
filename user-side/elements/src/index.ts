@@ -5,9 +5,11 @@ import { Greeting } from './greeting';
 import { HistoryCalendar } from './history-calendar';
 import { ProfileForm } from './profile-form';
 import { RangeForm } from './range-form';
+import { ReadingOverview } from './reading-overview';
 import { ReminderForm } from './reminder-form';
 import { StreakSummary } from './streak-summary';
 import { TodayCard } from './today-card';
+import { Welcome, WelcomeReplay } from './welcome';
 
 export { readingContexts } from './contexts';
 export { dailyReminderInvite } from './calendar-invite';
@@ -19,10 +21,13 @@ const ELEMENTS = {
   'hmpt-history-calendar': HistoryCalendar,
   'hmpt-achievement-list': AchievementList,
   'hmpt-bookshelf': Bookshelf,
+  'hmpt-reading-overview': ReadingOverview,
   'hmpt-profile-form': ProfileForm,
   'hmpt-range-form': RangeForm,
   'hmpt-reminder-form': ReminderForm,
   'hmpt-celebration': Celebration,
+  'hmpt-welcome': Welcome,
+  'hmpt-welcome-replay': WelcomeReplay,
 } as const;
 
 /**

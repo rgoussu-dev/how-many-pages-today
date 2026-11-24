@@ -29,6 +29,18 @@ describe('the daily challenge', () => {
     expect(snapshot?.today.pages).toBe(40);
   });
 
+  it('deals a card face down, and remembers the first time it is opened', async () => {
+    const first = await app.challenge.open();
+    expect(first.unveiledAt).toBeUndefined();
+    deps.clock.set(at(24, 9, 5));
+    const opened = await app.challenge.unveil();
+    expect(opened.unveiledAt).toBe(at(24, 9, 5).toISOString());
+    deps.clock.set(at(24, 11, 0));
+    expect((await app.challenge.unveil()).unveiledAt).toBe(at(24, 9, 5).toISOString());
+    expect(snapshot?.today.unveiledAt).toBe(at(24, 9, 5).toISOString());
+    expect(snapshot?.today.pages).toBe(first.pages); // opening never redraws
+  });
+
   it('validates the day, starts a streak and unlocks the first achievement', async () => {
     await app.challenge.open();
     const result = await app.challenge.complete();
@@ -269,5 +281,50 @@ describe('reminders', () => {
     expect(await app.reminderCheck.run()).toBe('notified');
     await app.reminder.configure({ enabled: true, time: '20:15' });
     expect(await app.reminderCheck.run()).toBe('notified');
+  });
+});
+
+describe('the overview port', () => {
+  it('looks back over what the app recorded', async () => {
+    const deps = inMemoryDeps(at(24), [0.35]);
+    const app = createReadingApp(deps);
+    await app.challenge.complete({ pagesRead: 55, finishedBook: true, bookTitle: 'Kindred' });
+    const month = await app.overview.month(2026, 11);
+    expect(month.totals).toMatchObject({ pagesRead: 55, daysRead: 1, booksFinished: 1 });
+    expect(month.books.map((b) => b.title)).toEqual(['Kindred']);
+    expect((await app.overview.year(2026)).months[10]?.totals.pagesRead).toBe(55);
+  });
+});
+
+describe('the welcome', () => {
+  it('is needed on a first visit only, and not again once finished or skipped', async () => {
+    const deps = inMemoryDeps(at(24));
+    const app = createReadingApp(deps);
+    expect(await app.welcome.needed()).toBe(true);
+    await app.welcome.finish();
+    expect(await app.welcome.needed()).toBe(false);
+    expect(deps.preferences.welcome).toEqual({ completedOn: '2026-11-24' });
+  });
+
+  it('is not imposed on a reader who already has a card', async () => {
+    const app = createReadingApp(inMemoryDeps(at(24)));
+    await app.profile.save({ displayName: 'Ada', avatar: '🦉', favouriteGenre: '' });
+    expect(await app.welcome.needed()).toBe(false);
+  });
+
+  it('can be asked for again', async () => {
+    const app = createReadingApp(inMemoryDeps(at(24)));
+    const events: ReadingEvent[] = [];
+    app.view.onEvent((e) => events.push(e));
+    await app.welcome.replay();
+    expect(events).toEqual([{ type: 'welcome-requested' }]);
+  });
+
+  it('offers installation through the platform', async () => {
+    const deps = inMemoryDeps(at(24));
+    const app = createReadingApp(deps);
+    expect(await app.welcome.installAvailability()).toBe('prompt');
+    expect(await app.welcome.install()).toBe('accepted');
+    expect(deps.installer.prompted).toBe(1);
   });
 });

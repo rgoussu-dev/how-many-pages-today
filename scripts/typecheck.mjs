@@ -15,6 +15,7 @@ const projects = [
   'user-side/elements',
   'infra/storage-indexeddb',
   'infra/reminders-browser',
+  'infra/install-browser',
   'application/pwa',
   'application/pwa/tsconfig.sw.json',
   'tsconfig.tests.json',

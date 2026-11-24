@@ -3,6 +3,10 @@
 import type { Clock, RandomSource } from '@hmpt/kernel';
 import type {
   AchievementLedger,
+  AppInstaller,
+  InstallAvailability,
+  InstallOutcome,
+  WelcomeState,
   Bookshelf,
   BookshelfRepository,
   ChallengeHistory,
@@ -64,6 +68,13 @@ export class InMemoryShelves implements BookshelfRepository {
 export class InMemoryPreferences implements PreferencesRepository {
   range: PageRange | undefined;
   reminder: ReminderSettings | undefined;
+  welcome: WelcomeState | undefined;
+  async loadWelcome() {
+    return this.welcome;
+  }
+  async saveWelcome(welcome: WelcomeState) {
+    this.welcome = welcome;
+  }
   async loadRange() {
     return this.range;
   }
@@ -135,6 +146,21 @@ export class FakeScheduler implements ReminderScheduler {
   }
 }
 
+export class FakeInstaller implements AppInstaller {
+  prompted = 0;
+  constructor(
+    public availabilityValue: InstallAvailability = 'prompt',
+    public outcome: InstallOutcome = 'accepted',
+  ) {}
+  async availability() {
+    return this.availabilityValue;
+  }
+  async prompt() {
+    this.prompted += 1;
+    return this.outcome;
+  }
+}
+
 export type InMemoryDeps = ReadingDeps & {
   readonly history: InMemoryChallengeHistory;
   readonly profiles: InMemoryProfiles;
@@ -142,6 +168,7 @@ export type InMemoryDeps = ReadingDeps & {
   readonly preferences: InMemoryPreferences;
   readonly achievements: InMemoryAchievements;
   readonly scheduler: FakeScheduler;
+  readonly installer: FakeInstaller;
   readonly notifier: RecordingNotifier;
   readonly clock: ManualClock;
   readonly random: SequenceRandom;
@@ -155,6 +182,7 @@ export function inMemoryDeps(start: Date = new Date(2026, 10, 24, 9, 0), random:
     preferences: new InMemoryPreferences(),
     achievements: new InMemoryAchievements(),
     scheduler: new FakeScheduler(),
+    installer: new FakeInstaller(),
     notifier: new RecordingNotifier(),
     clock: new ManualClock(start),
     random: new SequenceRandom(random),

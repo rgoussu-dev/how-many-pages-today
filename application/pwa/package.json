@@ -17,6 +17,7 @@
     "@hmpt/domain-contract": "0.1.0",
     "@hmpt/domain-core": "0.1.0",
     "@hmpt/elements": "0.1.0",
+    "@hmpt/infra-install-browser": "0.1.0",
     "@hmpt/infra-reminders-browser": "0.1.0",
     "@hmpt/infra-storage-indexeddb": "0.1.0",
     "@hmpt/kernel": "0.1.0",

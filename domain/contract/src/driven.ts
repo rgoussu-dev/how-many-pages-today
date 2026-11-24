@@ -6,7 +6,10 @@ import type {
   Profile,
   ReminderDelivery,
   ReminderSettings,
+  InstallAvailability,
+  InstallOutcome,
   UnlockedAchievement,
+  WelcomeState,
 } from './model';
 
 /**
@@ -40,6 +43,15 @@ export interface PreferencesRepository {
   saveRange(range: PageRange): Promise<void>;
   loadReminder(): Promise<ReminderSettings | undefined>;
   saveReminder(reminder: ReminderSettings): Promise<void>;
+  loadWelcome(): Promise<WelcomeState | undefined>;
+  saveWelcome(welcome: WelcomeState): Promise<void>;
+}
+
+/** Installing the app on the device's home screen. */
+export interface AppInstaller {
+  availability(): Promise<InstallAvailability>;
+  /** Shows the platform's install prompt, where there is one. */
+  prompt(): Promise<InstallOutcome>;
 }
 
 export interface AchievementLedger {

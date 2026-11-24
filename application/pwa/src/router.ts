@@ -1,11 +1,12 @@
-/** The shell's router: three hash routes (GitHub Pages has no server-side routing). */
+/** The shell's router: four hash routes (GitHub Pages has no server-side routing). */
 
-const ROUTES = ['today', 'progress', 'profile'] as const;
+const ROUTES = ['today', 'progress', 'overview', 'profile'] as const;
 type Route = (typeof ROUTES)[number];
 
 const TITLES: Record<Route, string> = {
   today: 'How Many Pages Today',
   progress: 'Progress · How Many Pages Today',
+  overview: 'Overview · How Many Pages Today',
   profile: 'You · How Many Pages Today',
 };
 
