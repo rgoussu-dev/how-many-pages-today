@@ -26,6 +26,7 @@ import { localizeShell } from './localize-shell';
 import { startRouter } from './router';
 import { registerServiceWorker } from './service-worker';
 import { keepFresh } from './keep-fresh';
+import { offerUpdates } from './offer-updates';
 import { databaseName, stage } from './stage';
 
 const base = import.meta.env.BASE_URL;
@@ -35,9 +36,9 @@ if (stage) document.documentElement.dataset.stage = stage;
 
 // Listen for the install prompt before anything else: it fires once, early.
 const installer = createBrowserInstaller();
+const worker = registerServiceWorker(`${base}sw.js`);
 
 async function assemble(): Promise<ReadingApp> {
-  const worker = registerServiceWorker(`${base}sw.js`);
   const storage = await openReadingDatabase(databaseName);
   return createReadingApp({
     history: storage.history,
@@ -87,6 +88,7 @@ async function boot(): Promise<void> {
   defineDesignSystem();
   defineReadingElements();
   keepFresh(app);
+  offerUpdates(worker.updates);
   document.querySelector('[data-booting]')?.removeAttribute('data-booting');
 }
 

@@ -83,6 +83,13 @@
           <span data-t="shell.tabs.profile">You</span>
         </a>
       </nav>
+
+      <!-- A new version of the app has downloaded: open it now, or later. -->
+      <aside class="app-update" data-update role="status" aria-live="polite" hidden>
+        <p data-t="shell.update.notice">A new edition is on the shelf.</p>
+        <button type="button" class="btn btn-quiet" data-update-later data-t="shell.update.later">Later</button>
+        <button type="button" class="btn btn-primary" data-update-open data-t="shell.update.open">Open it</button>
+      </aside>
     </div>
 
     <hmpt-celebration></hmpt-celebration>

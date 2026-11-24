@@ -17,3 +17,9 @@
   database, cache or storage key) must be named through `src/stage.ts`, so staging never
   touches the real reader's data; production's `sw.ts` must never serve navigations under
   `staging/`.
+- A new service worker waits (no `skipWaiting` on install): it takes over only when the page
+  asks (`{ type: 'skip-waiting' }`, sent by "Open it"), and the page reloads on the
+  `controllerchange` it asked for — never on the first install's. Keep it that way: an app
+  swapped mid-use may load assets the old page never knew.
+- `e2e/updates.spec.ts` ships a new version by editing `dist/sw.js` mid-test, so it runs in its
+  own Playwright project after all the others (`dependencies`); keep other tests out of it.

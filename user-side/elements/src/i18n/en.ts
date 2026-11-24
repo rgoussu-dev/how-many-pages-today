@@ -107,6 +107,11 @@ export const en = {
       profile: 'You · How Many Pages Today',
     },
     footnote: "Everything stays on this device. Clearing the browser's site data erases it.",
+    update: {
+      notice: 'A new edition is on the shelf.',
+      open: 'Open it',
+      later: 'Later',
+    },
     fatal:
       'Your reading card could not be dealt: this browser blocked local storage (private browsing?). Open the app in a regular window to keep your progress.',
   },

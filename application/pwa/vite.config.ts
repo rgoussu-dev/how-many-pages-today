@@ -17,7 +17,7 @@ export default defineConfig({
       srcDir: 'src',
       filename: 'sw.ts',
       injectRegister: false, // main.ts registers it, after the domain is wired
-      registerType: 'autoUpdate',
+      registerType: 'prompt', // a new version waits; the shell offers it (src/offer-updates.ts)
       injectManifest: {
         globPatterns: ['**/*.{js,css,html,svg,png,ico,webmanifest,woff2}'],
         rollupFormat: 'iife',

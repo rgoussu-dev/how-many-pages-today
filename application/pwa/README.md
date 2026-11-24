@@ -7,6 +7,9 @@ reader's language;
 `src/keep-fresh.ts` deals the new card at midnight and runs the reminder check while open;
 `src/sw.ts` precaches the build and runs the reminder check on periodic sync;
 `src/stage.ts` tells a staging build (`VITE_STAGE=staging`) apart from production.
+`src/service-worker.ts` registers the worker and notices a new version waiting;
+`src/offer-updates.ts` offers it (the slip above the tab bar) and looks for one when the app
+comes back to the foreground.
 
 `npm run dev`, `npm run build`, `npm run preview`, `npm run e2e`, `npm run icons`.
 

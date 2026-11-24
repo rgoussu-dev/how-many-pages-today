@@ -120,3 +120,44 @@ html[data-stage] body::after {
   pointer-events: none;
   box-shadow: 0 1px 3px rgb(0 0 0 / 0.35);
 }
+
+/* A new version of the app has downloaded: a slip of parchment above the tab bar offers it. */
+.app-update {
+  position: fixed;
+  inset: auto var(--s1) calc(var(--tabbar-height) + env(safe-area-inset-bottom) + var(--s0)) var(--s1);
+  z-index: 45; /* above the tab bar, beneath the walkthrough */
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s-1) var(--s0);
+  max-width: 30rem;
+  margin-inline: auto;
+  padding: var(--s-1) var(--s0);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--grain-paper), var(--surface);
+  box-shadow:
+    inset 0 0 0 3px var(--surface),
+    inset 0 0 0 4px color-mix(in srgb, var(--gilt) 55%, transparent),
+    var(--shadow-lift);
+  animation: update-arrives 360ms ease-out;
+}
+
+.app-update[hidden] {
+  display: none;
+}
+
+.app-update p {
+  flex: 1 0 100%; /* the words on top, the two choices side by side beneath */
+  margin: 0;
+  font-style: italic;
+  text-align: center;
+}
+
+@keyframes update-arrives {
+  from {
+    opacity: 0;
+    transform: translateY(0.75rem);
+  }
+}
