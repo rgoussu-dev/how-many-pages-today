@@ -26,6 +26,8 @@ export interface DailyChallenge {
   readonly status: ChallengeStatus;
   /** ISO-8601 instant. */
   readonly drawnAt: string;
+  /** ISO-8601 instant the reader first opened the card — the little ceremony plays until then. */
+  readonly unveiledAt?: string;
   /** ISO-8601 instant of the first log, present once completed. */
   readonly completedAt?: string;
   /** Pages actually read that day — more or fewer than the goal. Present once completed. */

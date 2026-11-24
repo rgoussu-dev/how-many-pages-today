@@ -201,6 +201,15 @@ export function createReadingApp(deps: ReadingDeps): ReadingApp {
   const challenge: DailyChallengePort = {
     open: refresh,
 
+    async unveil() {
+      const current = await ensureToday(deps);
+      if (current.unveiledAt !== undefined) return current;
+      const unveiled: DailyChallenge = { ...current, unveiledAt: deps.clock.now().toISOString() };
+      await deps.history.save(unveiled);
+      await refresh();
+      return unveiled;
+    },
+
     async complete(log = {}) {
       const current = await ensureToday(deps);
       if (current.status === 'completed') return err('already-completed');

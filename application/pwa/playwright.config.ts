@@ -13,6 +13,9 @@ export default defineConfig({
     baseURL: `http://127.0.0.1:${port}${base}`,
     trace: 'off',
     serviceWorkers: 'allow',
+    // The daily flourish keeps the card closed for ~3s; most tests don't need to watch it.
+    // Reduced motion opens it at once. The flourish has its own test with motion on.
+    contextOptions: { reducedMotion: 'reduce' },
     // CI installs the Chromium this Playwright version expects. Elsewhere, point
     // PLAYWRIGHT_CHROMIUM_PATH at an existing Chromium to skip the download.
     launchOptions: process.env.PLAYWRIGHT_CHROMIUM_PATH

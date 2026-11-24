@@ -29,6 +29,18 @@ describe('the daily challenge', () => {
     expect(snapshot?.today.pages).toBe(40);
   });
 
+  it('deals a card face down, and remembers the first time it is opened', async () => {
+    const first = await app.challenge.open();
+    expect(first.unveiledAt).toBeUndefined();
+    deps.clock.set(at(24, 9, 5));
+    const opened = await app.challenge.unveil();
+    expect(opened.unveiledAt).toBe(at(24, 9, 5).toISOString());
+    deps.clock.set(at(24, 11, 0));
+    expect((await app.challenge.unveil()).unveiledAt).toBe(at(24, 9, 5).toISOString());
+    expect(snapshot?.today.unveiledAt).toBe(at(24, 9, 5).toISOString());
+    expect(snapshot?.today.pages).toBe(first.pages); // opening never redraws
+  });
+
   it('validates the day, starts a streak and unlocks the first achievement', async () => {
     await app.challenge.open();
     const result = await app.challenge.complete();

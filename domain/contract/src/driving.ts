@@ -33,6 +33,8 @@ export interface ReadingLog {
 export interface DailyChallengePort {
   /** Draws today's card if it does not exist yet, then refreshes the read model. Idempotent. */
   open(): Promise<DailyChallenge>;
+  /** The reader has opened today's card. Idempotent; the first opening is kept. */
+  unveil(): Promise<DailyChallenge>;
   /** Logs today's reading. Final — a day read stays read. */
   complete(log?: ReadingLog): Promise<Result<DailyChallenge, ChallengeError>>;
   /** Adds pages read later the same day. Only ever upward. */

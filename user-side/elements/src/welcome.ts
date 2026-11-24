@@ -175,6 +175,7 @@ export class Welcome extends PortBoundElement {
     this.#index = -1;
     this.$('[data-root]').hidden = true;
     delete document.documentElement.dataset.welcoming;
+    window.scrollTo({ top: 0, behavior: 'instant' }); // back to the day's card
     for (const el of this.#inerted) (el as HTMLElement).inert = false;
     this.#inerted = [];
     document.removeEventListener('keydown', this.#keydown);

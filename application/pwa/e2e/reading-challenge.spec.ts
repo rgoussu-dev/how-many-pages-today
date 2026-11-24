@@ -348,3 +348,29 @@ test('welcome: where the browser offers to install, the librarian hands over the
   await w.getByRole('button', { name: 'Onward' }).click();
   await expect(w.getByRole('heading', { name: 'Your first card awaits' })).toBeVisible();
 });
+
+test.describe('with motion', () => {
+  test.use({ contextOptions: { reducedMotion: 'no-preference' } });
+
+  test('welcome: the day’s card waits closed, then arrives, opens and riffles to its page — once', async ({ page }) => {
+    const book = card(page);
+    const goal = await book.locator('[data-pages]').textContent();
+    // Behind the librarian, the card stays closed.
+    await expect(book).toHaveAttribute('data-reveal', 'closed');
+    await expect(book.locator('.tome-cover')).toBeVisible();
+    await expect(book.locator('.tome-cover-date')).not.toBeEmpty();
+
+    await welcome(page).getByRole('button', { name: 'I know my way' }).click();
+    await expect(book).toHaveAttribute('data-reveal', 'opening');
+    await expect(book.locator('.tome-inner')).toHaveJSProperty('inert', true);
+    await expect(book).not.toHaveAttribute('data-reveal', { timeout: 6000 });
+    await expect(book.locator('[data-pages]')).toHaveText(goal ?? '');
+    await expect(book.locator('.tome-inner')).toHaveJSProperty('inert', false);
+    await expect(book.getByRole('button', { name: /^I read/ })).toBeEnabled();
+
+    await page.reload();
+    await expect(book.locator('[data-pages]')).toHaveText(goal ?? '');
+    await page.waitForTimeout(500);
+    await expect(book).not.toHaveAttribute('data-reveal');
+  });
+});

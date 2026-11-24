@@ -38,6 +38,10 @@ No contract tests between infra and the domain contract (house rule).
 
 ## Commands
 
+The e2e suite runs with reduced motion (the daily flourish would hold the card closed for
+~3s); tests that need motion opt in with `test.use({ contextOptions: { reducedMotion:
+'no-preference' } })`.
+
 `npm run verify` (typecheck, lint:arch, test, build) must pass before every commit;
 `npm run e2e` before pushing (set `PLAYWRIGHT_CHROMIUM_PATH` to reuse an installed Chromium).
 dependency-cruiser's `missing-tsc-transpiler` warning is expected under TypeScript 7.0 — it
