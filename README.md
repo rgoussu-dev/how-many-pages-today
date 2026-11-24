@@ -66,8 +66,9 @@ its Playwright version (`npx playwright install chromium`), or point
 
 ## Deploy
 
-`.github/workflows/pages.yml` verifies every push and pull request and deploys the
-repository's **default branch** to GitHub Pages. Every action is pinned to a full commit
+`.github/workflows/pages.yml` verifies every pull request and every push to `main`, and
+deploys to GitHub Pages **only from `main`** — on a push to it, or a manual run of the
+workflow on it. Pull requests are verified, never published. Every action is pinned to a full commit
 SHA, with the release tag in a comment. One-time setup: *Settings → Pages →
 Build and deployment → Source: **GitHub Actions***. The app is then served at
 `https://<owner>.github.io/how-many-pages-today/` (change `BASE_PATH` for another host).

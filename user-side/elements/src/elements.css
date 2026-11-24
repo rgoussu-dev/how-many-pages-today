@@ -49,30 +49,7 @@ hmpt-greeting cite {
 hmpt-today-card .tome {
   position: relative;
   display: block;
-  padding: 0.4rem 0.4rem 0.45rem 1.1rem; /* the boards peeking out around the page; the spine on the left */
-  border-radius: 0.3rem 0.7rem 0.7rem 0.3rem;
-  background:
-    var(--grain-leather),
-    radial-gradient(120% 90% at 30% 15%, var(--leather-light), var(--leather) 55%, var(--leather-deep));
-  box-shadow:
-    4px 0 0 -1px #efe0bf,
-    5px 1px 0 -1px #d8c296,
-    7px 2px 0 -1px #efe0bf,
-    8px 3px 0 -1px #c7ad7c,
-    var(--shadow-lift);
-}
-
-hmpt-today-card .tome::before {
-  /* the raised bands of the spine */
-  content: '';
-  position: absolute;
-  inset: 0 auto 0 0;
-  width: 1.1rem;
-  border-radius: 0.3rem 0 0 0.3rem;
-  background:
-    repeating-linear-gradient(180deg, transparent 0 18%, rgb(0 0 0 / 0.35) 18% 19%, rgb(255 220 160 / 0.18) 19% 20%, transparent 20% 25%),
-    linear-gradient(90deg, rgb(0 0 0 / 0.45), rgb(255 255 255 / 0.08) 60%, rgb(0 0 0 / 0.3));
-  pointer-events: none;
+  border-radius: 0.2rem 0.6rem 0.6rem 0.2rem;
 }
 
 /* The page: paper by day, a warm dark page by lamplight; the gutter shadow at the spine. */
@@ -83,14 +60,32 @@ hmpt-today-card .tome-inner {
     linear-gradient(180deg, color-mix(in srgb, var(--surface) 94%, #fff), var(--surface));
 }
 
+/* An open book, seen from above, shows only its right-hand page: the gutter at the binding
+   on the left, the edges of the pages beneath peeking out on the right. The boards are below. */
 hmpt-today-card .tome-inner {
   position: relative;
   display: grid;
   gap: var(--s-1);
   padding: var(--s0) var(--s1) var(--s0) calc(var(--s1) + 0.25rem);
-  border-radius: 0.15rem 0.45rem 0.45rem 0.15rem;
+  border-radius: 0.2rem 0.6rem 0.6rem 0.2rem;
   color: var(--ink);
-  box-shadow: inset 0 0 30px -10px color-mix(in srgb, var(--gilt-dark) 40%, transparent);
+  box-shadow:
+    inset 0 0 30px -10px color-mix(in srgb, var(--gilt-dark) 40%, transparent),
+    3px 1px 0 -1px var(--surface),
+    3px 1px 0 0 var(--line),
+    6px 2px 0 -1px var(--surface-sunk),
+    6px 2px 0 0 var(--line),
+    var(--shadow-lift);
+}
+
+/* Closed on its back, the page edges show on the other side (the spine is now on the right). */
+hmpt-today-card[data-done]:not([data-peek]) .tome-inner {
+  box-shadow:
+    -3px 1px 0 -1px #efe0bf,
+    -3px 1px 0 0 #c7ad7c,
+    -6px 2px 0 -1px #e4d2ad,
+    -6px 2px 0 0 #b99a68,
+    var(--shadow-lift);
 }
 
 /* Running head: the date in small capitals over a printer's rule. */
@@ -214,11 +209,14 @@ hmpt-today-card .tome-check input {
 hmpt-today-card .tome-back {
   display: none;
   position: absolute;
-  inset: 0 0 0 1.1rem;
+  inset: 0;
   z-index: 3;
-  border-radius: 0 0.7rem 0.7rem 0;
-  transform-origin: 0 50%;
-  box-shadow: inset 6px 0 10px -6px rgb(0 0 0 / 0.6);
+  border-radius: 0.7rem 0.3rem 0.3rem 0.7rem;
+  transform-origin: 100% 50%; /* hinged at the spine, on the right */
+  background:
+    var(--spine-bands) 100% 0 / 1.1rem 100% no-repeat,
+    linear-gradient(270deg, rgb(0 0 0 / 0.45), rgb(255 255 255 / 0.08) 0.66rem, rgb(0 0 0 / 0.3) 1.1rem, transparent 1.1rem),
+    var(--board);
 }
 
 hmpt-today-card[data-done]:not([data-peek]) .tome-back {
@@ -232,14 +230,14 @@ hmpt-today-card .tome-back-face {
   place-content: center;
   justify-items: center;
   gap: 0.75rem;
-  padding: 2rem 1.75rem;
+  padding: 2rem 2.4rem 2rem 1.6rem;
   text-align: center;
 }
 
 hmpt-today-card .tome-back-face::before {
   content: '';
   position: absolute;
-  inset: 0.55rem;
+  inset: 0.55rem 1.65rem 0.55rem 0.55rem; /* the tooling stops short of the spine */
   border: 1px solid color-mix(in srgb, var(--gilt) 80%, transparent);
   outline: 1px solid color-mix(in srgb, var(--gilt) 45%, transparent);
   outline-offset: -5px;
@@ -339,7 +337,7 @@ hmpt-today-card[data-closing] .tome-back-face > :not(.tome-back-seal) {
 
 @keyframes back-close {
   from {
-    transform: rotateY(-172deg);
+    transform: rotateY(172deg); /* swings over from the right, closing the book */
     opacity: 0;
   }
   15% {
@@ -1462,7 +1460,7 @@ hmpt-today-card .tome-cover,
 hmpt-today-card .tome-leaves {
   display: none;
   position: absolute;
-  inset: 0 0 0 1.1rem; /* everything right of the spine */
+  inset: 0;
   z-index: 3;
   pointer-events: none;
 }
@@ -1479,12 +1477,33 @@ hmpt-today-card .tome-leaves {
   perspective-origin: 0 50%;
 }
 
-/* The front board: gilt-tooled leather, marbled endpaper on its inside. */
+/* The boards: gilt-tooled leather with the spine's raised bands — on the left of the front
+   board, on the right of the back board (a book seen from behind has its spine on the right). */
+hmpt-today-card .tome-cover,
+hmpt-today-card .tome-back {
+  --spine-bands: repeating-linear-gradient(
+    180deg,
+    transparent 0 18%,
+    rgb(0 0 0 / 0.35) 18% 19%,
+    rgb(255 220 160 / 0.18) 19% 20%,
+    transparent 20% 25%
+  );
+  --board: var(--grain-leather), radial-gradient(120% 90% at 30% 15%, var(--leather-light), var(--leather) 55%, var(--leather-deep));
+}
+
+/* The front board hinges at the spine, on the left; marbled endpaper on its inside. */
 hmpt-today-card .tome-cover {
-  border-radius: 0 0.7rem 0.7rem 0;
+  border-radius: 0.3rem 0.7rem 0.7rem 0.3rem;
   transform-origin: 0 50%;
   transform-style: preserve-3d;
-  box-shadow: inset 6px 0 10px -6px rgb(0 0 0 / 0.6);
+  background:
+    var(--spine-bands) 0 0 / 1.1rem 100% no-repeat,
+    linear-gradient(90deg, rgb(0 0 0 / 0.45), rgb(255 255 255 / 0.08) 0.66rem, rgb(0 0 0 / 0.3) 1.1rem, transparent 1.1rem),
+    var(--board);
+  box-shadow:
+    4px 1px 0 -1px #efe0bf,
+    5px 2px 0 -1px #c7ad7c,
+    var(--shadow-lift);
 }
 
 hmpt-today-card .tome-cover::before {
@@ -1515,7 +1534,7 @@ hmpt-today-card .tome-cover-face {
 hmpt-today-card .tome-cover-face::before {
   content: '';
   position: absolute;
-  inset: 0.55rem;
+  inset: 0.55rem 0.55rem 0.55rem 1.65rem; /* the tooling starts past the spine */
   border: 1px solid color-mix(in srgb, var(--gilt) 80%, transparent);
   outline: 1px solid color-mix(in srgb, var(--gilt) 45%, transparent);
   outline-offset: -5px;
@@ -1551,8 +1570,8 @@ hmpt-today-card .tome-cover-date {
 /* The leaves: cream pages, ruled with lines of text, that flip past. */
 hmpt-today-card .tome-leaves > span {
   position: absolute;
-  inset: 0.45rem 0.45rem 0.45rem 0;
-  border-radius: 0 0.4rem 0.4rem 0;
+  inset: 0;
+  border-radius: 0.2rem 0.6rem 0.6rem 0.2rem;
   transform-origin: 0 50%;
   /* the same paper as the page they land on, with lines of text printed on it */
   background-image:

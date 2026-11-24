@@ -1,7 +1,10 @@
 name: Verify & deploy to GitHub Pages
 
+# Pull requests are verified, never published. GitHub Pages is deployed only from `main`:
+# on a push to it, or a manual run of this workflow on it.
 on:
   push:
+    branches: [main]
   pull_request:
   workflow_dispatch:
 
@@ -37,13 +40,13 @@ jobs:
       - name: End-to-end (real browser, production build, offline included)
         run: npm run e2e
       - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
-        if: github.event_name != 'pull_request' && github.ref_name == github.event.repository.default_branch
+        if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main'
         with:
           path: application/pwa/dist
 
   deploy:
     needs: verify
-    if: github.event_name != 'pull_request' && github.ref_name == github.event.repository.default_branch
+    if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     permissions:
       pages: write
