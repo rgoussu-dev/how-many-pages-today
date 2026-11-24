@@ -2,9 +2,10 @@ import type { AchievementId, ChallengeError, FieldError, ReminderError } from '@
 import type { Messages } from './en';
 
 /*
- * Le carnet de phrases français. Il suit l’anglais clé pour clé (`Messages`).
- * Typographie française : espace fine insécable avant ? ! ; et %, insécable avant : et
- * à l’intérieur des guillemets « ». On vouvoie la personne qui lit, sans jamais la genrer.
+ * Le carnet de phrases français. Il suit l’anglais clé pour clé (`Messages`), mais il ne le
+ * traduit pas mot à mot : il le dit comme on le dirait, avec la bonne humeur d’une petite
+ * bibliothèque de quartier. On vouvoie la personne qui lit, sans jamais la genrer.
+ * Typographie : espace fine insécable avant ? ! ; et %, insécable avant : et dans « ».
  */
 
 const number = new Intl.NumberFormat('fr');
@@ -16,82 +17,82 @@ const pagesRead = (value: number) => count(value, 'page lue', 'pages lues');
 const days = (value: number) => count(value, 'jour');
 
 const ACHIEVEMENTS: Record<AchievementId, { readonly title: string; readonly description: string }> = {
-  'first-challenge': { title: 'Premier chapitre', description: 'Relevez votre premier défi quotidien.' },
-  'streak-3': { title: 'Petit bois', description: 'Lisez trois jours de suite.' },
-  'streak-7': { title: 'Une semaine de mots', description: 'Lisez sept jours de suite.' },
-  'streak-30': { title: 'Un mois de ferveur', description: 'Lisez trente jours de suite.' },
-  'streak-100': { title: 'Centurion', description: 'Lisez cent jours de suite.' },
+  'first-challenge': { title: 'Premier chapitre', description: 'Relevez votre tout premier défi.' },
+  'streak-3': { title: 'Petit bois', description: 'Lisez trois jours d’affilée.' },
+  'streak-7': { title: 'Une semaine de mots', description: 'Lisez sept jours d’affilée.' },
+  'streak-30': { title: 'Un mois de ferveur', description: 'Lisez trente jours d’affilée.' },
+  'streak-100': { title: 'Centurion', description: 'Cent jours d’affilée. Rien que ça.' },
   'book-1': { title: 'Fin', description: 'Terminez votre premier livre.' },
   'books-5': { title: 'Une étagère à soi', description: 'Terminez cinq livres.' },
   'books-12': { title: 'Un livre par mois', description: 'Terminez douze livres.' },
   'pages-500': { title: 'Cinq cents pages', description: 'Lisez 500 pages en tout.' },
   'pages-1000': { title: 'Mille pages', description: 'Lisez 1 000 pages en tout.' },
   'pages-5000': { title: 'Rat de bibliothèque', description: 'Lisez 5 000 pages en tout.' },
-  marathon: { title: 'Marathon', description: 'Lisez 100 pages ou plus en une seule journée.' },
-  'beyond-goal': { title: 'Encore un chapitre', description: 'Lisez plus que l’objectif du jour.' },
-  'double-goal': { title: 'Jusqu’au bout de la nuit', description: 'Lisez au moins deux fois l’objectif du jour.' },
-  'extra-100': { title: 'Chapitres bonus', description: 'Lisez 100 pages au-delà de vos objectifs, en tout.' },
-  'page-binge': { title: 'Impossible à lâcher', description: 'Lisez 200 pages ou plus en une seule journée.' },
+  marathon: { title: 'Marathon', description: 'Lisez 100 pages ou plus dans la journée.' },
+  'beyond-goal': { title: 'Encore un chapitre !', description: 'Dépassez l’objectif du jour.' },
+  'double-goal': { title: 'Jusqu’au bout de la nuit', description: 'Lisez au moins le double de l’objectif du jour.' },
+  'extra-100': { title: 'Chapitres en rab', description: 'Accumulez 100 pages au-delà de vos objectifs.' },
+  'page-binge': { title: 'Impossible à lâcher', description: 'Lisez 200 pages ou plus dans la journée.' },
   'little-by-little': {
     title: 'Petit à petit',
-    description: 'Notez une journée en deçà de l’objectif. Chaque page compte.',
+    description: 'Notez une journée sous l’objectif. Chaque page compte !',
   },
-  'final-chapter': { title: 'Le dernier chapitre', description: 'Terminez un livre avec la lecture du jour.' },
+  'final-chapter': { title: 'Le mot de la fin', description: 'Terminez un livre avec la lecture du jour.' },
   'early-bird': { title: 'Lève-tôt', description: 'Validez un défi avant 8 h.' },
   'night-owl': { title: 'Oiseau de nuit', description: 'Validez un défi après 22 h.' },
-  weekend: { title: 'Week-end studieux', description: 'Lisez le samedi et le dimanche d’un même week-end.' },
-  comeback: { title: 'De retour au rayon', description: 'Reprenez la lecture après au moins deux jours manqués.' },
+  weekend: { title: 'Week-end au coin du feu', description: 'Lisez le samedi et le dimanche d’un même week-end.' },
+  comeback: { title: 'Le grand retour', description: 'Reprenez la lecture après au moins deux jours sans.' },
   introductions: { title: 'Faisons connaissance', description: 'Remplissez votre carte de lecture.' },
 };
 
 const CHALLENGE_ERRORS: Record<ChallengeError, string> = {
-  'already-completed': 'La journée est déjà scellée.',
+  'already-completed': 'C’est déjà scellé pour aujourd’hui !',
   'not-completed': 'Notez d’abord votre lecture.',
-  'invalid-pages': 'Un nombre entier de pages, s’il vous plaît — au moins une.',
-  'invalid-title': 'Ce titre est un peu long.',
+  'invalid-pages': 'Des pages entières, s’il vous plaît — et au moins une !',
+  'invalid-title': 'Ce titre est un brin trop long.',
 };
 
 const REMINDER_ERRORS: Record<ReminderError, string> = {
   'invalid-time': 'Choisissez une heure, par exemple 20:30.',
   'permission-denied':
-    'Les notifications sont bloquées pour cette application. Autorisez-les dans les réglages du navigateur ou du téléphone, puis réessayez.',
+    'Les notifications sont bloquées pour cette appli. Autorisez-les dans les réglages du navigateur ou du téléphone, puis réessayez.',
   unsupported:
-    'Ce navigateur ne peut pas afficher de notifications ici. Sur iPhone et iPad, ajoutez d’abord l’application à l’écran d’accueil. Le rappel par agenda ci-dessous fonctionne partout.',
+    'Ce navigateur ne sait pas afficher de notifications ici. Sur iPhone et iPad, ajoutez d’abord l’appli à l’écran d’accueil. Le rappel par agenda, juste en dessous, marche partout.',
   'delivery-failed':
-    'La notification n’a pas pu s’afficher sur cet appareil. Le rappel par agenda ci-dessous fonctionne partout.',
+    'La notification n’a pas voulu s’afficher sur cet appareil. Le rappel par agenda, juste en dessous, marche partout.',
 };
 
 function fieldError({ field, problem, min = 0, max = 0 }: FieldError): string {
   switch (problem) {
     case 'required':
       return field === 'displayName'
-        ? 'Dites-nous comment vous appeler.'
+        ? 'Il me faut un nom pour la carte — un surnom fera l’affaire !'
         : field === 'avatar'
-          ? 'Choisissez un avatar.'
+          ? 'Choisissez un portrait, n’importe lequel !'
           : field === 'title'
-            ? 'Quel livre est-ce ?'
-            : 'Ce champ est nécessaire.';
+            ? 'Il me manque le titre !'
+            : 'Celui-ci, il me le faut.';
     case 'too-long':
-      return `Pas plus de ${n(max)} caractères.`;
+      return `Un peu long, tout ça : ${n(max)} caractères au plus.`;
     case 'not-whole':
-      return field === 'pagesRead' ? 'Un nombre entier de pages, s’il vous plaît.' : 'Un nombre entier, s’il vous plaît.';
+      return field === 'pagesRead' ? 'Des pages entières, s’il vous plaît — pas de demi-page !' : 'Un nombre entier, s’il vous plaît.';
     case 'out-of-range':
-      return field === 'pagesRead' ? `Entre ${n(min)} et ${n(max)} pages.` : `Un nombre entre ${n(min)} et ${n(max)}.`;
+      return field === 'pagesRead' ? `Entre ${n(min)} et ${n(max)} pages, voyons.` : `Un nombre entre ${n(min)} et ${n(max)}.`;
     case 'below-minimum':
-      return 'Le maximum ne peut pas être inférieur au minimum.';
+      return 'Le maximum ne peut pas passer sous le minimum !';
     case 'past-the-end':
-      return `Le livre s’arrête à la page ${n(max)}.`;
+      return `Le livre s’arrête page ${n(max)} — pas plus loin !`;
     case 'no-book':
-      return 'Il n’y a pas de livre sur la table de chevet.';
+      return 'Rien sur la table de chevet pour l’instant.';
   }
 }
 
 export const fr: Messages = {
   common: {
-    optional: '(facultatif)',
+    optional: '(si vous voulez)',
     title: 'Titre',
     aBook: 'Un livre',
-    saved: 'Enregistré ✓',
+    saved: 'C’est noté ✓',
     save: 'Enregistrer',
     fieldError,
   },
@@ -103,7 +104,7 @@ export const fr: Messages = {
     regions: { today: 'Aujourd’hui', progress: 'Progrès', overview: 'Bilan', profile: 'Profil et réglages' },
     headings: {
       progress: 'Votre bibliothèque',
-      overview: 'Retour sur vos lectures',
+      overview: 'Vos lectures, dans le rétro',
       profile: 'Votre salle de lecture',
     },
     titles: {
@@ -112,158 +113,164 @@ export const fr: Messages = {
       overview: 'Bilan · Combien de pages aujourd’hui',
       profile: 'Vous · Combien de pages aujourd’hui',
     },
-    footnote: 'Tout reste sur cet appareil. Effacer les données du site dans le navigateur les supprime.',
+    footnote: 'Tout reste ici, sur cet appareil. Effacez les données du site, et tout s’envole.',
     update: {
-      notice: 'Une nouvelle édition est sur l’étagère.',
-      open: 'L’ouvrir',
+      notice: 'Tout frais : une nouvelle édition vient d’arriver sur l’étagère !',
+      open: 'Voyons ça',
       later: 'Plus tard',
     },
     fatal:
-      'Impossible de distribuer votre carte de lecture : ce navigateur bloque le stockage local (navigation privée ?). Ouvrez l’application dans une fenêtre normale pour garder votre progression.',
+      'Impossible de vous servir votre carte du jour : ce navigateur bloque le stockage local (navigation privée, peut-être ?). Ouvrez l’appli dans une fenêtre normale pour garder vos progrès.',
   },
 
   tour: {
     card: {
       title: 'Votre carte du jour',
-      text: 'Chaque jour, je pose un livre fermé sur la table. Touchez-le et il s’ouvre sur la page du jour : une image, un nombre de pages — et, si un livre attend sur votre table de chevet, la page jusqu’à laquelle lire. Lisez-les, appuyez sur le bouton, et je referme le livre, je scelle la journée et j’avance votre marque-page. Plus de pages, moins — ou votre livre terminé ? Dites-le-moi sous « Plus ou moins de pages ? ». Chaque page compte.',
+      text: 'Chaque jour, je pose un livre fermé sur la table. Touchez-le : il s’ouvre sur la page du jour, avec une image, un nombre de pages — et, si un livre attend sur votre table de chevet, la page jusqu’où aller. Lisez, appuyez sur le bouton : je referme le livre, je scelle la journée et j’avance votre marque-page. Plus de pages, moins, ou un livre de fini ? Dites-le-moi sous « Plus ou moins de pages ? ». Chaque page compte !',
     },
     candle: {
-      title: 'Gardez la bougie allumée',
-      text: 'Lisez un peu chaque jour et cette bougie continue de brûler. Vos pages, vos livres et votre rang de lecture sont gardés ici aussi.',
+      title: 'Gardez la flamme',
+      text: 'Lisez un peu chaque jour, et cette bougie tient bon. Vos pages, vos livres et votre rang de lecture sont gardés au chaud ici aussi.',
     },
     library: {
       title: 'Votre bibliothèque',
-      text: 'Le livre sur votre table de chevet et son marque-page, l’étagère de vos livres terminés, le registre des six dernières semaines, et vos ex-libris — les distinctions gagnées en chemin.',
+      text: 'Le livre de votre table de chevet et son marque-page, l’étagère de vos livres terminés, le carnet des six dernières semaines, et vos ex-libris — de petites récompenses glanées en chemin.',
     },
     overview: {
-      title: 'Regarder en arrière',
-      text: 'Vos mois et vos années de lecture, d’un coup d’œil : pages, jours, livres — et vos plus beaux jours.',
+      title: 'Dans le rétro',
+      text: 'Vos mois et vos années de lecture d’un coup d’œil : pages, jours, livres… et vos plus belles journées.',
     },
     room: {
       title: 'Votre salle de lecture',
-      text: 'Votre carte de lecture, la langue que je parle, la taille du défi quotidien, et un rappel chaque jour à l’heure de votre choix.',
+      text: 'Votre carte de lecture, la langue que je parle, la taille du défi du jour, et un petit rappel à l’heure qui vous arrange.',
     },
   },
 
   greeting: {
     hello: 'Bonjour',
-    salutation: (hour: number) => (hour < 5 ? 'Bonsoir' : hour < 12 ? 'Bonjour' : hour < 18 ? 'Bon après-midi' : 'Bonsoir'),
+    salutation: (hour: number) =>
+      hour < 5 ? 'Toujours debout' : hour < 12 ? 'Bonjour' : hour < 18 ? 'Bon après-midi' : 'Bonsoir',
     named: (salutation: string, name: string) => `${salutation}, ${name}`,
     anonymous: (salutation: string) => `${salutation} !`,
     nightstand: 'Sur la table de chevet : ',
     nightstandEnd: (bookmark: number | null) => (bookmark === null || bookmark === 0 ? '.' : `, page ${n(bookmark)}.`),
     newHere: 'Première visite ? ',
     fillCard: 'Remplissez votre carte de lecture',
-    laidOut: 'Votre carte du jour vous attend.',
+    laidOut: 'Votre carte du jour est servie.',
   },
 
   card: {
     today: 'Aujourd’hui',
     unit: (value: number) => (value <= 1 ? 'page' : 'pages'),
     upTo: (page: number) => `jusqu’à la page ${n(page)}`,
-    toTheEnd: (page: number) => `jusqu’à la fin du livre — page ${n(page)}`,
-    placeBookmark: 'Marquer votre page dans ce livre',
-    readThem: (value: number) => `J’ai lu ${pages(value)}`,
+    toTheEnd: (page: number) => `jusqu’au bout du livre — page ${n(page)}`,
+    placeBookmark: 'Glissez-y un marque-page',
+    readThem: (value: number) => (value === 1 ? 'J’ai lu ma page' : `J’ai lu mes ${n(value)} pages`),
     readMore: 'Plus ou moins de pages ?',
-    pagesRead: 'Pages réellement lues',
-    finishedBook: 'J’ai terminé mon livre',
-    whichBook: 'Quel livre ?',
+    pagesRead: 'Pages vraiment lues',
+    finishedBook: 'J’ai fini mon livre !',
+    whichBook: 'Lequel ?',
     logReading: 'Noter ma lecture',
-    readSomeMore: 'Encore un peu de lecture aujourd’hui ?',
-    pagesToAdd: 'Pages à ajouter',
-    addPages: 'Ajouter les pages',
+    readSomeMore: 'Encore quelques pages ?',
+    pagesToAdd: 'Pages en plus',
+    addPages: 'Ajouter',
     closeBook: 'Refermer le livre',
     openCover: 'Ouvrir la carte du jour',
     coverEyebrow: 'La carte du jour',
     tapToOpen: 'Touchez pour ouvrir',
-    sealedGroup: 'Aujourd’hui, lu et scellé',
-    sealed: 'Lu, et scellé.',
+    sealedGroup: 'Aujourd’hui : lu et scellé',
+    sealed: 'Lu, et scellé !',
     openBook: 'Rouvrir le livre',
     bookmarkAt: (page: number, total: number | null) =>
-      total === null ? `Marque-page à la page ${n(page)}.` : `Marque-page à la page ${n(page)} sur ${n(total)}.`,
-    lastPage: (title: string) => `La dernière page de « ${title} ». Terminé ?`,
-    shelveIt: 'Le ranger sur l’étagère',
+      total === null ? `Marque-page glissé page ${n(page)}.` : `Marque-page glissé page ${n(page)} sur ${n(total)}.`,
+    bookmarkTag: (page: number) => (page > 0 ? `p. ${n(page)}` : ''),
+    bookmarkLabel: (title: string, page: number) =>
+      page > 0
+        ? `Marque-page de « ${title} », glissé page ${n(page)}`
+        : `Marque-page de « ${title} », glissé au tout début`,
+    lastPage: (title: string) => `Dernière page de « ${title} » ! Alors, terminé ?`,
+    shelveIt: 'Hop, sur l’étagère !',
     hints: [
-      'Trouvez un coin douillet. Les pages ne se liront pas toutes seules.',
-      'Un plaid, une tasse de thé, et ces pages.',
+      'Un coin douillet, et en avant : les pages ne vont pas se lire toutes seules.',
+      'Un plaid, une tasse de thé, et ces quelques pages.',
       'Le fauteuil vous attend depuis ce matin.',
-      'Téléphone posé, livre ouvert.',
+      'Téléphone au placard, nez dans le livre.',
       'Allumez la lampe ; le reste suivra.',
-      'Chaque page compte. Celles-ci tout particulièrement.',
+      'Chaque page compte. Celles-ci plus encore.',
     ],
     hintDone: (streak: number) =>
-      streak > 1 ? `${days(streak)} de suite. Une nouvelle carte vous attend demain.` : 'Une nouvelle carte vous attend demain.',
+      streak > 1 ? `${days(streak)} d’affilée ! Une nouvelle carte vous attend demain.` : 'Une nouvelle carte vous attend demain.',
     errors: CHALLENGE_ERRORS,
     summary: {
-      book: (read: number) => `${pages(read)} — et un livre terminé. Bravo.`,
-      beyond: (read: number, goal: number) => `${pages(read)} sur ${n(goal)} — ${pages(read - goal)} au-delà de l’objectif.`,
-      short: (read: number, goal: number) => `${pages(read)} sur ${n(goal)}. Chaque page compte.`,
-      exact: (read: number) => `${pages(read)}, exactement comme prévu.`,
+      book: (read: number) => `${pages(read)} — et un livre de fini. Bravo !`,
+      beyond: (read: number, goal: number) => `${pages(read)} sur ${n(goal)} — ${pages(read - goal)} de rab !`,
+      short: (read: number, goal: number) => `${pages(read)} sur ${n(goal)}. Chaque page compte !`,
+      exact: (read: number) => `${pages(read)}, pile comme prévu.`,
     },
     notes: {
       met: [
-        'Bien lu. La journée est à vous.',
-        'Toutes les pages sont au rendez-vous. Splendide.',
-        'Un triomphe discret. La lampe peut se reposer.',
-        'C’est ainsi qu’on relie une habitude : une page à la fois.',
-        'Le bibliothécaire approuve d’un signe de tête, par-dessus ses lunettes.',
-        'Une journée de plus inscrite au registre. Bravo.',
+        'Bien lu ! La journée est à vous.',
+        'Pas une page ne manque à l’appel. Splendide.',
+        'Mission accomplie. La lampe peut souffler un peu.',
+        'C’est comme ça qu’on prend le pli : une page à la fois.',
+        'Le bibliothécaire hoche la tête, ravi, par-dessus ses lunettes.',
+        'Encore une journée dans le carnet. Bravo !',
       ],
       beyond: [
-        'Au-delà du marque-page — l’histoire ne voulait plus vous lâcher.',
-        'Juste un chapitre de plus, n’est-ce pas ? Splendide.',
-        'Vous avez dépassé l’objectif. Excellent signe.',
-        'Plus que demandé. Les étagères sont impressionnées.',
+        'Plus loin que le marque-page — l’histoire ne voulait plus vous lâcher !',
+        'Juste un petit chapitre de plus, hein ? On connaît la chanson.',
+        'Au-delà de l’objectif ! Voilà qui fait plaisir.',
+        'Plus que demandé. Même les étagères applaudissent.',
       ],
       short: [
-        'Chaque page compte — celles-ci aussi.',
-        'Un chapitre court reste un chapitre. La bougie reste allumée.',
-        'Certains jours sont de minces volumes. Demain est une nouvelle page.',
-        'Un peu de lecture, c’est encore de la lecture. Merci de votre visite.',
+        'Chaque page compte — et celles-ci aussi !',
+        'Un petit chapitre reste un chapitre. La bougie brille toujours.',
+        'Il y a des jours en format poche. Demain, on tourne la page.',
+        'Un peu, c’est déjà beaucoup. À demain !',
       ],
       book: [
-        'La dernière page est tournée. Quel moment.',
-        'Fin — et en route vers un nouveau début.',
-        'Un livre de plus pour l’étagère. Le bibliothécaire est enchanté.',
+        'La dernière page est tournée. Quel moment !',
+        'Fin — et vivement le prochain !',
+        'Un livre de plus sur l’étagère. Le bibliothécaire est aux anges.',
       ],
     },
-    bookFinishedNote: (title: string, note: string) => `« ${title} » — terminé. ${note}`,
+    bookFinishedNote: (title: string, note: string) => `« ${title} », c’est fini ! ${note}`,
     newBookplate: (title: string) => `Nouvel ex-libris : ${title}`,
-    newBookplates: (value: number) => `${n(value)} nouveaux ex-libris aujourd’hui`,
-    inARow: (streak: number) => `${n(streak)} jours de suite`,
+    newBookplates: (value: number) => `${n(value)} nouveaux ex-libris aujourd’hui !`,
+    inARow: (streak: number) => `${n(streak)} jours d’affilée`,
     past: {
       read: (read: number) => `${pagesRead(read)} · scellé`,
-      unread: 'pages prévues, restées non lues',
+      unread: 'pages prévues, restées en plan',
       noCard: 'Pas de carte ce jour-là',
       exLibris: 'Ex libris',
       newReader: 'Votre nom ici',
       chapter: 'Chapitre',
-      one: 'Un',
+      one: 'Premier',
     },
   },
 
   summary: {
     region: 'Votre lecture',
     unit: (streak: number) => (streak <= 1 ? 'jour' : 'jours'),
-    inARow: 'de suite',
-    lightIt: 'Lisez aujourd’hui pour allumer la bougie.',
-    burnsOn: 'de suite — la bougie brûle toujours.',
-    keepLit: 'de suite — lisez aujourd’hui pour garder la bougie allumée.',
-    best: 'Meilleure série',
+    inARow: 'd’affilée',
+    lightIt: 'Lisez aujourd’hui pour allumer la bougie !',
+    burnsOn: 'd’affilée — la flamme tient bon.',
+    keepLit: 'd’affilée — lisez aujourd’hui pour garder la flamme.',
+    best: 'Record',
     pagesRead: 'Pages lues',
     booksRead: 'Livres lus',
     rank: (roman: string) => `Rang ${roman}`,
-    meter: 'Progression vers le rang suivant',
-    toNext: (remaining: number) => `Encore ${pages(remaining)} jusqu’au rang suivant.`,
-    top: 'Tout en haut de l’échelle. Chapeau bas.',
+    meter: 'En route vers le rang suivant',
+    toNext: (remaining: number) => `Plus que ${pages(remaining)} avant le rang suivant.`,
+    top: 'Tout en haut de l’échelle. Chapeau bas !',
     levels: [
       'Tourne-page',
       'Bibliophile en herbe',
-      'Livresque',
-      'Insatiable',
+      'Grignote-chapitres',
+      'Dévore-livres',
       'Bibliophile',
-      'Humaniste',
-      'Sage',
+      'Puits de science',
+      'Sage des rayonnages',
       'Bibliothécaire',
       'Archiviste',
       'Légende vivante',
@@ -274,50 +281,50 @@ export const fr: Messages = {
     heading: 'Votre étagère',
     count: (books: number) => count(books, 'livre'),
     nightstand: 'Sur la table de chevet',
-    finishedIt: 'Je l’ai terminé',
-    finishedABook: 'Un livre terminé ?',
+    finishedIt: 'Je l’ai fini !',
+    finishedABook: 'Un livre de fini ?',
     whichOne: 'Lequel ?',
-    putOnShelf: 'Le ranger sur l’étagère',
+    putOnShelf: 'Hop, sur l’étagère',
     readingElse: 'Vous lisez autre chose ?',
-    whatReading: 'Que lisez-vous ?',
-    anotherInstead: 'Vous commencez plutôt un autre livre ?',
-    titlePlaceholder: 'Titre du livre',
-    onPage: 'À la page',
-    totalPages: 'Nombre de pages du livre',
-    fromTheStart: 'Depuis le début',
-    startReading: 'Commencer la lecture',
-    shelfLabel: 'Les livres que vous avez terminés',
-    empty: 'Votre étagère attend son premier livre.',
+    whatReading: 'Que lisez-vous en ce moment ?',
+    anotherInstead: 'Un autre livre à la place ?',
+    titlePlaceholder: 'Le titre du livre',
+    onPage: 'J’en suis à la page',
+    totalPages: 'Nombre de pages',
+    fromTheStart: 'Au tout début',
+    startReading: 'Je commence',
+    shelfLabel: 'Vos livres terminés',
+    empty: 'Votre étagère attend son tout premier livre.',
     spine: (title: string, date: string) => `${title}, terminé le ${date}`,
     spineTitle: (title: string, date: string) => `${title} — terminé le ${date}`,
     bookmark: (page: number, total: number | null) =>
-      total === null ? `Marque-page à la page ${n(page)}` : `Page ${n(page)} sur ${n(total)}`,
+      total === null ? `Marque-page glissé page ${n(page)}` : `Page ${n(page)} sur ${n(total)}`,
     percent: (percent: number) => `${percent} % lu`,
     noBookmark: 'Pas encore de marque-page dans celui-ci.',
-    lastPage: 'La dernière page. Terminé ?',
-    progressLabel: 'Avancement dans le livre',
+    lastPage: 'Dernière page ! Alors, terminé ?',
+    progressLabel: 'Où vous en êtes dans le livre',
     moveBookmark: 'Déplacer le marque-page',
-    placeBookmark: 'Placer un marque-page',
+    placeBookmark: 'Glisser un marque-page',
   },
 
   calendar: {
     heading: 'Les six dernières semaines',
-    legend: { met: 'objectif atteint', short: 'quelques pages', missed: 'manqué', today: 'aujourd’hui' },
+    legend: { met: 'objectif atteint', short: 'quelques pages', missed: 'jour sans', today: 'aujourd’hui' },
     read: (date: string, read: number, goal: number, book: boolean) =>
-      `${date} — ${pagesRead(read)} sur ${n(goal)}${book ? ', un livre terminé' : ''}`,
-    missed: (date: string) => `${date} — manqué`,
+      `${date} — ${pagesRead(read)} sur ${n(goal)}${book ? ', et un livre de fini' : ''}`,
+    missed: (date: string) => `${date} — jour sans`,
   },
 
   achievements: {
-    heading: 'Distinctions',
+    heading: 'Vos ex-libris',
     tally: (earned: number, total: number) => `${n(earned)} / ${n(total)}`,
-    earned: (date: string) => `Obtenue le ${date}`,
-    locked: 'Verrouillée',
+    earned: (date: string) => `Obtenu le ${date}`,
+    locked: 'Encore sous clé',
     list: ACHIEVEMENTS,
   },
 
   overview: {
-    lookBackBy: 'Regarder par',
+    lookBackBy: 'Voir par',
     month: 'Mois',
     year: 'Année',
     previous: 'Précédent',
@@ -327,178 +334,178 @@ export const fr: Messages = {
     pagesRead: 'Pages lues',
     daysRead: 'Jours de lecture',
     booksFinished: 'Livres terminés',
-    perDay: 'Pages lues chaque jour',
-    perMonth: 'Pages lues chaque mois',
+    perDay: 'Pages lues, jour après jour',
+    perMonth: 'Pages lues, mois après mois',
     goalKey: 'l’objectif du jour',
-    showTable: 'Afficher en tableau',
+    showTable: 'Voir le tableau',
     day: 'Jour',
     monthColumn: 'Mois',
     goal: 'Objectif',
     noneEither: (period: string) => `Rien non plus en ${period}.`,
-    none: (period: string) => `Rien en ${period}.`,
-    same: (period: string) => `Comme en ${period}.`,
-    change: (up: boolean, by: number, period: string) => `${up ? '↑' : '↓'} ${n(by)} par rapport à ${period}.`,
+    none: (period: string) => `Rien en ${period} : ça décolle !`,
+    same: (period: string) => `Pile comme en ${period}.`,
+    change: (up: boolean, by: number, period: string) =>
+      up ? `↑ ${n(by)} de plus qu’en ${period} !` : `↓ ${n(by)} de moins qu’en ${period}.`,
     ofSoFar: (span: number) => `sur ${n(span)} jusqu’ici`,
     of: (span: number) => `sur ${n(span)}`,
     pages: (value: number) => pages(value),
     noCard: 'Pas de carte',
-    notRead: 'Non lu',
+    notRead: 'Jour sans',
     dayDetail: (label: string, goal: number | null, book: boolean) =>
       `${label}${goal !== null ? ` · objectif ${n(goal)}` : ''}${book ? ' · livre terminé' : ''}`,
     monthDetail: (month: string, daysRead: number, books: number) =>
       `${month} · ${days(daysRead)} de lecture${books ? ` · ${count(books, 'livre')}` : ''}`,
-    bestDay: (date: string, read: number) => `Meilleur jour : ${date}, ${pages(read)}.`,
-    bestMonth: (month: string, read: number) => `Meilleur mois : ${month}, ${pages(read)}.`,
-    longestRun: (run: number) => `Plus longue série : ${days(run)} de suite.`,
+    bestDay: (date: string, read: number) => `Plus belle journée : ${date}, ${pages(read)}.`,
+    bestMonth: (month: string, read: number) => `Plus beau mois : ${month}, ${pages(read)}.`,
+    longestRun: (run: number) => `Plus longue série : ${days(run)} d’affilée.`,
     goalsMet: (met: number, read: number) => `Objectif atteint ${days(met)} sur ${n(read)}.`,
-    beyond: (extra: number) => `${pages(extra)} au-delà de l’objectif.`,
-    average: (perDay: number) => `${pages(perDay)} par jour de lecture, en moyenne.`,
+    beyond: (extra: number) => `${pages(extra)} de rab sur vos objectifs.`,
+    average: (perDay: number) => `En moyenne, ${pages(perDay)} par jour de lecture.`,
     booksIn: (year: number) => `Livres terminés en ${year}`,
-    noBookMonth: (month: string) => `Aucun livre terminé en ${month} — pour l’instant.`,
-    noBookYear: (year: number) => `Aucun livre terminé en ${year} — pour l’instant.`,
+    noBookMonth: (month: string) => `Pas encore de livre terminé en ${month}… ça viendra !`,
+    noBookYear: (year: number) => `Pas encore de livre terminé en ${year}… ça viendra !`,
     span: (from: string, to: string) => ` — du ${from} au ${to}`,
     finishedOn: (date: string) => ` — terminé le ${date}`,
   },
 
   profile: {
     heading: 'Ex libris',
-    intro: 'Votre carte de lecture. Elle reste sur cet appareil — rien n’est jamais envoyé nulle part.',
-    since: (date: string) => `Carte ouverte le ${date} · elle reste sur cet appareil, jamais envoyée nulle part.`,
-    avatar: 'Avatar',
+    intro: 'Votre carte de lecture. Elle ne quitte jamais cet appareil — rien n’est envoyé nulle part.',
+    since: (date: string) => `Carte ouverte le ${date} · elle reste ici, sur cet appareil.`,
+    avatar: 'Portrait',
     name: 'Nom',
-    genre: 'Genre préféré',
+    genre: 'Genre de prédilection',
     genrePlaceholder: 'Science-fiction, poésie, polar…',
-    save: 'Enregistrer le profil',
-    check: 'Vérifiez les champs signalés, s’il vous plaît.',
+    save: 'Enregistrer',
+    check: 'Petit souci dans les champs en rouge.',
   },
 
   language: {
     heading: 'Langue',
-    intro: 'La salle de lecture parle la langue de votre appareil, sauf si vous en choisissez une autre.',
+    intro: 'Je parle la langue de votre appareil — à moins que vous ne préfériez l’autre.',
     legend: 'Langue',
-    auto: (name: string) => `Comme sur cet appareil (${name})`,
+    auto: (name: string) => `Comme cet appareil (${name})`,
   },
 
   range: {
-    heading: 'Défi quotidien',
-    intro: 'Chaque carte tire un nombre de pages dans cette fourchette.',
+    heading: 'Le défi du jour',
+    intro: 'Chaque carte tire son nombre de pages dans cette fourchette.',
     min: 'Minimum',
     max: 'Maximum',
-    step: 'Pas',
+    step: 'Par paliers de',
     possible: 'Cartes possibles',
-    more: (hidden: number) => `… ${n(hidden)} de plus`,
+    more: (hidden: number) => `… et ${n(hidden)} de plus`,
     save: 'Enregistrer la fourchette',
-    invalid: 'Cette fourchette ne fonctionne pas encore.',
-    redrawn: 'Enregistré ✓ — la carte du jour a été tirée à nouveau pour s’y accorder.',
-    fromNext: 'Enregistré ✓ — s’applique dès la prochaine carte.',
+    invalid: 'Cette fourchette ne tient pas encore debout.',
+    redrawn: 'C’est noté ✓ — la carte du jour a été retirée au sort pour coller.',
+    fromNext: 'C’est noté ✓ — dès la prochaine carte.',
   },
 
   reminder: {
-    heading: 'Rappel quotidien',
-    intro: 'Un petit signe à la même heure chaque jour, tant que vous n’avez pas lu vos pages.',
+    heading: 'Le petit rappel',
+    intro: 'Un petit signe chaque jour à la même heure, tant que vos pages ne sont pas lues.',
     everyDay: 'Me le rappeler chaque jour',
     at: 'À',
     save: 'Enregistrer le rappel',
-    test: 'Envoyer un essai',
-    neverMisses: 'Un rappel qui ne manque jamais ?',
-    help: 'Cette application fonctionne entièrement sur votre téléphone, sans serveur. Android (Chrome) peut la réveiller en arrière-plan — à peu près à l’heure choisie. L’iPhone n’affiche les rappels que lorsque l’application est ouverte. Pour un rappel qui sonne à l’heure pile, ajoutez-le à votre agenda :',
+    test: 'Faire un essai',
+    neverMisses: 'Un rappel qui ne rate jamais le coche ?',
+    help: 'Cette appli vit entièrement sur votre téléphone, sans serveur. Android (Chrome) peut la réveiller en coulisses — à peu près à l’heure dite. Sur iPhone, les rappels n’arrivent que si l’appli est ouverte. Pour un rappel qui sonne à l’heure pile, confiez-le à votre agenda :',
     calendar: '📅 Ajouter à mon agenda',
-    off: 'Rappel désactivé.',
-    background: (time: string) => `Enregistré ✓ — un rappel vers ${time}, même application fermée.`,
+    off: 'Rappel coupé.',
+    background: (time: string) => `C’est noté ✓ — un petit signe vers ${time}, même appli fermée.`,
     whileOpen: (time: string) =>
-      `Enregistré ✓ — un rappel à ${time} tant que l’application est ouverte. Ajoutez-le à votre agenda pour plus de sûreté.`,
-    testSent: 'Essai envoyé — regardez vos notifications.',
+      `C’est noté ✓ — un petit signe à ${time} tant que l’appli est ouverte. Pour ne jamais le rater, passez par l’agenda.`,
+    testSent: 'Essai envoyé — jetez un œil à vos notifications !',
     errors: REMINDER_ERRORS,
     invite: {
-      file: 'rappel-lecture-quotidien.ics',
+      file: 'rappel-lecture.ics',
       summary: '📖 Combien de pages aujourd’hui ?',
-      description: (url: string) => `Votre carte de lecture vous attend : ${url}`,
-      alarm: 'L’heure de vos pages du jour',
+      description: (url: string) => `Votre carte du jour vous attend : ${url}`,
+      alarm: 'C’est l’heure de vos pages !',
     },
   },
 
   celebration: {
-    beyond: (extra: number) => `✨ ${pages(extra)} au-delà de l’objectif. Splendide.`,
-    short: (read: number) => `🐢 ${pagesRead(read)}. Chaque page compte — la bougie reste allumée.`,
-    streak: (streak: number) => `🕯️ ${days(streak)} de suite. Splendide.`,
-    read: (read: number) => `${pagesRead(read)}. Bravo.`,
-    added: (added: number, total: number) => `📖 ${count(added, 'page')} de plus — ${n(total)} aujourd’hui.`,
-    shelved: (title: string, number: number) => `📕 « ${title} » rejoint votre étagère — livre numéro ${n(number)}.`,
-    shelvedUntitled: (number: number) => `📕 Un livre de plus sur votre étagère — le numéro ${n(number)}.`,
-    achievement: (icon: string, title: string) => `${icon} Distinction obtenue : ${title}`,
+    beyond: (extra: number) => `✨ ${pages(extra)} de rab. Splendide !`,
+    short: (read: number) => `🐢 ${pagesRead(read)}. Chaque page compte — la bougie brille toujours.`,
+    streak: (streak: number) => `🕯️ ${days(streak)} d’affilée. Bravo !`,
+    read: (read: number) => `${pagesRead(read)}. Bien joué !`,
+    added: (added: number, total: number) => `📖 ${count(added, 'page')} de plus — ${n(total)} aujourd’hui !`,
+    shelved: (title: string, number: number) => `📕 « ${title} » rejoint votre étagère — c’est le livre n° ${n(number)} !`,
+    shelvedUntitled: (number: number) => `📕 Un livre de plus sur l’étagère — le n° ${n(number)} !`,
+    achievement: (icon: string, title: string) => `${icon} Nouvel ex-libris : ${title}`,
   },
 
   welcome: {
     librarian: 'Le bibliothécaire',
     back: 'Retour',
     next: 'Suivant',
-    onward: 'En avant',
+    onward: 'En avant !',
     skipTour: 'Passer la visite',
-    tourCount: (index: number, total: number) => `Visite de la salle · ${index} sur ${total}`,
+    tourCount: (index: number, total: number) => `Visite des lieux · ${index} sur ${total}`,
     door: {
-      eyebrow: 'Une porte grince…',
+      eyebrow: 'La porte grince…',
       heading: 'La salle de lecture',
       speech:
-        '« Ah — un nouveau visage. Entrez donc, et prenez garde à la poussière. Je tiens cette petite bibliothèque, et chaque jour je distribue une carte : une image, et un nombre de pages à lire. C’est tout — et c’est bien assez. »',
+        '« Tiens, un nouveau visage ! Entrez donc, et attention à la poussière. Je m’occupe de cette petite bibliothèque, et chaque jour je tire une carte : une image, et un nombre de pages à lire. C’est tout — et croyez-moi, c’est bien assez. »',
       languages: 'Langue',
-      skip: 'Je connais le chemin',
+      skip: 'Je connais la maison',
       enter: 'Entrer',
     },
     card: {
       eyebrow: 'D’abord, le registre',
       heading: 'Votre carte de lecture',
-      speech:
-        '« Chaque personne qui lit ici en a une. Elle ne quitte jamais cette pièce — rien de ce que vous me dites n’est envoyé nulle part. »',
+      speech: '« Ici, tout le monde a la sienne. Elle ne quitte jamais cette pièce — ce que vous me confiez reste entre nous. »',
       portrait: 'Choisissez un portrait',
       name: 'Comment dois-je vous appeler ?',
-      genre: 'Un genre préféré ?',
+      genre: 'Un genre de prédilection ?',
       genrePlaceholder: 'Poésie, polar, science-fiction…',
       later: 'Plus tard',
       sign: 'Signer le registre',
     },
     nightstand: {
       eyebrow: 'Et sur votre table de chevet ?',
-      heading: 'Le livre en cours',
+      heading: 'Le livre du moment',
       speech:
-        '« Que lisez-vous en ce moment ? Dites-moi où se trouve votre marque-page, et chaque jour je vous dirai jusqu’à quelle page lire. À la dernière page, il rejoindra votre étagère. »',
+        '« Que lisez-vous en ce moment ? Dites-moi où en est votre marque-page : chaque jour, je vous dirai jusqu’à quelle page aller. Et à la dernière page, hop, il rejoindra votre étagère. »',
       greet: (name: string) =>
-        `« Enchanté, ${name}. Que lisez-vous en ce moment ? Dites-moi où se trouve votre marque-page, et chaque jour je vous dirai jusqu’à quelle page lire. À la dernière page, il rejoindra votre étagère. »`,
+        `« Enchanté, ${name} ! Que lisez-vous en ce moment ? Dites-moi où en est votre marque-page : chaque jour, je vous dirai jusqu’à quelle page aller. Et à la dernière page, hop, il rejoindra votre étagère. »`,
       book: 'Le livre que vous lisez',
       onPage: 'Votre marque-page est à la page',
       totalPages: 'Nombre de pages du livre',
       nothing: 'Rien pour l’instant',
-      put: 'Le poser sur la table de chevet',
+      put: 'Sur la table de chevet !',
     },
     install: {
       eyebrow: 'Une dernière chose',
-      heading: 'Une clé de la salle',
+      heading: 'Une clé de la maison',
       speech:
-        '« Gardez la salle de lecture sur votre écran d’accueil : elle s’ouvre comme n’importe quelle application, fonctionne sans connexion, et peut vous rappeler qu’il est l’heure de lire. »',
+        '« Gardez la salle de lecture sur votre écran d’accueil : elle s’ouvre comme une vraie appli, marche même sans réseau, et peut vous souffler qu’il est l’heure de lire. »',
       notNow: 'Pas maintenant',
       add: 'L’ajouter à mon écran d’accueil',
       iosShare: 'Touchez le bouton ',
       iosShareButton: 'Partager',
-      iosShareEnd: ' dans la barre d’outils de Safari.',
+      iosShareEnd: ' dans la barre de Safari.',
       iosScroll: 'Faites défiler et choisissez ',
       iosAddToHome: 'Sur l’écran d’accueil',
       iosAdd: 'Touchez ',
       iosAddButton: 'Ajouter',
-      iosAddEnd: '. La clé est à vous.',
-      done: 'C’est fait',
+      iosAddEnd: '. La clé est à vous !',
+      done: 'C’est fait !',
       menu: 'Dans le menu de votre navigateur, cherchez ',
       menuInstall: 'Installer l’application',
       menuOr: ' ou ',
       menuAddHome: 'Ajouter à l’écran d’accueil',
-      accepted: '« Splendide. La clé est sur votre écran d’accueil. »',
-      dismissed: '« Une autre fois, alors. La porte est toujours ouverte. »',
+      accepted: '« Parfait ! La clé est sur votre écran d’accueil. »',
+      dismissed: '« Une autre fois, alors. La porte reste ouverte. »',
     },
     finale: {
-      eyebrow: 'Et maintenant',
+      eyebrow: 'Et maintenant…',
       heading: 'Votre première carte vous attend',
       speech: (name: string | null, goal: number, readTo: number | null, bookplate: string) =>
-        `« Le livre du jour est sur la table${name ? `, ${name}` : ''}. Touchez-le, et il s’ouvrira sur votre page — ${pages(goal)} aujourd’hui${readTo === null ? '' : `, jusqu’à la page ${n(readTo)}`}. Lisez-les, appuyez sur le bouton, et je refermerai le livre et scellerai la journée à la cire.${bookplate} Prenez votre temps ; la lampe est allumée. »`,
-      oneBookplate: (title: string) => ` Oh — et vous avez déjà gagné votre premier ex-libris : « ${title} ».`,
-      bookplates: (value: number) => ` Oh — et vous avez déjà gagné ${n(value)} ex-libris.`,
+        `« Le livre du jour est sur la table${name ? `, ${name}` : ''}. Touchez-le, il s’ouvrira sur votre page — ${pages(goal)} aujourd’hui${readTo === null ? '' : `, jusqu’à la page ${n(readTo)}`}. Lisez-les, appuyez sur le bouton, et je refermerai le livre en scellant la journée à la cire.${bookplate} Prenez votre temps : la lampe est allumée. »`,
+      oneBookplate: (title: string) => ` Oh, et vous avez déjà gagné votre premier ex-libris : « ${title} » !`,
+      bookplates: (value: number) => ` Oh, et vous avez déjà gagné ${n(value)} ex-libris !`,
       begin: 'Tourner la première page',
     },
     replay: '🦉 Refaire la visite',

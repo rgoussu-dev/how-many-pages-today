@@ -1,4 +1,5 @@
 import type {
+  BookInHand,
   BookshelfPort,
   ChallengeError,
   DailyChallenge,
@@ -134,6 +135,11 @@ export class TodayCard extends PortBoundElement {
           </div>
           <p class="tome-folio" aria-hidden="true" data-folio></p>
         </div>
+        <!-- The book's own bookmark, lying on today's page under the leaves, its top standing out of the
+             book. Its holder is hinged at the spine like the rest of the right half, and turns with it. -->
+        <div class="tome-marker" data-marker>
+          <hmpt-ds-bookmark class="tome-bookmark" role="img" data-bookmark hidden></hmpt-ds-bookmark>
+        </div>
         <!-- A few leaves between the two days before and today: they riffle over as the camera pushes in. -->
         <div class="tome-leaves" aria-hidden="true">
           <div class="tome-leaf"><div class="tome-leaf-front" data-leaf></div><div class="tome-leaf-back"></div></div>
@@ -246,11 +252,14 @@ export class TodayCard extends PortBoundElement {
 
   /** The page is out of reach while a board covers it: the front before opening, the back once sealed. */
   #syncInert(): void {
-    const covered =
-      this.hasAttribute('data-reveal') ||
-      this.hasAttribute('data-closing') ||
-      (this.hasAttribute('data-done') && !this.hasAttribute('data-peek'));
+    const onItsBack = this.hasAttribute('data-done') && !this.hasAttribute('data-peek');
+    const covered = this.hasAttribute('data-reveal') || this.hasAttribute('data-closing') || onItsBack;
     this.$('.tome-inner').inert = covered;
+    // Lying on its back, the book shows its bookmark at the other edge — once it has finished
+    // turning over (while it turns, the bookmark has slipped out of sight).
+    const bookmark = this.$('[data-bookmark]');
+    if (onItsBack && !this.hasAttribute('data-closing')) bookmark.setAttribute('side', 'right');
+    else bookmark.removeAttribute('side');
   }
 
   // — opening: closed → the open book, the two days before → today's page ——————————————
@@ -344,6 +353,20 @@ export class TodayCard extends PortBoundElement {
     this.#turning = setTimeout(settle, kind === 'first' ? 4650 : 3050);
   }
 
+  /** The book in hand's own bookmark, lying in the book with the page on it, sticking out at the top. */
+  #renderBookmark(book: BookInHand | null, t: Messages): void {
+    const bookmark = this.$('[data-bookmark]');
+    const page = book?.bookmark;
+    const shown = book !== null && page !== undefined;
+    bookmark.hidden = !shown;
+    this.toggleAttribute('data-bookmarked', shown);
+    if (!shown) return;
+    // Each book keeps its own bookmark: the same woods every day until it is finished.
+    bookmark.setAttribute('seed', String(hashOf(`${book.title}|${book.startedOn}`)));
+    bookmark.setAttribute('mark', t.card.bookmarkTag(page));
+    bookmark.setAttribute('aria-label', t.card.bookmarkLabel(book.title, page));
+  }
+
   #render(snapshot: ReadingSnapshot): void {
     const { today, stats, shelf, achievements, readTo, language } = snapshot;
     const words = this.speak(language);
@@ -368,6 +391,7 @@ export class TodayCard extends PortBoundElement {
 
     // The bookmark: the page today's reading leads to, and — once read — where it now sits.
     const book = shelf.current;
+    this.#renderBookmark(book, t);
     const total = book?.totalPages ?? null;
     this.$('[data-until]').hidden = readTo === null;
     if (readTo !== null) {

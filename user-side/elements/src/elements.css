@@ -246,6 +246,121 @@ hmpt-today-card .tome-back-bookmark {
   color: color-mix(in srgb, var(--gilt-light) 85%, #fff);
 }
 
+/* The bookmark: a painted card lying the length of today's page along its left, its top
+   standing out of the book, tassel and all. It belongs to the right half of the book (see "the book of the
+   day" below): its holder spans that half, hinged at the spine, and takes the same turn as
+   the page — so it lies under the front cover while the book waits closed, sticks out of the
+   head as the book stands on its spine, and stays under the leaves until they riffle over.
+   Closing, it slips out; once the book lies on its back it is tucked in at the other edge. */
+hmpt-today-card {
+  --bookmark-width: 2.6rem;
+  /* how far the card stands out above the book */
+  --bookmark-out: 3.1rem;
+  --bookmark-inset: 0.7rem;
+}
+
+hmpt-today-card[data-bookmarked] {
+  padding-block-start: calc(var(--bookmark-out) + var(--bookmark-width) * 24 / 60 - 1rem);
+}
+
+hmpt-today-card .tome-marker {
+  position: absolute;
+  inset: 0 0 0 50%; /* from the spine to the fore-edge: the scene spans the whole spread */
+  transform-origin: 0 50%;
+  transform-style: preserve-3d;
+  transform: translateZ(1px); /* lying on the open page */
+  pointer-events: none;
+}
+
+/* The whole length of the page: from well above the head down to just short of the tail. */
+hmpt-today-card .tome-bookmark {
+  --bookmark-width: inherit;
+  position: absolute;
+  top: calc(0px - var(--bookmark-out) - var(--bookmark-width) * 24 / 60);
+  bottom: 0.6rem;
+  left: calc(var(--bookmark-inset) - var(--bookmark-width) * 40 / 60);
+  height: auto;
+}
+
+hmpt-today-card .tome-bookmark[side='right'] {
+  left: auto;
+  right: calc(var(--bookmark-inset) - var(--bookmark-width) * 40 / 60);
+}
+
+/* The page's words clear the bookmark lying on its left. */
+hmpt-today-card[data-bookmarked] .tome-inner {
+  padding-inline-start: calc(var(--bookmark-inset) + var(--bookmark-width) + 0.75rem);
+}
+
+/* Moving, or waiting closed: the right half's pose, a hair above the page, below the leaves. */
+hmpt-today-card:is([data-reveal], [data-closing]) .tome-marker {
+  transform: translateZ(var(--lift)) rotateY(var(--right-turn)) translateZ(0.25px);
+}
+
+hmpt-today-card[data-reveal='opening'] .tome-marker {
+  animation: marker-open 4800ms linear both;
+}
+
+/* The right half's opening (as `leaves-open`), a hair above the page. */
+@keyframes marker-open {
+  0% {
+    transform: translateZ(-30px) rotateY(0deg) translateZ(0.25px);
+    animation-timing-function: cubic-bezier(0.65, 0, 0.35, 1);
+  }
+  16.7% {
+    transform: translateZ(0px) rotateY(-86deg) translateZ(0.25px);
+    animation-timing-function: cubic-bezier(0.37, 0, 0.63, 1);
+  }
+  35.4% {
+    transform: translateZ(0px) rotateY(-88.5deg) translateZ(0.25px);
+    animation-timing-function: cubic-bezier(0.55, 0, 0.8, 0.4);
+  }
+  49% {
+    transform: translateZ(0px) rotateY(1.5deg) translateZ(0.25px);
+    animation-timing-function: ease-out;
+  }
+  53%,
+  100% {
+    transform: translateZ(0px) rotateY(0deg) translateZ(0.25px);
+  }
+}
+
+/* Closing, it is drawn up out of the book while the camera pulls back; reopening (the closing
+   rewound), it slides back in as the camera settles on today's page. */
+hmpt-today-card[data-closing] .tome-marker {
+  animation: marker-slip var(--closing-time) linear both;
+}
+
+hmpt-today-card[data-closing='reopen'] .tome-marker {
+  animation-direction: reverse;
+}
+
+@keyframes marker-slip {
+  0% {
+    opacity: 1;
+    transform: translateZ(0.25px);
+    animation-timing-function: ease-in;
+  }
+  12%,
+  100% {
+    opacity: 0;
+    transform: translateZ(0.25px) translateY(-1.4rem);
+  }
+}
+
+/* Lying on its back: under the back board, tucked in at the other edge as the book settles. */
+hmpt-today-card[data-done]:not([data-peek]):not([data-closing]) .tome-marker {
+  transform: translateZ(-1px);
+  animation: marker-tuck 700ms cubic-bezier(0.2, 0.9, 0.3, 1.1) both;
+}
+
+@keyframes marker-tuck {
+  from {
+    opacity: 0;
+    transform: translateZ(-1px) translateY(-1.4rem);
+  }
+}
+
 /* — streak & ledger — */
 
 hmpt-streak-summary .summary-streak {

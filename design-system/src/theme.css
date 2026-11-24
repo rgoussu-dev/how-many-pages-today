@@ -514,6 +514,64 @@ hmpt-ds-scene > svg {
   height: 100%;
 }
 
+/* — the bookmark: a painted card with a silk tassel — */
+
+hmpt-ds-bookmark {
+  /* The card's width; the element also holds the tassel, out to the left and above. */
+  --bookmark-width: 2.3rem;
+  position: relative;
+  display: block;
+  width: calc(var(--bookmark-width) * 100 / 60);
+  height: calc(var(--bookmark-width) * 264 / 60);
+  pointer-events: none;
+}
+
+hmpt-ds-bookmark > svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+hmpt-ds-bookmark .ds-bookmark-card {
+  filter: drop-shadow(1px 1.5px 1px rgb(30 15 5 / 0.45));
+}
+
+/* The page, inked on a parchment label just under the eyelet. */
+hmpt-ds-bookmark .ds-bookmark-mark {
+  position: absolute;
+  top: calc(var(--bookmark-width) * 37 / 60);
+  left: calc(var(--bookmark-width) * 44 / 60);
+  width: calc(var(--bookmark-width) * 52 / 60);
+  padding: 0.12rem 0 0.08rem;
+  border: 1px solid #b08a3e;
+  border-radius: 0.2rem;
+  background: linear-gradient(180deg, #fbf1d8, #ecd9ad);
+  box-shadow: 0 1px 2px rgb(30 15 5 / 0.35);
+  color: #3a2210;
+  font-family: var(--font-display);
+  font-size: 0.74rem;
+  line-height: 1.1;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+hmpt-ds-bookmark .ds-bookmark-mark[data-long] {
+  font-size: 0.6rem;
+  letter-spacing: -0.02em;
+}
+
+/* Lying on its back, the book shows its bookmark at the other edge: tassel mirrored, words not. */
+hmpt-ds-bookmark[side='right'] > svg {
+  transform: scaleX(-1);
+}
+
+hmpt-ds-bookmark[side='right'] .ds-bookmark-mark {
+  left: calc(var(--bookmark-width) * 4 / 60);
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

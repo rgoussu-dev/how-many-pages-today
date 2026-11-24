@@ -385,7 +385,7 @@ describe('reminders', () => {
     expect(await app.reminderCheck.run()).toBe('notified');
     expect(deps.notifier.sent[0]).toMatchObject({
       title: 'Combien de pages aujourd’hui\u202f?',
-      body: 'La carte du jour\u00a0: 40 pages, jusqu’à la page 152. Une nouvelle carte vous attend 📖',
+      body: 'Votre carte du jour\u00a0: 40 pages, jusqu’à la page 152. Une carte toute neuve vous attend 📖',
     });
   });
 

@@ -464,7 +464,7 @@ test.describe('in French', () => {
     const w = welcome(page);
     await expect(w.getByRole('heading', { name: 'La salle de lecture' })).toBeVisible();
     await expect(page).toHaveTitle('Combien de pages aujourd’hui');
-    await w.getByRole('button', { name: 'Je connais le chemin' }).click();
+    await w.getByRole('button', { name: 'Je connais la maison' }).click();
     await expect(tab(page, 'Aujourd’hui')).toBeVisible();
 
     await card(page).getByRole('button', { name: 'Ouvrir la carte du jour' }).click();
@@ -475,9 +475,9 @@ test.describe('in French', () => {
         .replace(/^./, (c) => c.toUpperCase()),
     );
     await expect(card(page).locator('[data-caption]')).toHaveText(/^(Des|Une|Un) /); // the plate, described in French
-    await card(page).getByRole('button', { name: `J’ai lu ${pages} pages` }).click();
-    await expect(card(page).locator('.tome-done')).toHaveText('Lu, et scellé.');
-    await expect(card(page).locator('[data-read]')).toHaveText(`${pages} pages, exactement comme prévu.`);
+    await card(page).getByRole('button', { name: `J’ai lu mes ${pages} pages` }).click();
+    await expect(card(page).locator('.tome-done')).toHaveText('Lu, et scellé\u202f!');
+    await expect(card(page).locator('[data-read]')).toHaveText(`${pages} pages, pile comme prévu.`);
 
     await tab(page, 'Progrès').click();
     await expect(page.locator('h1:visible')).toHaveText('Votre bibliothèque');
@@ -497,14 +497,14 @@ test('the reading room speaks the language the reader picks, and the device’s 
   await expect(page.locator('section[data-route="profile"] h1')).toHaveText('Votre salle de lecture');
   await expect(page).toHaveTitle('Vous · Combien de pages aujourd’hui');
   await expect(page.locator('hmpt-range-form').getByRole('button', { name: 'Enregistrer la fourchette' })).toBeVisible();
-  await expect(form.getByLabel('Comme sur cet appareil (English)')).not.toBeChecked();
+  await expect(form.getByLabel('Comme cet appareil (English)')).not.toBeChecked();
 
   await page.reload();
   await tab(page, 'Aujourd’hui').click(); // the choice is kept
   await expect(card(page).getByRole('button', { name: /^J’ai lu/ })).toBeVisible();
 
   await tab(page, 'Vous').click();
-  await form.getByText('Comme sur cet appareil (English)').click();
+  await form.getByText('Comme cet appareil (English)').click();
   await expect(tab(page, 'You')).toBeVisible();
   await expect(page.locator('html')).toHaveAttribute('lang', /^en/);
 });
@@ -516,7 +516,7 @@ test('welcome: the librarian can be asked, at the door, to speak French', async 
   await w.getByRole('button', { name: 'Entrer' }).click();
   await expect(w.getByRole('heading', { name: 'Votre carte de lecture' })).toBeVisible();
   await w.getByRole('button', { name: 'Signer le registre' }).click();
-  await expect(w.locator('[data-error="displayName"]')).toHaveText('Dites-nous comment vous appeler.');
+  await expect(w.locator('[data-error="displayName"]')).toHaveText('Il me faut un nom pour la carte — un surnom fera l’affaire\u202f!');
 });
 
 test('welcome: the book on the nightstand keeps its bookmark, and every day says which page to read to', async ({ page }) => {
@@ -531,6 +531,11 @@ test('welcome: the book on the nightstand keeps its bookmark, and every day says
   await page.keyboard.press('Escape');
 
   await expect(page.locator('hmpt-greeting [data-sub]')).toHaveText('On the nightstand: Middlemarch, page 112.');
+  // The book's own bookmark peeks out of the closed book, the page written on it.
+  const bookmark = card(page).locator('[data-bookmark]');
+  await expect(bookmark).toBeVisible();
+  await expect(bookmark.locator('.ds-bookmark-mark')).toHaveText('p. 112');
+  await expect(bookmark).toHaveAttribute('aria-label', 'Bookmark in “Middlemarch”, at page 112');
   await card(page).getByRole('button', { name: 'Open today’s card' }).click();
   const goal = await pagesOnCard(page);
   await expect(card(page).locator('[data-until]')).toHaveText(`up to page ${112 + goal}`);
@@ -540,6 +545,9 @@ test('welcome: the book on the nightstand keeps its bookmark, and every day says
   await card(page).getByLabel('Pages actually read').fill('30');
   await card(page).getByRole('button', { name: 'Log my reading' }).click();
   await expect(card(page).locator('[data-back-bookmark]')).toHaveText('Bookmark at page 142 of 880.');
+  // Turned over onto its back, the book shows its bookmark at the other edge, at the new page.
+  await expect(bookmark).toHaveAttribute('side', 'right');
+  await expect(bookmark.locator('.ds-bookmark-mark')).toHaveText('p. 142');
   await expect(page.locator('hmpt-greeting [data-sub]')).toHaveText('On the nightstand: Middlemarch, page 142.');
 
   await tab(page, 'Progress').click();
@@ -550,10 +558,12 @@ test('welcome: the book on the nightstand keeps its bookmark, and every day says
   // Pages read later the same day move it too.
   await tab(page, 'Today').click();
   await card(page).getByRole('button', { name: 'Open the book' }).click();
+  await expect(bookmark).not.toHaveAttribute('side');
   await card(page).getByText('Read some more today?').click();
   await card(page).getByLabel('Pages to add').fill('8');
   await card(page).getByRole('button', { name: 'Add pages' }).click();
   await expect(card(page).locator('[data-bookmark-line]')).toHaveText('Bookmark at page 150 of 880.');
+  await expect(bookmark.locator('.ds-bookmark-mark')).toHaveText('p. 150');
 });
 
 test('the bookmark can be moved by hand, and the last page offers to shelve the book', async ({ page }) => {
@@ -581,6 +591,7 @@ test('the bookmark can be moved by hand, and the last page offers to shelve the 
   await expect(card(page).locator('[data-last-page]')).toContainText('The last page of “Piranesi”. Finished?');
   await card(page).getByRole('button', { name: 'Put it on the shelf' }).click();
   await expect(card(page).locator('[data-last-page]')).toBeHidden();
+  await expect(card(page).locator('[data-bookmark]')).toBeHidden(); // it went to the shelf with the book
 
   await tab(page, 'Progress').click();
   await expect(shelf.locator('.spine')).toHaveAttribute('aria-label', /^Piranesi, finished /);
