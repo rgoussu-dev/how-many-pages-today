@@ -348,7 +348,7 @@ export class Welcome extends PortBoundElement {
             ? ` Oh — and you have already earned your first bookplate: “${this.#earned[0]}”.`
             : ` Oh — and you have already earned ${this.#earned.length} bookplates.`;
       body.querySelector('[data-finale]')!.textContent =
-        `“Today’s card is on the table${name}: ${plural(snapshot.today.pages, 'page')}. Read them, and press the button — I shall seal the day with wax.${bookplate} Take your time; the lamp is lit.”`;
+        `“Today’s book is on the table${name}. Tap it, and it will open on your page — ${plural(snapshot.today.pages, 'page')} today. Read them, press the button, and I shall close the book and seal the day with wax.${bookplate} Take your time; the lamp is lit.”`;
     }
   }
 

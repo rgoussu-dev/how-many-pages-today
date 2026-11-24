@@ -9,10 +9,14 @@ const welcome = (page: Page) => page.locator('hmpt-welcome');
 test.beforeEach(async ({ page }, testInfo) => {
   await page.goto('./');
   await expect(card(page).locator('[data-pages]')).not.toHaveText('…');
-  if (testInfo.title.startsWith('welcome:')) return;
-  // Every other test is a returning reader: step past the first-visit walkthrough.
+  // Tests of the first visit (and any tagged @fresh) start where a new reader does.
+  if (testInfo.title.startsWith('welcome:') || testInfo.tags.includes('@fresh')) return;
+  // Every other test is a returning reader: step past the first-visit walkthrough,
+  // then open the day's book (it waits, closed, for a tap).
   await welcome(page).getByRole('button', { name: 'I know my way' }).click();
   await expect(welcome(page).locator('[data-root]')).toBeHidden();
+  await card(page).getByRole('button', { name: 'Open today’s card' }).click();
+  await expect(card(page)).not.toHaveAttribute('data-reveal');
 });
 
 test('deals a card from the default range, with an illustration', async ({ page }) => {
@@ -20,8 +24,10 @@ test('deals a card from the default range, with an illustration', async ({ page 
   expect(pages % 10).toBe(0);
   expect(pages).toBeGreaterThanOrEqual(10);
   expect(pages).toBeLessThanOrEqual(100);
-  await expect(card(page).locator('hmpt-ds-scene svg')).toBeVisible();
-  await expect(card(page).locator('hmpt-ds-scene')).toHaveAttribute('aria-label', /.+/);
+  const plate = card(page).locator('.tome-inner hmpt-ds-scene');
+  await expect(plate.locator('svg')).toBeVisible();
+  await expect(plate).toHaveAttribute('aria-label', /.+/);
+  await expect(card(page).locator('[data-caption]')).toHaveText((await plate.getAttribute('aria-label')) ?? '');
 });
 
 test('validating the day seals the card, lights the streak, earns a badge, and survives a reload', async ({ page }) => {
@@ -358,35 +364,69 @@ test('welcome: where the browser offers to install, the librarian hands over the
 test.describe('with motion', () => {
   test.use({ contextOptions: { reducedMotion: 'no-preference' } });
 
-  test('welcome: the day’s card waits closed, opens and riffles to its page — once — and closes on its back cover when read', async ({ page }) => {
+  test('welcome: the day’s book waits closed for a tap, opens through the days before, and closes on its back cover', async ({ page }) => {
     const book = card(page);
     const goal = await book.locator('[data-pages]').textContent();
-    // Behind the librarian, the card stays closed.
     await expect(book).toHaveAttribute('data-reveal', 'closed');
-    await expect(book.locator('.tome-cover')).toBeVisible();
     await expect(book.locator('.tome-cover-date')).not.toBeEmpty();
 
     await welcome(page).getByRole('button', { name: 'I know my way' }).click();
-    await expect(book).toHaveAttribute('data-reveal', 'opening');
+    await page.waitForTimeout(1200);
+    await expect(book).toHaveAttribute('data-reveal', 'closed'); // it waits for the reader
     await expect(book.locator('.tome-inner')).toHaveJSProperty('inert', true);
+
+    // A first book: the spread the camera pulls back to is its front matter.
+    await expect(book.locator('[data-left]')).toContainText('Ex libris');
+    await expect(book.locator('[data-leaf]')).toContainText('Chapter');
+
+    await book.getByRole('button', { name: 'Open today’s card' }).click();
+    await expect(book).toHaveAttribute('data-reveal', 'opening');
+    await expect(book.locator('.tome-left')).toBeVisible();
     await expect(book).not.toHaveAttribute('data-reveal', { timeout: 6000 });
     await expect(book.locator('[data-pages]')).toHaveText(goal ?? '');
+    await expect(book.locator('[data-folio]')).toHaveText(`— ${goal} —`);
     await expect(book.locator('.tome-inner')).toHaveJSProperty('inert', false);
-    await expect(book.getByRole('button', { name: /^I read/ })).toBeEnabled();
 
-    // Reading the pages closes the book on its back cover, sealed, with a note.
+    // Reading the pages: pull back, turn today's page, turn the book over onto its back.
     await book.getByRole('button', { name: /^I read/ }).click();
     await expect(book).toHaveAttribute('data-closing', '');
-    await expect(book.locator('.tome-back')).toBeVisible();
+    await expect(book.locator('[data-left] .past-verso')).toHaveCount(1);
+    await expect(book).not.toHaveAttribute('data-closing', { timeout: 6000 });
+    await expect(book.locator('.tome-back-face')).toBeVisible();
     await expect(book.locator('[data-message]')).not.toBeEmpty();
     await expect(book.locator('.tome-inner')).toHaveJSProperty('inert', true);
-    await expect(book).not.toHaveAttribute('data-closing', { timeout: 4000 });
 
     await page.reload();
     await expect(book.locator('[data-pages]')).toHaveText(goal ?? '');
     await page.waitForTimeout(500);
     await expect(book).not.toHaveAttribute('data-reveal'); // opened once a day
-    await expect(book).not.toHaveAttribute('data-closing'); // closes once, when read
-    await expect(book.locator('.tome-back')).toBeVisible(); // and stays closed
+    await expect(book).not.toHaveAttribute('data-closing'); // closed once, when read
+    await expect(book.locator('.tome-back-face')).toBeVisible(); // and stays closed
+  });
+
+  test('the open book shows the two days before today', { tag: '@fresh' }, async ({ page }) => {
+    await welcome(page).getByRole('button', { name: 'I know my way' }).click();
+    await page.evaluate(async () => {
+      const db = await new Promise<IDBDatabase>((resolve) => {
+        const open = indexedDB.open('how-many-pages-today');
+        open.onsuccess = () => resolve(open.result);
+      });
+      const tx = db.transaction('challenges', 'readwrite');
+      const pad = (n: number) => String(n).padStart(2, '0');
+      const key = (back: number) => {
+        const d = new Date();
+        d.setDate(d.getDate() - back);
+        return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+      };
+      tx.objectStore('challenges').put({ day: key(2), pages: 40, artSeed: 1, status: 'completed', drawnAt: '', pagesRead: 52, goalMet: true });
+      tx.objectStore('challenges').put({ day: key(1), pages: 30, artSeed: 2, status: 'pending', drawnAt: '' });
+      await new Promise((resolve) => (tx.oncomplete = resolve));
+    });
+    await page.reload();
+    const book = card(page);
+    await expect(book).toHaveAttribute('data-reveal', 'closed');
+    await expect(book.locator('[data-left] .past-number')).toHaveText('52');
+    await expect(book.locator('[data-left] .past-note')).toHaveText('52 pages read · sealed');
+    await expect(book.locator('[data-leaf] .past-note')).toHaveText('pages dealt, left unread');
   });
 });

@@ -6,7 +6,7 @@ import type {
   ReadingView,
 } from '@hmpt/domain-contract';
 import { readingContexts } from './contexts';
-import { longDate, plural } from './format';
+import { addDays, longDate, plural } from './format';
 import { PortBoundElement } from './port-bound';
 
 const HINTS_PENDING = [
@@ -87,24 +87,30 @@ function backCoverExtra(streak: number, achievements: ReadingSnapshot['achieveme
 }
 
 /**
- * `<hmpt-today-card>` — the day's card, bound like an old book: a leather cover with gilt
- * tooling, an illustrated plate, the goal in gold. One tap logs the goal; the reader may
- * log what they actually read instead, and finish a book along the way. Once logged the
- * card is sealed with wax: final, though more pages may always be added.
+ * `<hmpt-today-card>` — the day's card, bound as a book.
+ *
+ * Closed, it waits for a tap. Opening, the camera pulls back to the whole open book — the
+ * two days before, side by side — then pushes in while the last of them turns over, and
+ * lands on today's page. Logged, the camera pulls back again, today's page turns, and the
+ * book is turned over onto its back cover, sealed, with a note from the librarian.
+ *
+ * The real page is the right-hand page of that book: the camera (a transform on `.tome`)
+ * moves it, so the hand-off at either end is seamless. Reduced motion skips the camera.
  */
 export class TodayCard extends PortBoundElement {
   #challenge?: DailyChallengePort;
   #busy = false;
-  /** The day whose card is waiting, face down, to be opened. */
-  #sealedDay: string | null = null;
+  /** The day whose card is waiting, closed, to be opened. */
+  #closedDay: string | null = null;
   #playing = false;
-  #watchers: Array<() => void> = [];
   /** The last day and status rendered, to tell a fresh validation from a reload. */
   #seen: { day: string; done: boolean } | null = null;
 
   protected markup(): string {
     return /* html */ `
       <article class="tome" aria-labelledby="today-pages">
+        <div class="tome-boards" aria-hidden="true"></div>
+        <div class="tome-left" aria-hidden="true" data-left></div>
         <div class="tome-inner">
           <p class="tome-date" data-date>Today</p>
           <div class="tome-plate">
@@ -151,15 +157,19 @@ export class TodayCard extends PortBoundElement {
           </div>
           <p class="tome-folio" aria-hidden="true" data-folio></p>
         </div>
-        <div class="tome-leaves" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span></div>
-        <div class="tome-cover leather" aria-hidden="true">
-          <div class="tome-cover-face">
-            <p class="tome-cover-eyebrow">Today’s card</p>
-            <svg class="tome-cover-emblem" viewBox="0 0 64 44" aria-hidden="true"><path d="M32 8C26 4 18 3 6 4v32c12-1 20 0 26 4 6-4 14-5 26-4V4C46 3 38 4 32 8zM32 8v32M11 12c6-.5 11 .5 15 2.5M11 18c6-.5 11 .5 15 2.5M11 24c6-.5 11 .5 15 2.5M38 14.5c4-2 9-3 15-2.5M38 20.5c4-2 9-3 15-2.5M38 26.5c4-2 9-3 15-2.5"/></svg>
-            <p class="tome-cover-date" data-cover-date></p>
-          </div>
+        <div class="tome-leaf" aria-hidden="true">
+          <div class="tome-leaf-front" data-leaf></div>
+          <div class="tome-leaf-back"></div>
         </div>
-        <div class="tome-back leather" data-back>
+        <button type="button" class="tome-cover" data-open-cover aria-label="Open today’s card">
+          <span class="tome-cover-face">
+            <span class="tome-cover-eyebrow">Today’s card</span>
+            <svg class="tome-cover-emblem" viewBox="0 0 64 44" aria-hidden="true"><path d="M32 8C26 4 18 3 6 4v32c12-1 20 0 26 4 6-4 14-5 26-4V4C46 3 38 4 32 8zM32 8v32M11 12c6-.5 11 .5 15 2.5M11 18c6-.5 11 .5 15 2.5M11 24c6-.5 11 .5 15 2.5M38 14.5c4-2 9-3 15-2.5M38 20.5c4-2 9-3 15-2.5M38 26.5c4-2 9-3 15-2.5"/></svg>
+            <span class="tome-cover-date" data-cover-date></span>
+            <span class="tome-cover-hint">Tap to open</span>
+          </span>
+        </button>
+        <div class="tome-back" data-back>
           <div class="tome-back-face" role="group" aria-label="Today, read and sealed">
             <span class="tome-back-seal" aria-hidden="true"><span>✓</span></span>
             <p class="tome-back-eyebrow tome-done" role="status">Read, and sealed.</p>
@@ -168,12 +178,14 @@ export class TodayCard extends PortBoundElement {
             <p class="tome-back-extra" data-extra></p>
             <button type="button" class="tome-back-open" data-open-book>Open the book</button>
           </div>
+          <div class="tome-back-inside" aria-hidden="true"></div>
         </div>
       </article>`;
   }
 
   protected override setup(): void {
     this.$('[data-complete]').addEventListener('click', () => void this.#run((port) => port.complete()));
+    this.$('[data-open-cover]').addEventListener('click', () => void this.#open());
     this.$('[data-open-book]').addEventListener('click', () => {
       this.setAttribute('data-peek', '');
       this.#syncInert();
@@ -216,98 +228,7 @@ export class TodayCard extends PortBoundElement {
   protected connect() {
     this.#challenge = this.request(readingContexts.challenge);
     const view: ReadingView = this.request(readingContexts.view);
-    return [view.subscribe((snapshot) => this.#render(snapshot)), () => this.#unwatch()];
-  }
-
-  /** The day is logged: the back board swings shut over the page and the seal is pressed. */
-  #closeBook(): void {
-    this.removeAttribute('data-peek');
-    if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-    this.removeAttribute('data-closing');
-    void this.offsetWidth;
-    this.setAttribute('data-closing', '');
-    setTimeout(() => this.removeAttribute('data-closing'), 1800);
-  }
-
-  // — the daily flourish: the book arrives, opens, and riffles to the day's page ————————
-
-  /** The page is out of reach while a board covers it: the front before opening, the back once sealed. */
-  #syncInert(): void {
-    const covered = this.hasAttribute('data-reveal') || (this.hasAttribute('data-done') && !this.hasAttribute('data-peek'));
-    this.$('.tome-inner').inert = covered;
-  }
-
-  /** A card not yet opened waits face down until it can be seen. */
-  #arrange(today: DailyChallenge): void {
-    const waiting = today.unveiledAt === undefined && today.status === 'pending';
-    if (!waiting) {
-      if (!this.#playing) this.removeAttribute('data-reveal');
-      this.#sealedDay = null;
-      this.#unwatch();
-      return;
-    }
-    if (this.#sealedDay === today.day) return;
-    this.#sealedDay = today.day;
-    this.$('[data-cover-date]').textContent = longDate(today.day);
-    this.setAttribute('data-reveal', 'closed');
-    this.#syncInert(); // nothing behind the cover is reachable yet
-    this.#watch();
-  }
-
-  /** Plays once the card is on screen, the page is visible, and no walkthrough is running. */
-  #watch(): void {
-    this.#unwatch();
-    let inView = false;
-    const tryPlay = () => {
-      const welcoming = document.documentElement.hasAttribute('data-welcoming');
-      if (inView && !welcoming && document.visibilityState === 'visible') void this.#play();
-    };
-    const sight = new IntersectionObserver(([entry]) => {
-      inView = entry?.isIntersecting === true && entry.intersectionRatio > 0.35;
-      tryPlay();
-    }, { threshold: [0, 0.35, 0.6] });
-    sight.observe(this);
-    const welcome = new MutationObserver(tryPlay);
-    welcome.observe(document.documentElement, { attributes: true, attributeFilter: ['data-welcoming'] });
-    document.addEventListener('visibilitychange', tryPlay);
-    this.#watchers = [
-      () => sight.disconnect(),
-      () => welcome.disconnect(),
-      () => document.removeEventListener('visibilitychange', tryPlay),
-    ];
-  }
-
-  #unwatch(): void {
-    this.#watchers.forEach((stop) => stop());
-    this.#watchers = [];
-  }
-
-  async #play(): Promise<void> {
-    if (this.#playing || !this.#sealedDay) return;
-    this.#playing = true;
-    this.#unwatch();
-    const target = Number(this.$('[data-pages]').textContent) || 0;
-    const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if (!still) {
-      this.setAttribute('data-reveal', 'opening');
-      // The pages riffle past while the cover is open, and the count runs up to the day's page.
-      const number = this.$('[data-pages]');
-      const folio = this.$('[data-folio]');
-      const show = (n: number) => {
-        number.textContent = String(n);
-        folio.textContent = `— ${n} —`; // the folio turns with the leaves
-      };
-      show(1);
-      await wait(1250);
-      await countUp(show, target, 950);
-      this.setAttribute('data-reveal', 'landed');
-      await wait(700);
-    }
-    this.removeAttribute('data-reveal');
-    this.#playing = false;
-    this.#syncInert();
-    this.#sealedDay = null;
-    await this.#challenge?.unveil();
+    return [view.subscribe((snapshot) => this.#render(snapshot))];
   }
 
   /** Runs one command at a time; returns the error, if any. */
@@ -324,11 +245,90 @@ export class TodayCard extends PortBoundElement {
     }
   }
 
-  #render({ today, stats, shelf, achievements }: ReadingSnapshot): void {
-    this.#arrange(today);
+  /** The page is out of reach while a board covers it: the front before opening, the back once sealed. */
+  #syncInert(): void {
+    const covered =
+      this.hasAttribute('data-reveal') ||
+      this.hasAttribute('data-closing') ||
+      (this.hasAttribute('data-done') && !this.hasAttribute('data-peek'));
+    this.$('.tome-inner').inert = covered;
+  }
+
+  // — opening: closed → the open book, the two days before → today's page ——————————————
+
+  /** A card not yet opened waits closed, its spread laid out beneath the cover. */
+  #arrange({ today, history, profile }: ReadingSnapshot): void {
+    const waiting = today.unveiledAt === undefined && today.status === 'pending';
+    if (!waiting) {
+      if (!this.#playing) this.removeAttribute('data-reveal');
+      this.#closedDay = null;
+      return;
+    }
+    if (this.#closedDay === today.day) return;
+    this.#closedDay = today.day;
+    this.$('[data-cover-date]').textContent = longDate(today.day);
+    // The spread the camera pulls back to: the two days before today — or, in a brand-new
+    // book, its front matter.
+    const byDay = new Map(history.map((c) => [c.day, c]));
+    const before = addDays(today.day, -2);
+    const yesterday = addDays(today.day, -1);
+    const fresh = !history.some((c) => c.day < today.day);
+    this.$('[data-left]').replaceChildren(
+      fresh ? frontMatter('ex-libris', profile?.displayName ?? null) : pastPage(before, byDay.get(before)),
+    );
+    this.$('[data-leaf]').replaceChildren(fresh ? frontMatter('chapter-one', null) : pastPage(yesterday, byDay.get(yesterday)));
+    this.setAttribute('data-reveal', 'closed');
+    this.#syncInert();
+  }
+
+  async #open(): Promise<void> {
+    if (this.#playing || !this.#closedDay) return;
+    this.#playing = true;
+    const target = Number(this.$('[data-pages]').textContent) || 0;
+    if (!matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      const number = this.$('[data-pages]');
+      const folio = this.$('[data-folio]');
+      const show = (n: number) => {
+        number.textContent = String(n);
+        folio.textContent = `— ${n} —`; // the folio turns with the page
+      };
+      show(1);
+      this.setAttribute('data-reveal', 'opening');
+      this.#syncInert();
+      await wait(1750); // the cover lifts, the camera pulls back, yesterday's page begins to turn
+      await countUp(show, target, 800); // …and the count runs up as the camera pushes in
+      this.setAttribute('data-reveal', 'landed');
+      await wait(550);
+    }
+    this.removeAttribute('data-reveal');
+    this.#playing = false;
+    this.#closedDay = null;
+    this.#syncInert();
+    await this.#challenge?.unveil();
+  }
+
+  // — closing: today's page → the open book → turned over onto the back cover ——————————
+
+  /** The day is logged: the camera pulls back, today's page turns, the book is turned over. */
+  #closeBook(): void {
+    this.removeAttribute('data-peek');
+    if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    this.$('[data-left]').replaceChildren(verso()); // the back of the page before today's
+    this.removeAttribute('data-closing');
+    void this.offsetWidth;
+    this.setAttribute('data-closing', '');
+    setTimeout(() => {
+      this.removeAttribute('data-closing');
+      this.#syncInert();
+    }, 3400);
+  }
+
+  #render(snapshot: ReadingSnapshot): void {
+    const { today, stats, shelf, achievements } = snapshot;
+    this.#arrange(snapshot);
     const done = today.status === 'completed';
     this.toggleAttribute('data-done', done);
-    const plate = this.$('hmpt-ds-scene');
+    const plate = this.$('.tome-inner hmpt-ds-scene');
     plate.setAttribute('seed', String(today.artSeed));
     // The plate's caption, as in an illustrated book: the scene's own description.
     this.$('[data-caption]').textContent = plate.getAttribute('aria-label') ?? '';
@@ -385,3 +385,49 @@ function countUp(show: (n: number) => void, target: number, duration: number): P
     requestAnimationFrame(frame);
   });
 }
+
+const el = <K extends keyof HTMLElementTagNameMap>(tag: K, className: string, text?: string): HTMLElementTagNameMap[K] => {
+  const node = document.createElement(tag);
+  node.className = className;
+  if (text !== undefined) node.textContent = text;
+  return node;
+};
+
+/** A past day's page, as glimpsed in the open book: its date, its plate, what was read. */
+function pastPage(day: string, card: DailyChallenge | undefined): HTMLElement {
+  const page = el('div', 'past-page');
+  page.append(el('p', 'past-head', longDate(day)));
+  const plate = el('div', 'past-plate');
+  const frame = document.createElement('frame-pk');
+  frame.setAttribute('ratio', '4:3');
+  const scene = document.createElement('hmpt-ds-scene');
+  scene.setAttribute('seed', String(card?.artSeed ?? hashOf(day)));
+  frame.append(scene);
+  plate.append(frame);
+  page.append(plate);
+  if (card?.status === 'completed') {
+    const read = card.pagesRead ?? card.pages;
+    page.append(el('p', 'past-number', String(read)), el('p', 'past-note', `${plural(read, 'page')} read · sealed`));
+  } else if (card) {
+    page.append(el('p', 'past-number past-faint', String(card.pages)), el('p', 'past-note', 'pages dealt, left unread'));
+  } else {
+    page.append(el('p', 'past-number past-faint', '—'), el('p', 'past-note', 'No card that day'));
+  }
+  return page;
+}
+
+/** The front matter of a brand-new book. */
+function frontMatter(kind: 'ex-libris' | 'chapter-one', name: string | null): HTMLElement {
+  const page = el('div', `past-page past-${kind}`);
+  if (kind === 'ex-libris') {
+    const plate = el('div', 'past-bookplate');
+    plate.append(el('p', 'past-bookplate-title', 'Ex libris'), el('p', 'past-bookplate-name', name ?? 'A new reader'));
+    page.append(plate);
+  } else {
+    page.append(el('p', 'past-chapter-eyebrow', 'Chapter'), el('p', 'past-chapter-title', 'One'), el('p', 'past-ornament', '❦'));
+  }
+  return page;
+}
+
+/** The back of a turned leaf: paper ruled with lines of text. */
+const verso = (): HTMLElement => el('div', 'past-page past-verso');
