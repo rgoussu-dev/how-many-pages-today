@@ -271,3 +271,15 @@ describe('reminders', () => {
     expect(await app.reminderCheck.run()).toBe('notified');
   });
 });
+
+describe('the overview port', () => {
+  it('looks back over what the app recorded', async () => {
+    const deps = inMemoryDeps(at(24), [0.35]);
+    const app = createReadingApp(deps);
+    await app.challenge.complete({ pagesRead: 55, finishedBook: true, bookTitle: 'Kindred' });
+    const month = await app.overview.month(2026, 11);
+    expect(month.totals).toMatchObject({ pagesRead: 55, daysRead: 1, booksFinished: 1 });
+    expect(month.books.map((b) => b.title)).toEqual(['Kindred']);
+    expect((await app.overview.year(2026)).months[10]?.totals.pagesRead).toBe(55);
+  });
+});

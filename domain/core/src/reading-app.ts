@@ -11,6 +11,7 @@ import {
   type DailyChallenge,
   type DailyChallengePort,
   type FinishedBook,
+  type OverviewPort,
   type Notifier,
   type PageRange,
   type PageRangePort,
@@ -29,6 +30,7 @@ import { ACHIEVEMENTS, earnedAchievements } from './achievements';
 import { dayKeyOf } from './days';
 import { drawArtSeed, drawPages, possiblePages, validateRange } from './pages';
 import { validateOptionalTitle, validatePagesRead, validateProfile, validateTitle } from './profile';
+import { monthOverview, yearOverview } from './overview';
 import { nextReminderAt, parseTime, reminderInstantOn } from './reminders';
 import { computeStats, goalMetOf, pagesReadOf } from './stats';
 import { ReadingStore } from './store';
@@ -52,6 +54,7 @@ export interface ReadingApp {
   readonly challenge: DailyChallengePort;
   readonly profile: ProfilePort;
   readonly bookshelf: BookshelfPort;
+  readonly overview: OverviewPort;
   readonly range: PageRangePort;
   readonly reminder: ReminderPort;
   readonly reminderCheck: ReminderCheckPort;
@@ -272,6 +275,17 @@ export function createReadingApp(deps: ReadingDeps): ReadingApp {
     },
   };
 
+  const overview: OverviewPort = {
+    async month(year, month) {
+      const [history, shelf] = await Promise.all([deps.history.all(), loadShelf()]);
+      return monthOverview(history, shelf, year, month, today());
+    },
+    async year(year) {
+      const [history, shelf] = await Promise.all([deps.history.all(), loadShelf()]);
+      return yearOverview(history, shelf, year, today());
+    },
+  };
+
   const range: PageRangePort = {
     preview(candidate) {
       const valid = validateRange(candidate);
@@ -341,6 +355,7 @@ export function createReadingApp(deps: ReadingDeps): ReadingApp {
     challenge,
     profile,
     bookshelf,
+    overview,
     range,
     reminder,
     reminderCheck: createReminderCheck(deps),

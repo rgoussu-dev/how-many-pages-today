@@ -22,7 +22,11 @@ dusty shelves, lamplight, pillows and a blanket — and, after dusk, the same ro
   days beyond the goal starred), and a flurry of autumn leaves when you finish.
 - **Your shelf.** Put a book on the nightstand, or not: a book can be marked finished from
   the shelf or from the day's card, with or without a title. Each keeps when it was started
-  and finished, ready for a month-by-month, year-by-year look back.
+  and finished.
+- **Looking back.** A month or a year at a time: pages read, days read and books finished
+  against the period before; a chart of pages per day (with each day's goal marked) or per
+  month; the best day or month, the longest run, goals met, pages beyond the goal; and the
+  books finished, with their dates. Every value is also in a table view.
 - **A profile that never leaves the phone.** Name, avatar, favourite genre — stored in the
   browser's IndexedDB. There is no server.
 - **Typography.** EB Garamond and IM Fell English, free fonts under the SIL Open Font
@@ -115,7 +119,7 @@ flowchart LR
 | [`platform/kernel`](platform/kernel) | `Result`, the `Clock`/`RandomSource` port types, the Context protocol |
 | [`platform/commons`](platform/commons) | System clock, `Math.random` |
 | [`domain/contract`](domain/contract) | Model, driving & driven ports, domain events |
-| [`domain/core`](domain/core) | Page draws, streaks, levels, the bookshelf, achievements, reminder policy; in-memory fakes |
+| [`domain/core`](domain/core) | Page draws, streaks, levels, the bookshelf, achievements, the monthly/yearly overview, reminder policy; in-memory fakes |
 | [`design-system`](design-system) | The library theme over planks tokens, bundled fonts; `<hmpt-ds-scene>`, the seeded illustration |
 | [`user-side/elements`](user-side/elements) | Port-bound custom elements and their context keys |
 | [`infra/storage-indexeddb`](infra/storage-indexeddb) | Every repository port on one IndexedDB database |

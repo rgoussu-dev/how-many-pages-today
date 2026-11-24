@@ -33,7 +33,8 @@ test('validating the day seals the card, lights the streak, earns a badge, and s
   expect(await pagesOnCard(page)).toBe(pages);
 
   await tab(page, 'Progress').click();
-  await expect(page.locator('hmpt-achievement-list [data-count]')).toHaveText(/^1 \/ \d+$/);
+  // the first badge is always earned; a 100-page draw would also earn the marathon
+  await expect(page.locator('hmpt-achievement-list .badge[data-earned] strong')).toContainText(['First chapter']);
   await expect(page.locator('hmpt-history-calendar li[data-state="completed"]')).toHaveCount(1);
 
   // a day read stays read: no way back, no second validation
@@ -214,4 +215,39 @@ test('the calendar fallback downloads a daily recurring event with an alarm', as
   expect(ics).toContain('RRULE:FREQ=DAILY');
   expect(ics).toMatch(/DTSTART:\d{8}T211500\r\n/);
   expect(ics).toContain('BEGIN:VALARM');
+});
+
+test('the overview looks back over the month and the year', async ({ page }) => {
+  await card(page).getByText('Read more, or fewer?').click();
+  await card(page).getByLabel('Pages actually read').fill('55');
+  await card(page).getByText('I finished my book').click();
+  await card(page).getByLabel(/Which book/).fill('Kindred');
+  await card(page).getByRole('button', { name: 'Log my reading' }).click();
+  await expect(card(page)).toHaveAttribute('data-done', '');
+
+  await tab(page, 'Overview').click();
+  const overview = page.locator('hmpt-reading-overview');
+  const now = new Date();
+  await expect(overview.locator('[data-title]')).toHaveText(
+    new Intl.DateTimeFormat(undefined, { month: 'long', year: 'numeric' }).format(now),
+  );
+  await expect(overview.locator('[data-pages]')).toHaveText('55');
+  await expect(overview.locator('[data-books]')).toHaveText('1');
+  await expect(overview.locator('.ov-book cite')).toHaveText(['Kindred']);
+  await expect(overview.getByRole('button', { name: 'Next month' })).toBeDisabled();
+
+  // every value is reachable without hovering: the table view, and keyboard focus
+  await overview.getByText('Show as a table').click();
+  await expect(overview.locator('[data-table] tr')).toHaveCount(
+    new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate(),
+  );
+  await overview.locator(`.ov-columns li`).nth(now.getDate() - 1).focus();
+  await expect(overview.locator('[data-tooltip]')).toBeVisible();
+  await expect(overview.locator('[data-tip-value]')).toHaveText('55 pages');
+
+  await overview.getByRole('button', { name: 'Year' }).click();
+  await expect(overview.locator('[data-title]')).toHaveText(String(now.getFullYear()));
+  await expect(overview.locator('.ov-columns li')).toHaveCount(12);
+  await expect(overview.locator('[data-pages]')).toHaveText('55');
+  await expect(overview.locator('.ov-book-month')).toHaveCount(1);
 });

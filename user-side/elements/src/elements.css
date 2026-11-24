@@ -778,3 +778,352 @@ hmpt-celebration .toast[data-visible] {
   transform: translate(-50%, 0);
   opacity: 1;
 }
+
+/* — the overview: a month or a year looked back on — */
+
+hmpt-reading-overview {
+  display: block;
+  /* chart colours — validated against the parchment and lamplit surfaces (dataviz checks) */
+  --chart-bar: #a8472b;
+  --chart-goal: var(--ink);
+  --plot-height: 9.5rem;
+}
+
+@media (prefers-color-scheme: dark) {
+  hmpt-reading-overview {
+    --chart-bar: #c27440;
+  }
+}
+
+hmpt-reading-overview .ov-scale {
+  display: flex;
+  justify-self: center;
+  width: fit-content;
+  margin-inline: auto;
+  padding: 3px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface-sunk);
+}
+
+hmpt-reading-overview .ov-scale-btn {
+  min-width: 6rem;
+  min-height: 2.5rem;
+  padding: 0.3rem 1rem;
+  border: 0;
+  border-radius: 2px;
+  background: transparent;
+  color: var(--ink-soft);
+  font-family: var(--font-caps);
+  font-size: 1.05rem;
+  cursor: pointer;
+}
+
+hmpt-reading-overview .ov-scale-btn[aria-pressed='true'] {
+  color: var(--gilt-light);
+  background: var(--grain-leather), linear-gradient(180deg, var(--leather-light), var(--leather-deep));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--gilt) 60%, transparent);
+}
+
+hmpt-reading-overview .ov-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-1);
+}
+
+hmpt-reading-overview .ov-nav h2 {
+  text-align: center;
+}
+
+hmpt-reading-overview .ov-step {
+  display: grid;
+  place-items: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  border: 1px solid var(--gilt);
+  border-radius: 50%;
+  background: transparent;
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-size: 1.6rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+hmpt-reading-overview .ov-step:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+hmpt-reading-overview .ov-stats > div {
+  padding: 0.5rem 0.4rem;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  text-align: center;
+}
+
+hmpt-reading-overview .ov-value {
+  font-family: var(--font-family);
+  font-weight: 500;
+  font-size: 1.75rem;
+  font-variant-numeric: lining-nums;
+  line-height: 1.1;
+}
+
+hmpt-reading-overview .ov-delta {
+  font-size: 0.85rem;
+  font-style: italic;
+  color: var(--ink-soft);
+}
+
+/* the chart */
+
+hmpt-reading-overview .ov-chart {
+  margin: 0;
+}
+
+hmpt-reading-overview .ov-caption {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.25rem 1rem;
+  margin-block-end: var(--s-1);
+  font-family: var(--font-caps);
+  color: var(--ink-soft);
+}
+
+hmpt-reading-overview .ov-key {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-family: var(--font-family);
+  font-style: italic;
+  font-size: 0.9rem;
+}
+
+hmpt-reading-overview .ov-key-goal {
+  display: inline-block;
+  width: 0.9rem;
+  height: 2px;
+  background: var(--chart-goal);
+}
+
+hmpt-reading-overview .ov-plot {
+  position: relative;
+  padding-left: 2rem; /* room for the y labels */
+}
+
+hmpt-reading-overview .ov-grid {
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: var(--plot-height);
+  pointer-events: none;
+}
+
+hmpt-reading-overview .ov-gridline {
+  position: absolute;
+  left: 2rem;
+  right: 0;
+  bottom: var(--at);
+  height: 1px;
+  background: color-mix(in srgb, var(--line) 70%, transparent);
+}
+
+hmpt-reading-overview .ov-baseline {
+  background: var(--ink-faint);
+}
+
+hmpt-reading-overview .ov-gridline > span {
+  position: absolute;
+  right: calc(100% + 0.35rem);
+  bottom: -0.55em;
+  font-size: 0.75rem;
+  font-variant-numeric: lining-nums tabular-nums;
+  color: var(--ink-faint);
+}
+
+hmpt-reading-overview .ov-columns {
+  display: grid;
+  grid-template-columns: repeat(var(--count, 30), minmax(0, 1fr));
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+hmpt-reading-overview .ov-columns > li {
+  display: grid;
+  grid-template-rows: var(--plot-height) auto auto;
+  justify-items: center;
+  outline: none;
+  cursor: default;
+}
+
+hmpt-reading-overview .ov-plotcell {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+hmpt-reading-overview .ov-bar {
+  position: absolute;
+  bottom: 0;
+  left: 1px;
+  right: 1px; /* the 2px surface gap between neighbours */
+  max-width: 24px;
+  margin-inline: auto;
+  height: var(--h);
+  min-height: 2px;
+  border-radius: 4px 4px 0 0;
+  background: var(--chart-bar);
+  transition: filter 120ms ease;
+}
+
+hmpt-reading-overview .ov-columns[data-scale='month'] .ov-bar {
+  border-radius: 2px 2px 0 0; /* day columns are narrow: a 4px end would round them to a dome */
+}
+
+hmpt-reading-overview .ov-goal {
+  position: absolute;
+  left: 0;
+  right: 0;
+  max-width: 26px;
+  margin-inline: auto;
+  bottom: calc(var(--h) - 1px);
+  height: 2px;
+  background: var(--chart-goal);
+  box-shadow: 0 0 0 1px var(--surface); /* the surface ring keeps it legible over a bar */
+}
+
+hmpt-reading-overview .ov-bar-value {
+  position: absolute;
+  left: 50%;
+  bottom: calc(var(--h) + 0.3rem);
+  transform: translateX(-50%);
+  font-size: 0.8rem;
+  font-weight: 600;
+  font-variant-numeric: lining-nums;
+  color: var(--ink);
+  white-space: nowrap;
+}
+
+hmpt-reading-overview .ov-columns > li:hover .ov-bar,
+hmpt-reading-overview .ov-columns > li:focus-visible .ov-bar {
+  filter: brightness(1.18);
+}
+
+hmpt-reading-overview .ov-columns > li:focus-visible .ov-plotcell {
+  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--gilt) 70%, transparent);
+  border-radius: 2px;
+}
+
+hmpt-reading-overview .ov-tick {
+  min-height: 1.2rem;
+  padding-top: 0.2rem;
+  font-size: 0.75rem;
+  font-variant-numeric: lining-nums;
+  color: var(--ink-faint);
+  white-space: nowrap;
+}
+
+hmpt-reading-overview .ov-book-mark {
+  font-size: 0.7rem;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+hmpt-reading-overview .ov-tooltip {
+  position: absolute;
+  top: 0;
+  z-index: 2;
+  display: grid;
+  gap: 0.1rem;
+  min-width: 8rem;
+  padding: 0.45rem 0.65rem;
+  border: 1px solid var(--gilt-dark);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  box-shadow: var(--shadow);
+  transform: translate(-50%, -105%);
+  pointer-events: none;
+  text-align: center;
+}
+
+hmpt-reading-overview .ov-tooltip strong {
+  font-size: 1.05rem;
+  color: var(--ink);
+}
+
+hmpt-reading-overview .ov-tooltip span {
+  font-size: 0.85rem;
+  color: var(--ink-soft);
+}
+
+/* table view, highlights, books */
+
+hmpt-reading-overview .ov-table table {
+  width: 100%;
+  margin-block-start: var(--s-1);
+  border-collapse: collapse;
+  font-size: 0.95rem;
+  font-variant-numeric: lining-nums tabular-nums;
+}
+
+hmpt-reading-overview .ov-table th,
+hmpt-reading-overview .ov-table td {
+  padding: 0.25rem 0.4rem;
+  border-bottom: 1px solid color-mix(in srgb, var(--line) 60%, transparent);
+  text-align: right;
+}
+
+hmpt-reading-overview .ov-table th[scope='row'],
+hmpt-reading-overview .ov-table thead th:first-child {
+  text-align: left;
+  font-weight: 400;
+}
+
+hmpt-reading-overview .ov-highlights {
+  display: grid;
+  gap: 0.25rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-style: italic;
+  color: var(--ink-soft);
+}
+
+hmpt-reading-overview .ov-highlights li::before {
+  content: '❧ ';
+  font-style: normal;
+  color: var(--gilt);
+}
+
+hmpt-reading-overview .ov-books {
+  display: grid;
+  gap: var(--s-1);
+}
+
+hmpt-reading-overview .ov-book-list {
+  display: grid;
+  gap: 0.35rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+hmpt-reading-overview .ov-book cite {
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+}
+
+hmpt-reading-overview .ov-book cite[data-untitled] {
+  color: var(--ink-faint);
+}
+
+hmpt-reading-overview .ov-book-month {
+  margin-block-start: 0.4rem;
+}
+
+hmpt-reading-overview .ov-empty {
+  font-style: italic;
+}

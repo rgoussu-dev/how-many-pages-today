@@ -57,6 +57,7 @@ async function boot(): Promise<void> {
       [readingContexts.challenge, app.challenge],
       [readingContexts.profile, app.profile],
       [readingContexts.bookshelf, app.bookshelf],
+      [readingContexts.overview, app.overview],
       [readingContexts.range, app.range],
       [readingContexts.reminder, app.reminder],
       [readingContexts.view, app.view],
