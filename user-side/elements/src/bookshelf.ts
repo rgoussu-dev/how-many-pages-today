@@ -34,6 +34,16 @@ export class Bookshelf extends PortBoundElement {
               <p class="nightstand-title"><cite data-current></cite></p>
               <button type="button" class="btn btn-primary" data-finish>I finished it</button>
             </div>
+            <details data-finish-wrap hidden>
+              <summary>Finished a book?</summary>
+              <form novalidate class="shelf-start" data-finish-form>
+                <label class="field"><span>Which one? <em>(optional)</em></span>
+                  <input name="finishedTitle" maxlength="120" autocomplete="off" placeholder="Title">
+                </label>
+                <p class="field-error" data-error="finishedTitle"></p>
+                <button class="btn btn-primary" type="submit">Put it on the shelf</button>
+              </form>
+            </details>
             <details data-start-wrap>
               <summary data-start-summary>Reading something else?</summary>
               <form novalidate class="shelf-start">
@@ -54,7 +64,7 @@ export class Bookshelf extends PortBoundElement {
   }
 
   protected override setup(): void {
-    const form = this.$<HTMLFormElement>('form');
+    const form = this.$<HTMLFormElement>('[data-start-wrap] form');
     form.addEventListener('submit', async (event) => {
       event.preventDefault();
       if (!this.#shelf) return;
@@ -63,10 +73,23 @@ export class Bookshelf extends PortBoundElement {
       showFieldErrors(this, result.ok ? [] : result.error);
       if (result.ok) {
         input.value = '';
-        this.$<HTMLDetailsElement>('details').open = false;
+        this.$<HTMLDetailsElement>('[data-start-wrap]').open = false;
       }
     });
-    this.$('[data-finish]').addEventListener('click', () => void this.#shelf?.finishCurrent());
+    this.$('[data-finish]').addEventListener('click', () => void this.#shelf?.finishBook());
+    const finish = this.$<HTMLFormElement>('[data-finish-form]');
+    finish.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      if (!this.#shelf) return;
+      const input = finish.elements.namedItem('finishedTitle') as HTMLInputElement;
+      const result = await this.#shelf.finishBook({ title: input.value });
+      const errors = result.ok ? [] : result.error.map((e) => ({ ...e, field: 'finishedTitle' }));
+      showFieldErrors(this, errors);
+      if (result.ok) {
+        input.value = '';
+        this.$<HTMLDetailsElement>('[data-finish-wrap]').open = false;
+      }
+    });
   }
 
   protected connect() {
@@ -78,9 +101,10 @@ export class Bookshelf extends PortBoundElement {
   #render({ shelf }: ReadingSnapshot): void {
     const reading = shelf.current !== null;
     this.$('[data-nightstand]').hidden = !reading;
-    this.$('[data-current]').textContent = shelf.current ?? '';
-    // With nothing in hand the form is the point: open, no summary to click.
-    const details = this.$<HTMLDetailsElement>('details');
+    this.$('[data-current]').textContent = shelf.current?.title ?? '';
+    this.$('[data-finish-wrap]').hidden = reading;
+    // With nothing in hand, starting a book is the point: open, no summary to click.
+    const details = this.$<HTMLDetailsElement>('[data-start-wrap]');
     if (!reading) details.open = true;
     this.$('[data-start-summary]').hidden = !reading;
     this.$('[data-start-label]').textContent = reading ? 'Starting another book instead?' : 'What are you reading?';
@@ -92,18 +116,20 @@ export class Bookshelf extends PortBoundElement {
   }
 
   #spine(book: FinishedBook): HTMLElement {
-    const h = hash(book.title);
+    const name = book.title ?? 'A book';
+    const h = hash(book.title ?? `${book.finishedOn}#untitled`);
     const spine = document.createElement('span');
     spine.className = 'spine';
     spine.setAttribute('role', 'img');
-    spine.setAttribute('aria-label', `${book.title}, finished ${shortDate(book.finishedOn)}`);
-    spine.title = `${book.title} — finished ${shortDate(book.finishedOn)}`;
+    spine.setAttribute('aria-label', `${name}, finished ${shortDate(book.finishedOn)}`);
+    spine.title = `${name} — finished ${shortDate(book.finishedOn)}`;
+    spine.toggleAttribute('data-untitled', book.title === null);
     spine.style.setProperty('--binding', BINDINGS[h % BINDINGS.length] ?? BINDINGS[0]!);
     spine.style.setProperty('--spine-height', `${(7.2 + ((h >>> 8) % 25) / 10).toFixed(1)}rem`);
     spine.style.setProperty('--spine-width', `${(2 + ((h >>> 16) % 7) / 10).toFixed(1)}rem`);
     const title = document.createElement('span');
     title.className = 'spine-title';
-    title.textContent = book.title;
+    title.textContent = book.title ?? '❦';
     spine.append(title);
     return spine;
   }

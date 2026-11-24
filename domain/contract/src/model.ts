@@ -13,20 +13,31 @@ export const DEFAULT_PAGE_RANGE: PageRange = { min: 10, max: 100, step: 10 };
 /** Hard limits on what a reader may configure. */
 export const PAGE_RANGE_LIMITS = { lowest: 1, highest: 1000 } as const;
 
+/** `completed` once any reading is logged for the day — every page counts toward the streak. */
 export type ChallengeStatus = 'pending' | 'completed';
 
-/** One card: the challenge drawn for a given day. */
+/** One card: the challenge drawn for a given day, and what was actually read. */
 export interface DailyChallenge {
   readonly day: DayKey;
+  /** The goal drawn for the day. */
   readonly pages: number;
   /** Seeds the card illustration; drawn once with the challenge so the card never changes. */
   readonly artSeed: number;
   readonly status: ChallengeStatus;
   /** ISO-8601 instant. */
   readonly drawnAt: string;
-  /** ISO-8601 instant, present once completed. */
+  /** ISO-8601 instant of the first log, present once completed. */
   readonly completedAt?: string;
+  /** Pages actually read that day — more or fewer than the goal. Present once completed. */
+  readonly pagesRead?: number;
+  /** A book was finished that day. */
+  readonly finishedBook?: boolean;
+  /** At least the goal was read, or a book was finished. Present once completed. */
+  readonly goalMet?: boolean;
 }
+
+/** Limits on a single log entry. */
+export const PAGES_READ_LIMITS = { lowest: 1, highest: 2000 } as const;
 
 export const AVATARS = ['📚', '🦉', '🐛', '🦊', '🐢', '🐈', '🌙', '☕', '🌿', '🚀', '🧙', '🎩'] as const;
 
@@ -40,14 +51,24 @@ export interface Profile {
 
 export type ProfileInput = Omit<Profile, 'readerSince'>;
 
-export interface FinishedBook {
+export interface BookInHand {
   readonly title: string;
+  readonly startedOn: DayKey;
+}
+
+/**
+ * A finished book. The title is optional — finishing counts even unnamed. The dates are
+ * kept so the shelf can later be read back month by month, year by year.
+ */
+export interface FinishedBook {
+  readonly title: string | null;
+  readonly startedOn?: DayKey;
   readonly finishedOn: DayKey;
 }
 
 /** The book in hand, and every book finished since — the reader's own shelf. */
 export interface Bookshelf {
-  readonly current: string | null;
+  readonly current: BookInHand | null;
   /** Oldest first, in the order they were finished. */
   readonly finished: readonly FinishedBook[];
 }
@@ -84,6 +105,12 @@ export type AchievementId =
   | 'pages-1000'
   | 'pages-5000'
   | 'marathon'
+  | 'beyond-goal'
+  | 'double-goal'
+  | 'extra-100'
+  | 'page-binge'
+  | 'little-by-little'
+  | 'final-chapter'
   | 'early-bird'
   | 'night-owl'
   | 'weekend'
@@ -119,6 +146,8 @@ export interface ReadingStats {
   readonly currentStreak: number;
   readonly bestStreak: number;
   readonly totalPages: number;
+  /** Pages read beyond the day's goal, summed over every day. */
+  readonly extraPages: number;
   readonly completedCount: number;
   readonly booksRead: number;
   readonly level: ReaderLevel;

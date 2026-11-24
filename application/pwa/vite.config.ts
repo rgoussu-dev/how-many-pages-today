@@ -20,6 +20,7 @@ export default defineConfig({
         rollupFormat: 'iife',
       },
       includeAssets: ['icons/favicon.svg', 'icons/apple-touch-icon.png'],
+      // public/licenses/*.txt (font licences) ship with the site but need not be precached.
       manifest: {
         id: base,
         name: 'How Many Pages Today',

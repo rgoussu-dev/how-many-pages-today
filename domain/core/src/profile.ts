@@ -1,5 +1,5 @@
 import { err, ok, type Result } from '@hmpt/kernel';
-import type { FieldError, ProfileInput } from '@hmpt/domain-contract';
+import { PAGES_READ_LIMITS, type FieldError, type ProfileInput } from '@hmpt/domain-contract';
 
 const LIMITS = { displayName: 40, avatar: 16, favouriteGenre: 60 } as const;
 export const TITLE_LIMIT = 120;
@@ -25,4 +25,17 @@ export function validateTitle(title: string): Result<string, FieldError[]> {
   if (cleaned.length === 0) return err([{ field: 'title', message: 'Which book is it?' }]);
   if (cleaned.length > TITLE_LIMIT) return err([{ field: 'title', message: `Keep it under ${TITLE_LIMIT} characters.` }]);
   return ok(cleaned);
+}
+
+/** A title the reader may leave blank: blank is null, anything else must be a valid title. */
+export function validateOptionalTitle(title: string | undefined): Result<string | null, FieldError[]> {
+  if (title === undefined || title.trim().length === 0) return ok(null);
+  return validateTitle(title);
+}
+
+export function validatePagesRead(pages: number, field = 'pagesRead'): Result<number, FieldError[]> {
+  const { lowest, highest } = PAGES_READ_LIMITS;
+  if (!Number.isInteger(pages)) return err([{ field, message: 'Use a whole number of pages.' }]);
+  if (pages < lowest || pages > highest) return err([{ field, message: `Between ${lowest} and ${highest} pages.` }]);
+  return ok(pages);
 }

@@ -17,13 +17,24 @@ import type { ReadingEvent } from './events';
  * keys and never see the implementation.
  */
 
-export type ChallengeError = 'already-completed';
+export type ChallengeError = 'already-completed' | 'not-completed' | 'invalid-pages' | 'invalid-title';
+
+export interface ReadingLog {
+  /** Pages actually read; the day's goal when omitted. */
+  readonly pagesRead?: number;
+  /** Finish a book along with the day's reading (the one in hand, or `bookTitle`). */
+  readonly finishedBook?: boolean;
+  /** Optional title for the finished book; defaults to the book in hand. */
+  readonly bookTitle?: string;
+}
 
 export interface DailyChallengePort {
   /** Draws today's card if it does not exist yet, then refreshes the read model. Idempotent. */
   open(): Promise<DailyChallenge>;
-  /** "I read them": validates today's challenge. Final — a day read stays read. */
-  complete(): Promise<Result<DailyChallenge, ChallengeError>>;
+  /** Logs today's reading. Final — a day read stays read. */
+  complete(log?: ReadingLog): Promise<Result<DailyChallenge, ChallengeError>>;
+  /** Adds pages read later the same day. Only ever upward. */
+  addPages(pages: number): Promise<Result<DailyChallenge, ChallengeError>>;
 }
 
 export interface FieldError {
@@ -35,13 +46,14 @@ export interface ProfilePort {
   save(input: ProfileInput): Promise<Result<Profile, readonly FieldError[]>>;
 }
 
-export type ShelfError = 'nothing-in-progress';
-
 export interface BookshelfPort {
   /** Puts a book in hand (replacing any unfinished one). */
   startReading(title: string): Promise<Result<Bookshelf, readonly FieldError[]>>;
-  /** Shelves the book in hand as finished today. */
-  finishCurrent(): Promise<Result<FinishedBook, ShelfError>>;
+  /**
+   * Shelves a book as finished today: the book in hand, or — with nothing in hand — a book
+   * named here, or an untitled one. A given title overrides the one in hand.
+   */
+  finishBook(input?: { title?: string }): Promise<Result<FinishedBook, readonly FieldError[]>>;
 }
 
 export interface PageRangeUpdate {

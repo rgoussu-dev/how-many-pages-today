@@ -27,17 +27,30 @@ export class Celebration extends PortBoundElement {
 
   #on(event: ReadingEvent): void {
     switch (event.type) {
-      case 'challenge-completed':
+      case 'challenge-completed': {
+        const { pages, pagesRead = pages, goalMet } = event.challenge;
         this.#burst();
         this.#toast(
-          event.streak > 1
-            ? `🕯️ ${plural(event.streak, 'day')} in a row. Splendid.`
-            : `${plural(event.challenge.pages, 'page')} read. Well done.`,
+          pagesRead > pages
+            ? `✨ ${pagesRead - pages} pages beyond the goal. Splendid.`
+            : goalMet === false
+              ? `🐢 ${plural(pagesRead, 'page')} read. Every page counts — the candle stays lit.`
+              : event.streak > 1
+                ? `🕯️ ${plural(event.streak, 'day')} in a row. Splendid.`
+                : `${plural(pagesRead, 'page')} read. Well done.`,
         );
+        break;
+      }
+      case 'pages-added':
+        this.#toast(`📖 ${plural(event.added, 'more page')} — ${event.challenge.pagesRead} today.`);
         break;
       case 'book-finished':
         this.#burst();
-        this.#toast(`📕 “${event.book.title}” joins your shelf — book number ${event.booksRead}.`);
+        this.#toast(
+          event.book.title
+            ? `📕 “${event.book.title}” joins your shelf — book number ${event.booksRead}.`
+            : `📕 Another book on your shelf — number ${event.booksRead}.`,
+        );
         break;
       case 'achievement-unlocked':
         this.#toast(`${event.achievement.icon} Achievement unlocked: ${event.achievement.title}`);

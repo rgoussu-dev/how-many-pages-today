@@ -89,32 +89,127 @@ describe('the daily challenge', () => {
 
 describe('the bookshelf', () => {
   it('puts a book in hand, shelves it when finished, and counts books read', async () => {
-    const deps = inMemoryDeps(at(24));
+    const deps = inMemoryDeps(at(20));
     const app = createReadingApp(deps);
     const events: ReadingEvent[] = [];
     app.view.onEvent((e) => events.push(e));
 
-    expect(await app.bookshelf.finishCurrent()).toEqual({ ok: false, error: 'nothing-in-progress' });
     expect(await app.bookshelf.startReading('   ')).toMatchObject({ ok: false });
     await app.bookshelf.startReading('  The   Dispossessed ');
-    expect(app.view.current()?.shelf.current).toBe('The Dispossessed');
+    expect(app.view.current()?.shelf.current).toEqual({ title: 'The Dispossessed', startedOn: '2026-11-20' });
 
-    const finished = await app.bookshelf.finishCurrent();
-    expect(finished).toEqual({ ok: true, value: { title: 'The Dispossessed', finishedOn: '2026-11-24' } });
+    deps.clock.set(at(24));
+    const finished = await app.bookshelf.finishBook();
+    const book = { title: 'The Dispossessed', startedOn: '2026-11-20', finishedOn: '2026-11-24' };
+    expect(finished).toEqual({ ok: true, value: book });
     const snapshot = app.view.current();
-    expect(snapshot?.shelf).toEqual({ current: null, finished: [{ title: 'The Dispossessed', finishedOn: '2026-11-24' }] });
+    expect(snapshot?.shelf).toEqual({ current: null, finished: [book] });
     expect(snapshot?.stats.booksRead).toBe(1);
     expect(events.map((e) => e.type)).toEqual(['book-finished', 'achievement-unlocked']);
     expect(snapshot?.achievements.find((a) => a.id === 'book-1')?.unlockedOn).toBe('2026-11-24');
+  });
+
+  it('shelves a book with nothing in hand, named or not', async () => {
+    const app = createReadingApp(inMemoryDeps(at(24)));
+    expect(await app.bookshelf.finishBook()).toEqual({ ok: true, value: { title: null, finishedOn: '2026-11-24' } });
+    expect(await app.bookshelf.finishBook({ title: ' Kindred ' })).toEqual({
+      ok: true,
+      value: { title: 'Kindred', finishedOn: '2026-11-24' },
+    });
+    expect(app.view.current()?.stats.booksRead).toBe(2);
   });
 
   it('awards a shelf of your own at five books', async () => {
     const app = createReadingApp(inMemoryDeps(at(24)));
     for (const title of ['A', 'B', 'C', 'D', 'E']) {
       await app.bookshelf.startReading(title);
-      await app.bookshelf.finishCurrent();
+      await app.bookshelf.finishBook();
     }
     expect(app.view.current()?.achievements.find((a) => a.id === 'books-5')?.unlockedOn).toBe('2026-11-24');
+  });
+
+  it('reads a shelf saved before books carried a start date', async () => {
+    const deps = inMemoryDeps(at(24));
+    deps.shelves.shelf = { current: 'Middlemarch' as never, finished: [{ title: 'Persuasion', finishedOn: '2026-11-01' }] };
+    const app = createReadingApp(deps);
+    await app.challenge.open();
+    expect(app.view.current()?.shelf.current).toEqual({ title: 'Middlemarch', startedOn: '2026-11-24' });
+  });
+});
+
+describe('logging what was actually read', () => {
+  const unlocked = (app: ReturnType<typeof createReadingApp>) =>
+    app.view.current()?.achievements.filter((a) => a.unlockedOn).map((a) => a.id) ?? [];
+
+  it('logs the goal with one tap', async () => {
+    const app = createReadingApp(inMemoryDeps(at(24), [0.35]));
+    const result = await app.challenge.complete();
+    expect(result).toMatchObject({ ok: true, value: { pagesRead: 40, goalMet: true, finishedBook: false } });
+  });
+
+  it('logs more than the goal, and rewards it', async () => {
+    const app = createReadingApp(inMemoryDeps(at(24), [0.35])); // goal: 40
+    await app.challenge.complete({ pagesRead: 85 });
+    expect(app.view.current()?.stats).toMatchObject({ totalPages: 85, extraPages: 45, currentStreak: 1 });
+    expect(unlocked(app)).toEqual(expect.arrayContaining(['beyond-goal', 'double-goal']));
+    expect(unlocked(app)).not.toContain('extra-100');
+  });
+
+  it('logs fewer pages: the streak holds, the goal is not met, and that is encouraged', async () => {
+    const app = createReadingApp(inMemoryDeps(at(24), [0.35]));
+    await app.challenge.complete({ pagesRead: 12 });
+    expect(app.view.current()?.today).toMatchObject({ status: 'completed', pagesRead: 12, goalMet: false });
+    expect(app.view.current()?.stats).toMatchObject({ totalPages: 12, currentStreak: 1 });
+    expect(unlocked(app)).toContain('little-by-little');
+  });
+
+  it('meets the goal by finishing a book, even short of the pages', async () => {
+    const deps = inMemoryDeps(at(24), [0.35]);
+    const app = createReadingApp(deps);
+    await app.bookshelf.startReading('Piranesi');
+    const events: ReadingEvent[] = [];
+    app.view.onEvent((e) => events.push(e));
+    await app.challenge.complete({ pagesRead: 18, finishedBook: true });
+    expect(app.view.current()?.today).toMatchObject({ pagesRead: 18, goalMet: true, finishedBook: true });
+    expect(app.view.current()?.shelf.finished.map((b) => b.title)).toEqual(['Piranesi']);
+    expect(events.map((e) => e.type).slice(0, 2)).toEqual(['challenge-completed', 'book-finished']);
+    expect(unlocked(app)).toEqual(expect.arrayContaining(['final-chapter', 'book-1']));
+    expect(unlocked(app)).not.toContain('little-by-little');
+  });
+
+  it('finishes an unnamed book from the card, or names it there', async () => {
+    const app = createReadingApp(inMemoryDeps(at(24)));
+    await app.challenge.complete({ finishedBook: true, bookTitle: 'Jane Eyre' });
+    expect(app.view.current()?.shelf.finished).toEqual([{ title: 'Jane Eyre', finishedOn: '2026-11-24' }]);
+  });
+
+  it('adds pages later the same day — only ever upward', async () => {
+    const app = createReadingApp(inMemoryDeps(at(24), [0.35]));
+    expect(await app.challenge.addPages(10)).toEqual({ ok: false, error: 'not-completed' });
+    await app.challenge.complete({ pagesRead: 30 });
+    expect(await app.challenge.addPages(0)).toEqual({ ok: false, error: 'invalid-pages' });
+    const result = await app.challenge.addPages(25);
+    expect(result).toMatchObject({ ok: true, value: { pagesRead: 55, goalMet: true } });
+    expect(app.view.current()?.stats.totalPages).toBe(55);
+    expect(unlocked(app)).toContain('beyond-goal');
+  });
+
+  it('rejects impossible counts', async () => {
+    const app = createReadingApp(inMemoryDeps(at(24)));
+    expect(await app.challenge.complete({ pagesRead: 0 })).toEqual({ ok: false, error: 'invalid-pages' });
+    expect(await app.challenge.complete({ pagesRead: 12.5 })).toEqual({ ok: false, error: 'invalid-pages' });
+    expect(await app.challenge.complete({ finishedBook: true, bookTitle: 'x'.repeat(200) })).toEqual({
+      ok: false,
+      error: 'invalid-title',
+    });
+  });
+
+  it('counts days logged before page counts existed as their goal, met', async () => {
+    const deps = inMemoryDeps(at(24));
+    await deps.history.save({ day: '2026-11-23', pages: 60, artSeed: 1, status: 'completed', drawnAt: '', completedAt: '' });
+    const app = createReadingApp(deps);
+    await app.challenge.open();
+    expect(app.view.current()?.stats).toMatchObject({ totalPages: 60, extraPages: 0, currentStreak: 1 });
   });
 });
 

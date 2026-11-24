@@ -17,7 +17,8 @@ export class HistoryCalendar extends PortBoundElement {
             <div class="calendar-grid calendar-head">${weekdays}</div>
             <ol class="calendar-grid" data-days></ol>
             <cluster-pk space="var(--s0)" class="calendar-legend" aria-hidden="true">
-              <span><i class="cal-swatch" data-state="completed"></i> read</span>
+              <span><i class="cal-swatch" data-state="completed"></i> goal met</span>
+              <span><i class="cal-swatch" data-state="completed" data-short></i> some pages</span>
               <span><i class="cal-swatch" data-state="missed"></i> missed</span>
               <span><i class="cal-swatch" data-state="today"></i> today</span>
             </cluster-pk>
@@ -52,11 +53,16 @@ export class HistoryCalendar extends PortBoundElement {
                 ? 'before'
                 : 'missed';
       cell.dataset.state = state;
+      if (card?.status === 'completed') {
+        const read = card.pagesRead ?? card.pages;
+        if (card.goalMet === false) cell.dataset.short = '';
+        if (read > card.pages) cell.dataset.beyond = '';
+      }
       if (day === today.day) cell.dataset.today = '';
       cell.textContent = String(dateOf(day).getDate());
       cell.title =
         state === 'completed' && card
-          ? `${longDate(day)} — ${plural(card.pages, 'page')} read`
+          ? `${longDate(day)} — ${plural(card.pagesRead ?? card.pages, 'page')} read of ${card.pages}${card.finishedBook ? ', a book finished' : ''}`
           : `${longDate(day)}${state === 'missed' ? ' — missed' : ''}`;
       cell.setAttribute('aria-label', cell.title);
       cells.push(cell);

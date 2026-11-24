@@ -31,8 +31,19 @@ describe('achievements', () => {
     expect(earned([read('2026-11-01'), read('2026-11-03')])).not.toContain('comeback');
   });
 
-  it('awards the marathon for a 100-page day', () => {
+  it('awards the marathon for 100 pages actually read in a day', () => {
     expect(earned([read('2026-11-01', 100)])).toContain('marathon');
     expect(earned([read('2026-11-01', 90)])).not.toContain('marathon');
+    expect(earned([{ ...read('2026-11-01', 40), pagesRead: 120 }])).toContain('marathon');
+  });
+
+  it('adds up pages beyond the goals toward bonus chapters', () => {
+    const over = (day: string) => ({ ...read(day, 40), pagesRead: 75 }); // 35 extra each
+    expect(earned([over('2026-11-01'), over('2026-11-02')])).not.toContain('extra-100');
+    expect(earned([over('2026-11-01'), over('2026-11-02'), over('2026-11-03')])).toContain('extra-100');
+  });
+
+  it('recognises a 200-page day', () => {
+    expect(earned([{ ...read('2026-11-01', 50), pagesRead: 200 }])).toContain('page-binge');
   });
 });

@@ -38,8 +38,9 @@ test('validating the day seals the card, lights the streak, earns a badge, and s
 
   // a day read stays read: no way back, no second validation
   await tab(page, 'Today').click();
-  await expect(card(page).getByRole('button')).toHaveCount(0);
-  await expect(card(page).locator('[data-done-note]')).toHaveText('Read, and sealed.');
+  await expect(card(page).getByRole('button', { name: /^I read/ })).toBeHidden();
+  await expect(card(page).locator('.tome-done')).toHaveText('Read, and sealed.');
+  await expect(card(page).locator('[data-read]')).toHaveText(`${pages} pages, exactly as dealt.`);
 });
 
 test('works offline once installed', async ({ page, context }) => {
@@ -88,6 +89,53 @@ test('the profile stays on the device and greets the reader', async ({ page }) =
   await expect(page.locator('hmpt-greeting [data-avatar]')).toHaveText('🦉');
   await page.reload();
   await expect(page.locator('hmpt-greeting h1')).toContainText('Ada');
+});
+
+test('logging fewer pages keeps the streak, earns encouragement, and more can be added later', async ({ page }) => {
+  const goal = await pagesOnCard(page);
+  await card(page).getByText('Read more, or fewer?').click();
+  await card(page).getByLabel('Pages actually read').fill('3');
+  await card(page).getByRole('button', { name: 'Log my reading' }).click();
+
+  await expect(card(page)).toHaveAttribute('data-done', '');
+  await expect(card(page).locator('[data-read]')).toHaveText(`3 of ${goal} pages. Every page counts.`);
+  const summary = page.locator('section[data-route="today"] hmpt-streak-summary');
+  await expect(summary.locator('[data-streak]')).toHaveText('1');
+  await expect(summary.locator('[data-pages]')).toHaveText('3');
+
+  await card(page).getByText('Read some more today?').click();
+  await card(page).getByLabel('Pages to add').fill(String(goal + 10));
+  await card(page).getByRole('button', { name: 'Add pages' }).click();
+  await expect(card(page).locator('[data-read]')).toHaveText(`${goal + 13} of ${goal} pages — 13 pages beyond the goal.`);
+
+  await tab(page, 'Progress').click();
+  const earned = page.locator('hmpt-achievement-list .badge[data-earned] strong');
+  await expect(earned).toContainText(['Little by little']);
+  await expect(earned).toContainText(['Just one more chapter']);
+  await expect(page.locator('hmpt-history-calendar li[data-beyond]')).toHaveCount(1);
+});
+
+test('a book can be finished from the card, named there, and short pages still meet the goal', async ({ page }) => {
+  await card(page).getByText('Read more, or fewer?').click();
+  await card(page).getByLabel('Pages actually read').fill('2');
+  await card(page).getByText('I finished my book').click();
+  await card(page).getByLabel(/Which book/).fill('Piranesi');
+  await card(page).getByRole('button', { name: 'Log my reading' }).click();
+  await expect(card(page).locator('[data-read]')).toHaveText('2 pages — and a book finished. Bravo.');
+
+  await tab(page, 'Progress').click();
+  await expect(page.locator('hmpt-bookshelf .spine')).toHaveAttribute('aria-label', /^Piranesi, finished /);
+  await expect(page.locator('hmpt-history-calendar li[data-short]')).toHaveCount(0);
+  await expect(page.locator('hmpt-achievement-list .badge[data-earned] strong')).toContainText(['The final chapter']);
+});
+
+test('a book can be shelved without a title', async ({ page }) => {
+  await tab(page, 'Progress').click();
+  const shelf = page.locator('hmpt-bookshelf');
+  await shelf.getByText('Finished a book?').click();
+  await shelf.getByRole('button', { name: 'Put it on the shelf' }).click();
+  await expect(shelf.locator('.spine')).toHaveAttribute('aria-label', /^A book, finished /);
+  await expect(page.locator('section[data-route="progress"] hmpt-streak-summary [data-books]')).toHaveText('1');
 });
 
 test('books go from the nightstand to the shelf, and count as books read', async ({ page }) => {

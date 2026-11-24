@@ -11,16 +11,23 @@ dusty shelves, lamplight, pillows and a blanket — and, after dusk, the same ro
   in steps of ten. The plate is one of six cosy library scenes (dusty shelves, a banker's
   lamp, a window seat of pillows, a wingback armchair, a rainy windowsill, a candlelit
   still life) painted from a seed, so the same day always shows the same card, online or not.
-- **A day read stays read.** Validating is deliberate and final — there is no undo.
+- **Log what you actually read.** One tap logs the day's goal; or enter the real count —
+  more or fewer pages. Any reading keeps the streak alive (every page counts); the goal is
+  met at the goal or beyond, or by finishing a book. A day read stays read — there is no
+  undo — but you can always add pages read later the same day.
 - **Gamified.** Current and best streak (a candle), pages read, books read, a ten-rank reader
-  level, seventeen achievements as bookplates, a six-week ledger, and a flurry of autumn
-  leaves when you finish.
-- **Your shelf.** Put a book on the nightstand; when you finish it, it joins your shelf,
-  spine out, and counts toward *books read*.
+  level, twenty-three achievements as bookplates — including ones for reading beyond the
+  goal, twice the goal, 100 bonus pages all told, a 200-page day, a short day logged
+  honestly, and finishing a book on the day — a six-week ledger (short days half-bound,
+  days beyond the goal starred), and a flurry of autumn leaves when you finish.
+- **Your shelf.** Put a book on the nightstand, or not: a book can be marked finished from
+  the shelf or from the day's card, with or without a title. Each keeps when it was started
+  and finished, ready for a month-by-month, year-by-year look back.
 - **A profile that never leaves the phone.** Name, avatar, favourite genre — stored in the
   browser's IndexedDB. There is no server.
-- **Typography.** EB Garamond and IM Fell English (SIL OFL), bundled latin subsets,
-  precached — the look survives offline.
+- **Typography.** EB Garamond and IM Fell English, free fonts under the SIL Open Font
+  License, bundled as latin subsets and precached — the look survives offline. Their
+  licences ship with the site under `/licenses/`.
 - **Daily reminder.** A notification at a fixed hour until you have read; plus a one-tap
   calendar event as the reminder that never misses (see [Reminders](#reminders)).
 - **Installable and offline.** Every asset is precached by the service worker.
@@ -41,7 +48,8 @@ its Playwright version (`npx playwright install chromium`), or point
 ## Deploy
 
 `.github/workflows/pages.yml` verifies every push and pull request and deploys the
-repository's **default branch** to GitHub Pages. One-time setup: *Settings → Pages →
+repository's **default branch** to GitHub Pages. Every action is pinned to a full commit
+SHA, with the release tag in a comment. One-time setup: *Settings → Pages →
 Build and deployment → Source: **GitHub Actions***. The app is then served at
 `https://<owner>.github.io/how-many-pages-today/` (change `BASE_PATH` for another host).
 

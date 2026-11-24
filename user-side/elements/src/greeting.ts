@@ -30,7 +30,7 @@ export class Greeting extends PortBoundElement {
     const sub = this.$('[data-sub]');
     if (shelf.current) {
       const title = document.createElement('cite');
-      title.textContent = shelf.current;
+      title.textContent = shelf.current.title;
       sub.replaceChildren('On the nightstand: ', title, '.');
     } else if (!profile) {
       sub.innerHTML = 'New here? <a href="#profile">Fill in your reader’s card</a>.';

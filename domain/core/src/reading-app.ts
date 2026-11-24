@@ -10,6 +10,7 @@ import {
   type ChallengeHistory,
   type DailyChallenge,
   type DailyChallengePort,
+  type FinishedBook,
   type Notifier,
   type PageRange,
   type PageRangePort,
@@ -27,9 +28,9 @@ import {
 import { ACHIEVEMENTS, earnedAchievements } from './achievements';
 import { dayKeyOf } from './days';
 import { drawArtSeed, drawPages, possiblePages, validateRange } from './pages';
-import { validateProfile, validateTitle } from './profile';
+import { validateOptionalTitle, validatePagesRead, validateProfile, validateTitle } from './profile';
 import { nextReminderAt, parseTime, reminderInstantOn } from './reminders';
-import { computeStats } from './stats';
+import { computeStats, goalMetOf, pagesReadOf } from './stats';
 import { ReadingStore } from './store';
 
 export interface ReminderCheckDeps {
@@ -115,7 +116,28 @@ export function createReminderCheck(deps: ReminderCheckDeps): ReminderCheckPort 
 export function createReadingApp(deps: ReadingDeps): ReadingApp {
   const store = new ReadingStore();
   const today = () => dayKeyOf(deps.clock.now());
-  const loadShelf = async (): Promise<Bookshelf> => (await deps.shelves.load()) ?? EMPTY_SHELF;
+  const loadShelf = async (): Promise<Bookshelf> => {
+    const stored = await deps.shelves.load();
+    if (!stored) return EMPTY_SHELF;
+    // Shelves saved before books carried a start date held the book in hand as a bare title.
+    const current = stored.current as unknown;
+    return typeof current === 'string' ? { ...stored, current: { title: current, startedOn: today() } } : stored;
+  };
+
+  /** Puts a finished book on the shelf and announces it. The caller refreshes. */
+  async function shelve(title: string | null): Promise<FinishedBook> {
+    const shelf = await loadShelf();
+    const inHand = shelf.current;
+    const book: FinishedBook = {
+      title: title ?? inHand?.title ?? null,
+      ...(inHand && (title === null || title === inHand.title) ? { startedOn: inHand.startedOn } : {}),
+      finishedOn: today(),
+    };
+    const finished = [...shelf.finished, book];
+    await deps.shelves.save({ current: null, finished });
+    store.emit({ type: 'book-finished', book, booksRead: finished.length });
+    return book;
+  }
 
   async function snapshotFor(todayChallenge: DailyChallenge): Promise<ReadingSnapshot> {
     const [history, profile, shelf, range, reminder, unlocked] = await Promise.all([
@@ -172,16 +194,47 @@ export function createReadingApp(deps: ReadingDeps): ReadingApp {
   const challenge: DailyChallengePort = {
     open: refresh,
 
-    async complete() {
+    async complete(log = {}) {
       const current = await ensureToday(deps);
       if (current.status === 'completed') return err('already-completed');
-      const done: DailyChallenge = { ...current, status: 'completed', completedAt: deps.clock.now().toISOString() };
+      const pagesRead = log.pagesRead ?? current.pages;
+      if (!validatePagesRead(pagesRead).ok) return err('invalid-pages');
+      const title = validateOptionalTitle(log.bookTitle);
+      if (!title.ok) return err('invalid-title');
+
+      const finishedBook = log.finishedBook === true;
+      const done: DailyChallenge = {
+        ...current,
+        status: 'completed',
+        completedAt: deps.clock.now().toISOString(),
+        pagesRead,
+        finishedBook,
+        goalMet: pagesRead >= current.pages || finishedBook,
+      };
       await deps.history.save(done);
       const streak = computeStats(await deps.history.all(), today()).currentStreak;
       store.emit({ type: 'challenge-completed', challenge: done, streak });
+      if (finishedBook) await shelve(title.value);
       await awardAchievements();
       await refresh();
       return ok(done);
+    },
+
+    async addPages(pages) {
+      const current = await ensureToday(deps);
+      if (current.status !== 'completed') return err('not-completed');
+      if (!validatePagesRead(pages).ok) return err('invalid-pages');
+      const pagesRead = pagesReadOf(current) + pages;
+      const updated: DailyChallenge = {
+        ...current,
+        pagesRead,
+        goalMet: goalMetOf(current) || pagesRead >= current.pages,
+      };
+      await deps.history.save(updated);
+      store.emit({ type: 'pages-added', challenge: updated, added: pages });
+      await awardAchievements();
+      await refresh();
+      return ok(updated);
     },
   };
 
@@ -203,19 +256,16 @@ export function createReadingApp(deps: ReadingDeps): ReadingApp {
     async startReading(title) {
       const valid = validateTitle(title);
       if (!valid.ok) return valid;
-      const shelf: Bookshelf = { ...(await loadShelf()), current: valid.value };
+      const shelf: Bookshelf = { ...(await loadShelf()), current: { title: valid.value, startedOn: today() } };
       await deps.shelves.save(shelf);
       await refresh();
       return ok(shelf);
     },
 
-    async finishCurrent() {
-      const shelf = await loadShelf();
-      if (shelf.current === null) return err('nothing-in-progress');
-      const book = { title: shelf.current, finishedOn: today() };
-      const finished = [...shelf.finished, book];
-      await deps.shelves.save({ current: null, finished });
-      store.emit({ type: 'book-finished', book, booksRead: finished.length });
+    async finishBook(input = {}) {
+      const title = validateOptionalTitle(input.title);
+      if (!title.ok) return title;
+      const book = await shelve(title.value);
       await awardAchievements();
       await refresh();
       return ok(book);

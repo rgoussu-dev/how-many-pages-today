@@ -7,7 +7,7 @@ import type {
   ReadingStats,
 } from '@hmpt/domain-contract';
 import { addDays, daysBetween, weekdayOf } from './days';
-import { completedOnly } from './stats';
+import { completedOnly, goalMetOf, pagesReadOf } from './stats';
 
 interface AchievementRule extends Achievement {
   readonly earned: (facts: AchievementFacts) => boolean;
@@ -107,8 +107,50 @@ const RULES: readonly AchievementRule[] = [
     id: 'marathon',
     icon: '🏃',
     title: 'Marathon',
-    description: 'Complete a challenge of 100 pages or more.',
-    earned: ({ history }) => completedOnly(history).some((c) => c.pages >= 100),
+    description: 'Read 100 pages or more in a single day.',
+    earned: ({ history }) => completedOnly(history).some((c) => pagesReadOf(c) >= 100),
+  },
+  {
+    id: 'beyond-goal',
+    icon: '✨',
+    title: 'Just one more chapter',
+    description: "Read more than the day's goal.",
+    earned: ({ history }) => completedOnly(history).some((c) => pagesReadOf(c) > c.pages),
+  },
+  {
+    id: 'double-goal',
+    icon: '🌙',
+    title: 'Burning the midnight oil',
+    description: "Read at least twice the day's goal.",
+    earned: ({ history }) => completedOnly(history).some((c) => pagesReadOf(c) >= 2 * c.pages),
+  },
+  {
+    id: 'extra-100',
+    icon: '🎁',
+    title: 'Bonus chapters',
+    description: 'Read 100 pages beyond your goals, all told.',
+    earned: ({ stats }) => stats.extraPages >= 100,
+  },
+  {
+    id: 'page-binge',
+    icon: '🌀',
+    title: 'Lost in a book',
+    description: 'Read 200 pages or more in a single day.',
+    earned: ({ history }) => completedOnly(history).some((c) => pagesReadOf(c) >= 200),
+  },
+  {
+    id: 'little-by-little',
+    icon: '🐢',
+    title: 'Little by little',
+    description: 'Log a day short of the goal. Every page counts.',
+    earned: ({ history }) => completedOnly(history).some((c) => !goalMetOf(c) && pagesReadOf(c) > 0),
+  },
+  {
+    id: 'final-chapter',
+    icon: '🔖',
+    title: 'The final chapter',
+    description: "Finish a book on the day's reading.",
+    earned: ({ history }) => completedOnly(history).some((c) => c.finishedBook === true),
   },
   {
     id: 'early-bird',

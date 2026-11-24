@@ -4,6 +4,14 @@ import { addDays, daysBetween } from './days';
 export const completedOnly = (history: readonly DailyChallenge[]): DailyChallenge[] =>
   history.filter((c) => c.status === 'completed');
 
+/** Pages actually read. Days logged before counts existed read exactly their goal. */
+export const pagesReadOf = (c: DailyChallenge): number => c.pagesRead ?? c.pages;
+
+/** Whether the day met its goal. Days logged before this was recorded met it in full. */
+export const goalMetOf = (c: DailyChallenge): boolean => c.goalMet ?? pagesReadOf(c) >= c.pages;
+
+export const extraPagesOf = (c: DailyChallenge): number => Math.max(0, pagesReadOf(c) - c.pages);
+
 /**
  * The streak still alive today: it ends today when today is read, otherwise it ends
  * yesterday — an unread today does not break a streak until the day is over.
@@ -63,11 +71,13 @@ export function levelFor(totalPages: number): ReaderLevel {
 export function computeStats(history: readonly DailyChallenge[], today: DayKey, booksRead = 0): ReadingStats {
   const completed = completedOnly(history);
   const days = new Set(completed.map((c) => c.day));
-  const totalPages = completed.reduce((sum, c) => sum + c.pages, 0);
+  const totalPages = completed.reduce((sum, c) => sum + pagesReadOf(c), 0);
+  const extraPages = completed.reduce((sum, c) => sum + extraPagesOf(c), 0);
   return {
     currentStreak: currentStreak(days, today),
     bestStreak: bestStreak(days),
     totalPages,
+    extraPages,
     completedCount: completed.length,
     booksRead,
     level: levelFor(totalPages),
