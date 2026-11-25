@@ -272,7 +272,7 @@ export class TodayCard extends PortBoundElement {
                   <button type="button" class="scroll-read-on" data-read-on><span class="scroll-hand" aria-hidden="true">☞</span><span data-t="card.scroll.readOn"></span></button>
                 </div>
                 <i class="scroll-curl scroll-curl-bottom" aria-hidden="true"></i>
-                <span class="scroll-roll" aria-hidden="true"><span class="scroll-wind"><i></i><i></i></span></span>
+                <span class="scroll-roll" aria-hidden="true"><i class="scroll-lip"></i><span class="scroll-wind"><i></i><i></i></span></span>
               </div>
               <div class="scroll-spot" data-spot>
                 <span class="scroll-cords" aria-hidden="true"><i></i><i></i></span>

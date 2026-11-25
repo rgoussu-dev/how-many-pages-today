@@ -20,7 +20,13 @@ const ROLLED = 'inset(50% 0% 50% 0%)';
 const UNROLLED = 'inset(0% 0% 0% 0%)';
 /** Where the seal hangs on the open charter, from where it sits on the rolled one: its foot, on the left. */
 const AT_THE_FOOT = 'translate(-5.1em, 7.9em)';
-const ENDS_MEET = '10.5em';
+/**
+ * Rolling up, each curled end travels to the middle and thickens as the skin winds onto it,
+ * until the two lie side by side exactly where the rolled charter lies — then the roll takes
+ * over above them, so nothing jumps.
+ */
+const TOP_WOUND = 'translateY(9.675em) scaleY(1.27)';
+const BOTTOM_WOUND = 'translateY(-9.675em) scaleY(1.27)';
 const SVG = 'http://www.w3.org/2000/svg';
 
 const wait = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
@@ -130,9 +136,10 @@ export class ScrollScene {
     const o = { duration: ms, easing: EASE };
     return Promise.all([
       this.#animate(this.#part('[data-sheet]'), [{ clipPath: ROLLED }, { clipPath: UNROLLED }], o),
-      this.#animate(this.#part('.scroll-curl-top'), [{ transform: `translateY(${ENDS_MEET})` }, { transform: 'none' }], o),
-      this.#animate(this.#part('.scroll-curl-bottom'), [{ transform: `translateY(-${ENDS_MEET})` }, { transform: 'none' }], o),
-      this.#animate(this.#part('.scroll-roll'), [{ opacity: 1 }, { opacity: 0, offset: 0.15 }, { opacity: 0 }], { duration: ms }),
+      this.#animate(this.#part('.scroll-curl-top'), [{ opacity: 1, transform: TOP_WOUND }, { opacity: 1, transform: 'none' }], o),
+      this.#animate(this.#part('.scroll-curl-bottom'), [{ opacity: 1, transform: BOTTOM_WOUND }, { opacity: 1, transform: 'none' }], o),
+      // the roll lifts off the two ends lying beneath it before they move apart
+      this.#animate(this.#part('.scroll-roll'), [{ opacity: 1 }, { opacity: 0, offset: 0.2 }, { opacity: 0 }], { duration: ms }),
       sealed
         ? Promise.all([
             this.#animate(this.#part('.scroll-wind'), [{ transform: 'scaleY(1)' }, { transform: 'scaleY(0)' }], { duration: ms * 0.2 }),
@@ -146,9 +153,10 @@ export class ScrollScene {
     const o = { duration: ms, easing: EASE };
     return Promise.all([
       this.#animate(this.#part('[data-sheet]'), [{ clipPath: UNROLLED }, { clipPath: ROLLED }], o),
-      this.#animate(this.#part('.scroll-curl-top'), [{ transform: 'none' }, { transform: `translateY(${ENDS_MEET})` }], o),
-      this.#animate(this.#part('.scroll-curl-bottom'), [{ transform: 'none' }, { transform: `translateY(-${ENDS_MEET})` }], o),
-      this.#animate(this.#part('.scroll-roll'), [{ opacity: 0 }, { opacity: 0, offset: 0.85 }, { opacity: 1 }], { duration: ms }),
+      this.#animate(this.#part('.scroll-curl-top'), [{ opacity: 1, transform: 'none' }, { opacity: 1, transform: TOP_WOUND }], o),
+      this.#animate(this.#part('.scroll-curl-bottom'), [{ opacity: 1, transform: 'none' }, { opacity: 1, transform: BOTTOM_WOUND }], o),
+      // the roll settles over the two ends once they lie side by side
+      this.#animate(this.#part('.scroll-roll'), [{ opacity: 0 }, { opacity: 0, offset: 0.8 }, { opacity: 1 }], { duration: ms }),
       this.#animate(this.#part('[data-spot]'), [{ transform: AT_THE_FOOT }, { transform: 'none' }], o),
       this.#animate(this.#part('.scroll-wind'), [{ transform: 'scaleY(0)' }, { transform: 'scaleY(1)' }], {
         duration: ms * 0.25,
@@ -161,6 +169,7 @@ export class ScrollScene {
   /** The librarian writes the day, letter by letter, the quill following the ink; then the paraph. */
   async #write(go: () => void): Promise<void> {
     const pen = this.#part('[data-quill]');
+    const page = this.#part('.scroll-writing');
     const letters = [...this.#root.querySelectorAll<HTMLElement>('.scroll-ch')];
     const per = Math.max(9, Math.min(26, 3000 / Math.max(1, letters.length)));
     pen.style.opacity = '1';
@@ -171,8 +180,13 @@ export class ScrollScene {
       if (line && its !== line) await wait(190);
       line = its;
       letter.classList.add('scroll-ch-on');
-      const x = letter.offsetLeft + letter.offsetWidth;
-      const y = letter.offsetTop + letter.offsetHeight;
+      // Where the letter ends, measured from the writing itself: a line's ink filter makes
+      // it the letters' offset parent, and the book may be scaled by the camera.
+      const box = page.getBoundingClientRect();
+      const at = letter.getBoundingClientRect();
+      const scale = box.width / page.offsetWidth || 1;
+      const x = (at.right - box.left) / scale;
+      const y = (at.bottom - box.top) / scale;
       pen.style.transform = `translate(${x - 2}px, ${y - pen.offsetHeight + Math.sin(x / 5) * 2.5}px)`;
       await wait(per);
     }
@@ -207,7 +221,7 @@ export class ScrollScene {
     const tilt = this.#part('.candle-tilt');
     const flame = this.#part('.candle-flame');
     const drip = this.#part('.wax-drip');
-    const puddle = this.#part('[data-puddle]');
+    const puddle = this.#part('.wax-seal');
     void this.#animate(candle, [
       { opacity: 1, transform: 'translateY(18em)' },
       { opacity: 1, transform: 'none' },
@@ -266,7 +280,7 @@ export class ScrollScene {
     ], { duration: 1500, easing: EASE, fill: 'none' });
     await wait(680);
     go();
-    void this.#animate(this.#part('[data-puddle]'), [
+    void this.#animate(this.#part('.wax-seal'), [
       { transform: 'scale(0.9)' },
       { transform: 'scale(1.05)' },
       { transform: 'scale(1)' },
