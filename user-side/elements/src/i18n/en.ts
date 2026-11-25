@@ -1,4 +1,4 @@
-import type { AchievementId, FieldError, ReminderError, ChallengeError } from '@hmpt/domain-contract';
+import { PAGES_READ_LIMITS, type AchievementId, type ChallengeError, type FieldError, type ReminderError } from '@hmpt/domain-contract';
 
 /*
  * The English phrasebook — the reference every other language must match, key for key
@@ -37,13 +37,6 @@ const ACHIEVEMENTS: Record<AchievementId, { readonly title: string; readonly des
   weekend: { title: 'Weekend warrior', description: 'Read on both the Saturday and the Sunday of a weekend.' },
   comeback: { title: 'Back on the shelf', description: 'Return to reading after missing two days or more.' },
   introductions: { title: 'Pleased to meet you', description: 'Fill in your reader profile.' },
-};
-
-const CHALLENGE_ERRORS: Record<ChallengeError, string> = {
-  'already-completed': 'Today is already sealed.',
-  'not-completed': 'Log your reading first.',
-  'invalid-pages': 'A whole number of pages, please — at least one.',
-  'invalid-title': 'That title is a little long.',
 };
 
 const REMINDER_ERRORS: Record<ReminderError, string> = {
@@ -120,7 +113,7 @@ export const en = {
   tour: {
     card: {
       title: 'Your daily card',
-      text: 'Each day I lay a book on the table, closed. Tap it and it opens on the day’s page: a picture, a number of pages — and, with a book on your nightstand, the page to read up to. Read them, press the button, and I close the book, seal the day and move your bookmark on. Read more, fewer — or finished your book? Tell me under “Read more, or fewer?”. Every page counts.',
+      text: 'Each day I lay a book on the table, closed. Tap it and it opens on the day’s page: a picture, a number of pages, and the page to read up to from your bookmark. Read, write the page you stopped at, and I close the book, write the day on a scroll and seal it in wax — red for a short day, orange for the goal, gold beyond it. Every page counts.',
     },
     candle: {
       title: 'Keep the candle lit',
@@ -158,31 +151,29 @@ export const en = {
     unit: (count: number): string => (count === 1 ? 'page' : 'pages'),
     upTo: (page: number) => `up to page ${n(page)}`,
     toTheEnd: (page: number) => `to the end of the book — page ${n(page)}`,
-    placeBookmark: 'Keep your place in the book',
-    readThem: (count: number) => `I read ${pages(count)}`,
-    readMore: 'Read more, or fewer?',
-    pagesRead: 'Pages actually read',
-    finishedBook: 'I finished my book',
-    whichBook: 'Which book?',
-    logReading: 'Log my reading',
-    readSomeMore: 'Read some more today?',
-    pagesToAdd: 'Pages to add',
-    addPages: 'Add pages',
+    stoppedAt: 'I stopped at page',
+    readOnTo: 'I read on to page',
+    lastPageCheck: 'That was the last page',
+    seal: 'Seal the day',
+    book: {
+      ask: 'First, the book on your nightstand — and the page your bookmark is at.',
+      askBookmark: (title: string) => `Where is your bookmark in “${title}”?`,
+      title: 'The book you are reading',
+      bookmark: 'Your bookmark is at page',
+      total: 'Pages in the book',
+      put: 'Put it on the nightstand',
+    },
     closeBook: 'Close the book',
     openCover: 'Open today’s card',
     coverEyebrow: 'Today’s card',
     tapToOpen: 'Tap to open',
     sealedGroup: 'Today, read and sealed',
-    sealed: 'Read, and sealed.',
-    openBook: 'Open the book',
     bookmarkAt: (page: number, total: number | null) =>
       total === null ? `Bookmark at page ${n(page)}.` : `Bookmark at page ${n(page)} of ${n(total)}.`,
     /** The page written on the bookmark itself, or nothing yet at the very start. */
     bookmarkTag: (page: number): string => (page > 0 ? `p. ${n(page)}` : ''),
     bookmarkLabel: (title: string, page: number): string =>
       page > 0 ? `Bookmark in “${title}”, at page ${n(page)}` : `Bookmark in “${title}”, at the very start`,
-    lastPage: (title: string) => `The last page of “${title}”. Finished?`,
-    shelveIt: 'Put it on the shelf',
     hints: [
       'Find a cosy corner. The pages will not read themselves.',
       'A blanket, a cup of tea, and these pages.',
@@ -193,7 +184,35 @@ export const en = {
     ],
     hintDone: (streak: number): string =>
       streak > 1 ? `${days(streak)} in a row. A fresh card awaits tomorrow.` : 'A fresh card awaits tomorrow.',
-    errors: CHALLENGE_ERRORS,
+    errors: (error: ChallengeError, bookmark: number, total: number | null): string => {
+      switch (error) {
+        case 'already-completed':
+          return 'Today is already sealed.';
+        case 'not-completed':
+          return 'Seal the day first.';
+        case 'no-bookmark':
+          return 'Tell me where your bookmark is first.';
+        case 'invalid-page':
+          return 'Which page? A whole number, please.';
+        case 'not-past-bookmark':
+          return `Your bookmark is already at page ${n(bookmark)}: a later page, please.`;
+        case 'past-the-end':
+          return total === null ? 'That page is past the end of any book.' : `This book ends at page ${n(total)}.`;
+        case 'too-many-pages':
+          return `More than ${n(PAGES_READ_LIMITS.highest)} pages at one sitting? Check the page.`;
+      }
+    },
+    scroll: {
+      heads: { met: 'To the page', beyond: 'Beyond the page', short: 'A short day, honestly kept', book: 'Finis' },
+      finis: 'Finis',
+      signature: 'The librarian',
+      readOn: 'I read some more',
+      rollUp: 'Roll up the scroll',
+      unroll: 'Unroll the scroll',
+      skip: 'Tap to skip ahead',
+      openHint: 'Tap the scroll to roll it up.',
+      rolledHint: 'Tap the seal to unroll it.',
+    },
     summary: {
       book: (read: number) => `${pages(read)} — and a book finished. Bravo.`,
       beyond: (read: number, goal: number) => `${n(read)} of ${n(goal)} pages — ${pages(read - goal)} beyond the goal.`,
@@ -418,11 +437,6 @@ export const en = {
   },
 
   celebration: {
-    beyond: (extra: number) => `✨ ${pages(extra)} beyond the goal. Splendid.`,
-    short: (read: number) => `🐢 ${pages(read)} read. Every page counts — the candle stays lit.`,
-    streak: (streak: number) => `🕯️ ${days(streak)} in a row. Splendid.`,
-    read: (read: number) => `${pages(read)} read. Well done.`,
-    added: (added: number, total: number) => `📖 ${count(added, 'more page')} — ${n(total)} today.`,
     shelved: (title: string, number: number) => `📕 “${title}” joins your shelf — book number ${n(number)}.`,
     shelvedUntitled: (number: number) => `📕 Another book on your shelf — number ${n(number)}.`,
     achievement: (icon: string, title: string) => `${icon} Achievement unlocked: ${title}`,
@@ -495,7 +509,7 @@ export const en = {
       eyebrow: 'Now then',
       heading: 'Your first card awaits',
       speech: (name: string | null, goal: number, readTo: number | null, bookplate: string) =>
-        `“Today’s book is on the table${name ? `, ${name}` : ''}. Tap it, and it will open on your page — ${pages(goal)} today${readTo === null ? '' : `, up to page ${n(readTo)}`}. Read them, press the button, and I shall close the book and seal the day with wax.${bookplate} Take your time; the lamp is lit.”`,
+        `“Today’s book is on the table${name ? `, ${name}` : ''}. Tap it, and it will open on your page — ${pages(goal)} today${readTo === null ? '' : `, up to page ${n(readTo)}`}. Read them, write the page you stopped at, and I shall close the book, write the day on a scroll and seal it with wax.${bookplate} Take your time; the lamp is lit.”`,
       oneBookplate: (title: string) => ` Oh — and you have already earned your first bookplate: “${title}”.`,
       bookplates: (count: number) => ` Oh — and you have already earned ${n(count)} bookplates.`,
       begin: 'Turn the first page',

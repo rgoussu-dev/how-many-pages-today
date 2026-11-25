@@ -9,8 +9,10 @@ import type {
 } from '@hmpt/domain-contract';
 import { readingContexts } from './contexts';
 import { addDays } from './format';
+import { showFieldErrors, typedNumber } from './forms';
 import { deviceSpeech, speech, type Messages, type Speech } from './i18n';
 import { PortBoundElement } from './port-bound';
+import { ScrollScene, type Wax } from './scroll-scene';
 
 /** What was read, in words: the goal, beyond it, short of it, or a book finished. */
 function readingSummary(day: DailyChallenge, t: Messages): string {
@@ -28,10 +30,15 @@ const hashOf = (text: string): number => {
   return h >>> 0;
 };
 
-/** A warm note for the back cover — chosen by chance, but the same all day. */
-function backCoverNote(day: DailyChallenge, bookTitle: string | null, t: Messages): string {
+/** The wax the day is sealed in: short of the goal, the goal, beyond it, or a book finished. */
+function waxOf(day: DailyChallenge): Wax {
   const read = day.pagesRead ?? day.pages;
-  const kind = day.finishedBook ? 'book' : read > day.pages ? 'beyond' : day.goalMet === false ? 'short' : 'met';
+  return day.finishedBook ? 'book' : read > day.pages ? 'beyond' : day.goalMet === false ? 'short' : 'met';
+}
+
+/** A warm note from the librarian — chosen by chance, but the same all day. */
+function backCoverNote(day: DailyChallenge, bookTitle: string | null, t: Messages): string {
+  const kind = waxOf(day);
   const pool = t.card.notes[kind];
   const note = pool[hashOf(`${day.day}:${kind}`) % pool.length] ?? pool[0] ?? '';
   // The summary beneath already says how many pages: the note only says how it felt.
@@ -50,8 +57,10 @@ function backCoverExtra(streak: number, achievements: ReadingSnapshot['achieveme
  *
  * Closed, it waits for a tap. Opening, the camera pulls back to the closed book, which falls
  * open at the middle — the two days before, side by side — then pushes in while the last
- * of them turns over, and lands on today's page. Logged, the camera pulls back again, today's page turns, and the
- * book is turned over onto its back cover, sealed, with a note from the librarian.
+ * of them turns over, and lands on today's page. There the reader writes the page they
+ * stopped at (with no bookmark yet, the page first asks for the book and where it is marked).
+ * Logged, the camera pulls back again, today's page turns, the book is turned over onto its
+ * back cover, and a scroll is written, sealed in the day's wax and left open on it.
  *
  * Each half of the book is a panel hinged at the spine (x = 0 of the card): the left half is
  * the front board with a page on its inside; the right half is the real page, the leaves on
@@ -69,8 +78,13 @@ export class TodayCard extends PortBoundElement {
   #laidOut = '';
   #playing = false;
   #turning: ReturnType<typeof setTimeout> | undefined;
-  /** The last day and status rendered, to tell a fresh validation from a reload. */
-  #seen: { day: string; done: boolean } | null = null;
+  /** The last day, status and pages rendered, to tell a fresh validation (or reading on) from a reload. */
+  #seen: { day: string; done: boolean; read: number } | null = null;
+  /** What the page field was last filled in for, so a re-render never overwrites the reader's typing. */
+  #filledFor = '';
+  #scroll!: ScrollScene;
+  /** A tap asked to skip the ceremony before it began (while the book was still turning over). */
+  #skipCeremony = false;
 
   protected markup(): string {
     return /* html */ `
@@ -94,45 +108,44 @@ export class TodayCard extends PortBoundElement {
           </p>
           <p class="tome-until" data-until hidden><span class="ribbon" aria-hidden="true"></span><span data-until-text></span></p>
           <p class="tome-hint" data-hint></p>
+          <p class="tome-read" data-read-page hidden></p>
 
-          <div class="tome-actions" data-pending>
-            <button type="button" class="btn btn-primary btn-block" data-complete></button>
-            <a class="tome-place" href="#progress" data-place hidden data-t="card.placeBookmark"></a>
-            <details class="tome-log" data-log>
-              <summary data-t="card.readMore"></summary>
-              <form novalidate data-log-form>
-                <label class="field"><span data-t="card.pagesRead"></span>
-                  <input name="pagesRead" type="number" inputmode="numeric" min="1" max="2000" step="1" required>
+          <!-- No bookmark yet: the book on the nightstand, and the page it is marked at. -->
+          <div class="tome-actions" data-book-needed hidden>
+            <p class="tome-ask" data-book-ask></p>
+            <form novalidate data-book-form class="tome-book-form">
+              <label class="field" data-book-title><span data-t="card.book.title"></span>
+                <input name="title" maxlength="120" autocomplete="off" required>
+              </label>
+              <p class="field-error" data-error="title"></p>
+              <div class="tome-book-pages">
+                <label class="field"><span data-t="card.book.bookmark"></span>
+                  <input name="bookmark" type="number" inputmode="numeric" min="0" step="1" value="0">
                 </label>
-                <label class="tome-check"><input type="checkbox" name="finishedBook"> <span data-t="card.finishedBook"></span></label>
-                <label class="field" data-title-field hidden><span><span data-t="card.whichBook"></span> <em data-t="common.optional"></em></span>
-                  <input name="bookTitle" maxlength="120" autocomplete="off">
+                <label class="field"><span><span data-t="card.book.total"></span> <em data-t="common.optional"></em></span>
+                  <input name="totalPages" type="number" inputmode="numeric" min="1" step="1">
                 </label>
-                <p class="field-error" data-error="log" role="alert"></p>
-                <button class="btn btn-primary" type="submit" data-t="card.logReading"></button>
-              </form>
-            </details>
+              </div>
+              <p class="field-error" data-error="bookmark"></p>
+              <p class="field-error" data-error="totalPages"></p>
+              <button class="btn btn-primary" type="submit" data-t="card.book.put"></button>
+            </form>
           </div>
 
-          <div class="tome-actions" data-sealed hidden>
-            <p class="tome-read" data-read-page></p>
-            <p class="tome-until" data-bookmark-line hidden><span class="ribbon" aria-hidden="true"></span><span data-bookmark-text></span></p>
-            <div class="tome-last-page" data-last-page hidden>
-              <p data-last-page-text></p>
-              <button type="button" class="btn btn-primary" data-shelve data-t="card.shelveIt"></button>
-            </div>
-            <details class="tome-log">
-              <summary data-t="card.readSomeMore"></summary>
-              <form novalidate data-more-form class="tome-more">
-                <label class="field"><span data-t="card.pagesToAdd"></span>
-                  <input name="more" type="number" inputmode="numeric" min="1" max="2000" step="1" required>
-                </label>
-                <button class="btn btn-primary" type="submit" data-t="card.addPages"></button>
-                <p class="field-error" data-error="more" role="alert"></p>
-              </form>
-            </details>
-            <button type="button" class="btn btn-quiet" data-close-book data-t="card.closeBook"></button>
+          <!-- The page the reading stopped at: the day's, or, once sealed, reading on. -->
+          <div class="tome-actions" data-log hidden>
+            <form novalidate data-log-form class="tome-log-form">
+              <label class="tome-stop">
+                <span class="tome-stop-label" data-log-label></span>
+                <input class="tome-stop-page" name="stoppedAt" type="number" inputmode="numeric" step="1" required>
+              </label>
+              <label class="tome-check" data-last-field hidden><input type="checkbox" name="finishedBook"> <span data-t="card.lastPageCheck"></span></label>
+              <p class="field-error" data-error="log" role="alert"></p>
+              <button class="btn btn-primary btn-block" type="submit" data-t="card.seal"></button>
+            </form>
           </div>
+
+          <button type="button" class="btn btn-quiet" data-close-book hidden data-t="card.closeBook"></button>
           <p class="tome-folio" aria-hidden="true" data-folio></p>
         </div>
         <!-- The book's own bookmark, lying on today's page under the leaves, its top standing out of the
@@ -161,13 +174,49 @@ export class TodayCard extends PortBoundElement {
         <div class="tome-back" data-back>
           <span class="tome-board" aria-hidden="true"><i class="tome-board-under"></i><i class="tome-board-fore"></i><i class="tome-board-head"></i><i class="tome-board-tail"></i><i class="tome-board-arc tome-board-arc-0"></i><i class="tome-board-arc tome-board-arc-1"></i><i class="tome-board-arc tome-board-arc-2"></i><i class="tome-board-arc tome-board-arc-3"></i><i class="tome-board-arc tome-board-arc-4"></i><i class="tome-board-arc tome-board-arc-5"></i></span>
           <div class="tome-back-face" role="group" data-t-label="card.sealedGroup">
-            <span class="tome-back-seal" aria-hidden="true"><span>✓</span></span>
-            <p class="tome-back-eyebrow tome-done" role="status" data-t="card.sealed"></p>
-            <p class="tome-back-message" data-message></p>
-            <p class="tome-back-summary" data-read></p>
-            <p class="tome-back-extra" data-extra></p>
-            <p class="tome-back-bookmark" data-back-bookmark hidden><span class="ribbon" aria-hidden="true"></span><span data-back-bookmark-text></span></p>
-            <button type="button" class="tome-back-open" data-open-book data-t="card.openBook"></button>
+            <!-- The scroll: written by the librarian, sealed in the day's wax. -->
+            <div class="scroll" data-scroll data-state="open">
+              <div class="scroll-body">
+                <i class="scroll-rod scroll-rod-top" aria-hidden="true"></i>
+                <div class="scroll-sheet" data-sheet>
+                  <div class="scroll-writing" role="status">
+                    <p class="scroll-date" data-line data-scroll-date></p>
+                    <p class="scroll-head" data-line data-head></p>
+                    <p class="scroll-line" data-line data-read></p>
+                    <p class="scroll-line" data-line data-message></p>
+                    <p class="scroll-line" data-line data-back-bookmark hidden></p>
+                    <p class="scroll-line" data-line data-extra hidden></p>
+                    <p class="scroll-sign" data-line data-sign data-t="card.scroll.signature"></p>
+                    <span class="scroll-quill" data-quill aria-hidden="true"><svg viewBox="0 0 64 64"><path d="M14 50C22 30 38 12 61 3 53 22 37 40 14 50Z" fill="#fbf4e2" stroke="#6b4a26" stroke-width="1.5"/><path d="M5 59 52 12" stroke="#6b4a26" stroke-width="2" stroke-linecap="round"/><path d="M3 61 8 56" stroke="#1c1209" stroke-width="2.5" stroke-linecap="round"/></svg></span>
+                  </div>
+                  <button type="button" class="scroll-read-on" data-read-on data-t="card.scroll.readOn"></button>
+                </div>
+                <i class="scroll-rod scroll-rod-bottom" aria-hidden="true"></i>
+                <span class="scroll-roll" aria-hidden="true"><i class="scroll-band"></i></span>
+              </div>
+              <div class="scroll-spot" data-spot>
+                <span class="scroll-tails" aria-hidden="true"><i></i><i></i></span>
+                <span class="wax-rays" aria-hidden="true"></span>
+                <span class="wax-ripple" aria-hidden="true"></span><span class="wax-ripple" aria-hidden="true"></span>
+                <span class="wax-puddle" data-puddle aria-hidden="true">
+                  <span class="wax-seal">
+                    <span class="wax-face">
+                      <svg class="wax-mark wax-mark-short" viewBox="0 0 48 48"><path d="M24 5c3 6 9 10 9 18a9 9 0 0 1-18 0c0-5 3-8 5-11 1 3 2 4 4 5-1-4 0-8 0-12zM18 38h12M20 43h8"/></svg>
+                      <svg class="wax-mark wax-mark-met" viewBox="0 0 64 44"><path d="M32 8C26 4 18 3 6 4v32c12-1 20 0 26 4 6-4 14-5 26-4V4C46 3 38 4 32 8zM32 8v32"/></svg>
+                      <svg class="wax-mark wax-mark-beyond" viewBox="0 0 48 48"><polygon points="24,4 29.6,17.6 44,18.6 33,28 36.4,42.4 24,34.6 11.6,42.4 15,28 4,18.6 18.4,17.6"/></svg>
+                      <svg class="wax-mark wax-mark-book" viewBox="0 0 48 48"><text x="24" y="29" text-anchor="middle" data-finis></text></svg>
+                    </span>
+                    <span class="wax-sheen"></span>
+                  </span>
+                </span>
+                <span class="wax-stamp" aria-hidden="true"><i></i><i></i><i></i></span>
+                <span class="wax-leaves" data-leaves aria-hidden="true"></span>
+                <button type="button" class="scroll-seal" data-seal></button>
+              </div>
+              <span class="wax-drip" aria-hidden="true"></span>
+              <span class="candle" aria-hidden="true"><span class="candle-tilt"><i class="candle-flame"></i><i class="candle-wick"></i><i class="candle-body"></i></span></span>
+            </div>
+            <p class="scroll-hint" data-scroll-hint></p>
           </div>
         </div>
       </article>
@@ -175,8 +224,8 @@ export class TodayCard extends PortBoundElement {
   }
 
   protected override setup(): void {
-    this.$('[data-complete]').addEventListener('click', () => void this.#run((port) => port.complete()));
-    this.$('[data-shelve]').addEventListener('click', () => void this.#shelf?.finishBook());
+    this.#scroll = new ScrollScene(this.$('[data-scroll]'));
+    this.addEventListener('scroll-state', () => this.#syncScroll());
     const cover = this.$('[data-open-cover]');
     cover.addEventListener('click', () => void this.#open());
     cover.addEventListener('keydown', (event) => {
@@ -185,42 +234,66 @@ export class TodayCard extends PortBoundElement {
         void this.#open();
       }
     });
+
+    // The back cover: a tap skips the ceremony; on the open scroll it rolls it up; the seal
+    // rolls and unrolls it; "I read some more" reopens the book onto today's page.
+    this.$('.tome-back-face').addEventListener('click', (event) => {
+      const state = this.#scroll.state;
+      if (state === 'playing' || this.hasAttribute('data-closing')) {
+        if (this.hasAttribute('data-done')) this.#skip();
+        return;
+      }
+      if (state === 'open' && !(event.target as Element).closest('button')) void this.#scroll.toggle();
+    });
+    this.$('[data-seal]').addEventListener('click', (event) => {
+      event.stopPropagation();
+      void this.#scroll.toggle();
+    });
     // Reopening after the day is read: the closing, rewound; closing it again: the closing,
-    // replayed. Both a little quicker than the first time, and the seal is not pressed twice.
-    this.$('[data-open-book]').addEventListener('click', () => {
+    // replayed. Both a little quicker than the first time.
+    this.$('[data-read-on]').addEventListener('click', (event) => {
+      event.stopPropagation();
       this.setAttribute('data-peek', '');
-      this.#turn('reopen', () => this.$<HTMLElement>('[data-close-book]').focus());
+      this.#turn('reopen', () => this.$<HTMLInputElement>('[name="stoppedAt"]').focus());
     });
     this.$('[data-close-book]').addEventListener('click', () => {
       this.removeAttribute('data-peek');
-      this.#turn('again', () => this.$<HTMLElement>('[data-open-book]').focus());
+      this.#turn('again', () => this.$<HTMLElement>('[data-seal]').focus());
     });
 
     const log = this.$<HTMLFormElement>('[data-log-form]');
-    const finished = log.elements.namedItem('finishedBook') as HTMLInputElement;
-    finished.addEventListener('change', () => {
-      this.$('[data-title-field]').hidden = !finished.checked;
-    });
+    const stopped = log.elements.namedItem('stoppedAt') as HTMLInputElement;
+    const last = log.elements.namedItem('finishedBook') as HTMLInputElement;
     log.addEventListener('submit', async (event) => {
       event.preventDefault();
-      const pagesRead = (log.elements.namedItem('pagesRead') as HTMLInputElement).valueAsNumber;
-      const bookTitle = (log.elements.namedItem('bookTitle') as HTMLInputElement).value;
-      const error = await this.#run((port) =>
-        port.complete({ pagesRead, finishedBook: finished.checked, ...(bookTitle.trim() ? { bookTitle } : {}) }),
-      );
-      this.$('[data-error="log"]').textContent = error ? this.#words().t.card.errors[error] : '';
+      const entry = {
+        stoppedAt: stopped.valueAsNumber,
+        ...(last.checked && !this.$('[data-last-field]').hidden ? { finishedBook: true } : {}),
+      };
+      const readingOn = this.hasAttribute('data-done');
+      const error = await this.#run((port) => (readingOn ? port.readOn(entry) : port.complete(entry)));
+      const book = this.#view?.current()?.shelf.current;
+      this.$('[data-error="log"]').textContent = error
+        ? this.#words().t.card.errors(error, book?.bookmark ?? 0, book?.totalPages ?? null)
+        : '';
+      stopped.toggleAttribute('aria-invalid', error !== null);
+      if (!error) last.checked = false;
     });
 
-    const more = this.$<HTMLFormElement>('[data-more-form]');
-    more.addEventListener('submit', async (event) => {
+    const bookForm = this.$<HTMLFormElement>('[data-book-form]');
+    bookForm.addEventListener('submit', async (event) => {
       event.preventDefault();
-      const input = more.elements.namedItem('more') as HTMLInputElement;
-      const error = await this.#run((port) => port.addPages(input.valueAsNumber));
-      this.$('[data-error="more"]').textContent = error ? this.#words().t.card.errors[error] : '';
-      if (!error) {
-        input.value = '';
-        this.$<HTMLDetailsElement>('[data-sealed] details').open = false;
-      }
+      if (!this.#shelf) return;
+      const field = (name: string) => bookForm.elements.namedItem(name) as HTMLInputElement;
+      const bookmark = typedNumber(field('bookmark')) ?? 0;
+      const totalPages = typedNumber(field('totalPages'));
+      const pages = { bookmark, ...(totalPages === undefined ? {} : { totalPages }) };
+      const inHand = this.#view?.current()?.shelf.current;
+      const result = inHand
+        ? await this.#shelf.updateBook(pages)
+        : await this.#shelf.startReading({ title: field('title').value, ...pages });
+      showFieldErrors(bookForm, result.ok ? [] : result.error, this.#words().t);
+      if (result.ok) stopped.focus();
     });
   }
 
@@ -260,6 +333,17 @@ export class TodayCard extends PortBoundElement {
     const bookmark = this.$('[data-bookmark]');
     if (onItsBack && !this.hasAttribute('data-closing')) bookmark.setAttribute('side', 'right');
     else bookmark.removeAttribute('side');
+  }
+
+  /** The words around the scroll follow its state: how to skip, roll or unroll it. */
+  #syncScroll(): void {
+    const { t } = this.#words();
+    const state = this.#scroll.state;
+    const playing = state === 'playing';
+    this.$('[data-scroll-hint]').textContent = playing ? t.card.scroll.skip : state === 'open' ? t.card.scroll.openHint : t.card.scroll.rolledHint;
+    this.$('[data-seal]').setAttribute('aria-label', state === 'open' ? t.card.scroll.rollUp : t.card.scroll.unroll);
+    this.$('[data-seal]').hidden = playing;
+    this.$('[data-read-on]').inert = state !== 'open';
   }
 
   // — opening: closed → the open book, the two days before → today's page ——————————————
@@ -325,16 +409,30 @@ export class TodayCard extends PortBoundElement {
 
   // — closing: today's page → the open book → turned over onto the back cover ——————————
 
-  /** The day is logged: the camera pulls back, today's page turns, the book is turned over. */
-  #closeBook(): void {
+  /**
+   * The day is logged (or logged again, reading on): the book closes and turns over, and
+   * the scroll is written and sealed on its back cover.
+   */
+  #seal(wax: Wax, kind: 'first' | 'again'): void {
     this.removeAttribute('data-peek');
-    this.#turn('first');
+    this.#skipCeremony = false;
+    this.#scroll.hold();
+    this.#turn(kind, () => {
+      if (this.#skipCeremony) this.#scroll.settle('open');
+      else void this.#scroll.play(wax);
+    });
+  }
+
+  /** Skips straight to the sealed scroll, lying open. */
+  #skip(): void {
+    this.#skipCeremony = true;
+    if (!this.hasAttribute('data-closing')) this.#scroll.settle('open');
   }
 
   /**
-   * Plays the closing: the first time (with the seal pressed and the note appearing), again
-   * (closing it after a look inside), or rewound (reopening it onto today's page). The state
-   * it ends in is already set; `then` runs once the book is at rest.
+   * Plays the closing: the first time, again (closing it after a look inside), or rewound
+   * (reopening it onto today's page). The state it ends in is already set; `then` runs once
+   * the book is at rest.
    */
   #turn(kind: 'first' | 'again' | 'reopen', then?: () => void): void {
     clearTimeout(this.#turning);
@@ -349,8 +447,7 @@ export class TodayCard extends PortBoundElement {
     void this.offsetWidth;
     this.setAttribute('data-closing', kind === 'first' ? '' : kind);
     this.#syncInert();
-    // The first time, until the note has appeared on the back cover; after, the quicker turn.
-    this.#turning = setTimeout(settle, kind === 'first' ? 4650 : 3050);
+    this.#turning = setTimeout(settle, kind === 'first' ? 4450 : 3050);
   }
 
   /** The book in hand's own bookmark, lying in the book with the page on it, sticking out at the top. */
@@ -367,8 +464,58 @@ export class TodayCard extends PortBoundElement {
     bookmark.setAttribute('aria-label', t.card.bookmarkLabel(book.title, page));
   }
 
+  /** The page's fields: the book and its bookmark first if there is none, then the page reached. */
+  #renderFields(snapshot: ReadingSnapshot, done: boolean, t: Messages): void {
+    const book = snapshot.shelf.current;
+    const marked = book !== null && book.bookmark !== undefined;
+    this.$('[data-book-needed]').hidden = marked;
+    this.$('[data-log]').hidden = !marked;
+    this.$('[data-book-title]').hidden = book !== null;
+    this.$('[data-book-ask]').textContent = book ? t.card.book.askBookmark(book.title) : t.card.book.ask;
+    this.$<HTMLInputElement>('[data-book-form] [name="title"]').placeholder = t.shelf.titlePlaceholder;
+    if (!marked) return;
+
+    const log = this.$<HTMLFormElement>('[data-log-form]');
+    const stopped = log.elements.namedItem('stoppedAt') as HTMLInputElement;
+    this.$('[data-log-label]').textContent = done ? t.card.readOnTo : t.card.stoppedAt;
+    stopped.min = String(book.bookmark! + 1);
+    if (book.totalPages !== undefined) stopped.max = String(book.totalPages);
+    else stopped.removeAttribute('max');
+    this.$('[data-last-field]').hidden = book.totalPages !== undefined;
+    // Filled in once for each day, state and bookmark: the page the card asked to reach, or —
+    // reading on — left for the reader to write. Never while they are typing.
+    const filledFor = `${snapshot.today.day}|${done}|${book.title}|${book.bookmark}`;
+    if (this.#filledFor !== filledFor) {
+      this.#filledFor = filledFor;
+      stopped.value = done || snapshot.readTo === null ? '' : String(snapshot.readTo);
+      this.$('[data-error="log"]').textContent = '';
+    }
+  }
+
+  /** The scroll's words: the day, how it went, a note from the librarian, the bookmark, the streak. */
+  #renderScroll(snapshot: ReadingSnapshot, words: Speech): void {
+    const { today, stats, shelf, achievements } = snapshot;
+    const { t } = words;
+    const wax = waxOf(today);
+    this.setAttribute('data-wax', wax);
+    const write = (selector: string, text: string) => {
+      const line = this.$(selector);
+      line.hidden = text === '';
+      if (line.textContent !== text) line.textContent = text;
+    };
+    write('[data-scroll-date]', words.longDate(today.day));
+    write('[data-head]', t.card.scroll.heads[wax]);
+    write('[data-read]', readingSummary(today, t));
+    write('[data-message]', backCoverNote(today, shelf.finished.at(-1)?.title ?? null, t));
+    const book = shelf.current;
+    write('[data-back-bookmark]', book?.bookmark ? t.card.bookmarkAt(book.bookmark, book.totalPages ?? null) : '');
+    write('[data-extra]', backCoverExtra(stats.currentStreak, achievements, today.day, t));
+    this.$('[data-finis]').textContent = t.card.scroll.finis;
+    this.#syncScroll();
+  }
+
   #render(snapshot: ReadingSnapshot): void {
-    const { today, stats, shelf, achievements, readTo, language } = snapshot;
+    const { today, stats, shelf, readTo, language } = snapshot;
     const words = this.speak(language);
     const { t } = words;
     this.#arrange(snapshot, words);
@@ -393,43 +540,28 @@ export class TodayCard extends PortBoundElement {
     const book = shelf.current;
     this.#renderBookmark(book, t);
     const total = book?.totalPages ?? null;
-    this.$('[data-until]').hidden = readTo === null;
-    if (readTo !== null) {
-      this.$('[data-until-text]').textContent = readTo === total ? t.card.toTheEnd(readTo) : t.card.upTo(readTo);
-    }
-    this.$('[data-place]').hidden = done || !book || book.bookmark !== undefined;
     const marked = book?.bookmark !== undefined && book.bookmark > 0;
-    const bookmarkText = marked ? t.card.bookmarkAt(book.bookmark!, total) : '';
-    this.$('[data-bookmark-line]').hidden = !done || !marked;
-    this.$('[data-bookmark-text]').textContent = bookmarkText;
-    this.$('[data-back-bookmark]').hidden = !done || !marked;
-    this.$('[data-back-bookmark-text]').textContent = bookmarkText;
-    const atTheEnd = done && book !== null && marked && total !== null && book.bookmark! >= total;
-    this.$('[data-last-page]').hidden = !atTheEnd;
-    if (atTheEnd) this.$('[data-last-page-text]').textContent = t.card.lastPage(book.title);
+    const until = done ? (marked ? t.card.bookmarkAt(book.bookmark!, total) : '') : readTo === null ? '' : readTo === total ? t.card.toTheEnd(readTo) : t.card.upTo(readTo);
+    this.$('[data-until]').hidden = until === '';
+    this.$('[data-until-text]').textContent = until;
+    this.#renderFields(snapshot, done, t);
 
-    this.$('[data-pending]').hidden = done;
-    this.$('[data-sealed]').hidden = !done;
-    const justSealed = done && this.#seen?.day === today.day && this.#seen.done === false;
-    this.#seen = { day: today.day, done };
-    if (done) {
-      const summary = readingSummary(today, t);
-      this.$('[data-read]').textContent = summary;
-      this.$('[data-read-page]').textContent = summary;
-      this.$('[data-message]').textContent = backCoverNote(today, shelf.finished.at(-1)?.title ?? null, t);
-      this.$('[data-extra]').textContent = backCoverExtra(stats.currentStreak, achievements, today.day, t);
-      if (justSealed) this.#closeBook();
+    this.$('[data-read-page]').hidden = !done;
+    this.$('[data-close-book]').hidden = !done;
+    const read = today.pagesRead ?? today.pages;
+    const seen = this.#seen;
+    this.#seen = { day: today.day, done, read };
+    if (!done) {
+      this.removeAttribute('data-peek');
       this.#syncInert();
       return;
     }
-    this.removeAttribute('data-peek');
+    this.$('[data-read-page]').textContent = readingSummary(today, t);
+    this.#renderScroll(snapshot, words);
+    const sameDay = seen?.day === today.day;
+    if (sameDay && !seen.done) this.#seal(waxOf(today), 'first');
+    else if (sameDay && seen.read !== read) this.#seal(waxOf(today), 'again');
     this.#syncInert();
-    this.$('[data-complete]').textContent = t.card.readThem(today.pages);
-    const log = this.$<HTMLFormElement>('[data-log-form]');
-    const pagesInput = log.elements.namedItem('pagesRead') as HTMLInputElement;
-    if (!pagesInput.value) pagesInput.value = String(today.pages);
-    const titleInput = log.elements.namedItem('bookTitle') as HTMLInputElement;
-    titleInput.placeholder = book ? book.title : t.common.title;
   }
 }
 

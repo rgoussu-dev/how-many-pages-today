@@ -174,18 +174,78 @@ hmpt-today-card .tome-actions {
   gap: var(--s-1);
 }
 
-/* The reading log, written on the page. */
-hmpt-today-card .tome-log > summary {
-  justify-self: center;
+/* The page the reading stopped at, written large on the page — and, without a bookmark yet,
+   the book and where it is marked. */
+hmpt-today-card :is(.tome-log-form, .tome-book-form) {
+  display: grid;
+  gap: var(--s-1);
+}
+
+hmpt-today-card .tome-ask {
+  text-align: center;
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 1.15rem;
+  color: var(--ink-soft);
+}
+
+hmpt-today-card .tome-book-pages {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+  gap: var(--s-1);
+}
+
+hmpt-today-card .tome-stop {
+  display: grid;
+  justify-items: center;
+  gap: 0.2rem;
+}
+
+hmpt-today-card .tome-stop-label {
+  font-family: var(--font-display);
+  font-size: 1.35rem;
+  color: var(--ink);
+}
+
+hmpt-today-card .tome-stop-page {
+  width: 6ch;
+  padding: 0.1rem 0.25rem;
+  border: 0;
+  border-bottom: 2px solid var(--ink-soft);
+  border-radius: 0;
+  background: transparent;
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-size: 2.4rem;
+  line-height: 1.1;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+hmpt-today-card .tome-stop-page::-webkit-inner-spin-button,
+hmpt-today-card .tome-stop-page::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+hmpt-today-card .tome-stop-page:focus-visible {
+  outline: none;
+  border-bottom-color: var(--gilt);
+  box-shadow: 0 6px 0 -4px var(--gilt);
+}
+
+hmpt-today-card .tome-stop-page[aria-invalid] {
+  border-bottom-color: var(--danger);
+}
+
+hmpt-today-card [data-error='log'] {
   text-align: center;
 }
 
-hmpt-today-card .tome-log form {
-  display: grid;
-  gap: var(--s-1);
-  margin-block-start: var(--s-1);
-  padding-top: var(--s-1);
-  border-top: 1px solid var(--line);
+hmpt-today-card [data-close-book] {
+  justify-self: center;
 }
 
 hmpt-today-card .tome-check {
@@ -218,32 +278,6 @@ hmpt-today-card .tome-until {
 
 hmpt-today-card [data-until] {
   margin-block-start: calc(var(--s-2) * -0.5);
-}
-
-hmpt-today-card .tome-place {
-  justify-self: center;
-  font-style: italic;
-  font-size: 0.95rem;
-}
-
-hmpt-today-card .tome-last-page {
-  display: grid;
-  gap: var(--s-2);
-  justify-items: center;
-  padding: 0.6rem 0.8rem;
-  text-align: center;
-  font-style: italic;
-  border-left: 3px solid var(--wax);
-  background: color-mix(in srgb, var(--surface-sunk) 70%, transparent);
-}
-
-hmpt-today-card .tome-back-bookmark {
-  display: flex;
-  align-items: center;
-  gap: 0.45rem;
-  font-family: var(--font-caps);
-  letter-spacing: 0.04em;
-  color: color-mix(in srgb, var(--gilt-light) 85%, #fff);
 }
 
 /* The bookmark: a painted card lying the length of today's page along its left, its top
@@ -2201,6 +2235,8 @@ hmpt-today-card:is([data-closing], [data-reveal='closed'], [data-reveal='opening
 
 /* Seen from behind, a book has its spine on the right. */
 hmpt-today-card .tome-back-face {
+  container-type: inline-size;
+  overflow: hidden; /* the candle rises from below the board's edge, the stamp comes down from above */
   position: absolute;
   inset: calc(var(--over) * -1) 0 calc(var(--over-tail) * -1) calc(var(--over) * -1); /* proud of the pages */
   display: grid;
@@ -2227,83 +2263,6 @@ hmpt-today-card .tome-back-face::before {
   outline-offset: -5px;
   border-radius: 0.2rem;
   pointer-events: none;
-}
-
-/* The wax seal, pressed onto the back board. */
-hmpt-today-card .tome-back-seal {
-  display: grid;
-  place-items: center;
-  width: 5rem;
-  height: 5rem;
-  border-radius: 47% 53% 50% 50% / 52% 46% 54% 48%;
-  background: radial-gradient(circle at 38% 32%, #c0453a, var(--wax) 55%, #4f0d0a);
-  box-shadow:
-    0 3px 6px rgb(0 0 0 / 0.5),
-    inset 0 -3px 6px rgb(0 0 0 / 0.35),
-    inset 0 2px 3px rgb(255 160 140 / 0.35);
-  transform: rotate(-14deg);
-}
-
-hmpt-today-card .tome-back-seal > span {
-  display: grid;
-  place-items: center;
-  width: 3.4rem;
-  height: 3.4rem;
-  border-radius: 50%;
-  border: 2px solid rgb(60 5 3 / 0.55);
-  color: #4f0d0a;
-  font-size: 1.8rem;
-  text-shadow: 0 1px 0 rgb(255 150 130 / 0.45);
-}
-
-hmpt-today-card .tome-back-eyebrow {
-  font-family: var(--font-caps);
-  font-size: 1.15rem;
-  letter-spacing: 0.08em;
-  color: var(--gilt-light);
-}
-
-hmpt-today-card .tome-back-message {
-  max-width: 18rem;
-  font-family: var(--font-display);
-  font-style: italic;
-  font-size: 1.5rem;
-  line-height: 1.25;
-  color: #fbeed2;
-  text-shadow: 0 1px 0 rgb(0 0 0 / 0.5);
-}
-
-hmpt-today-card .tome-back-summary,
-hmpt-today-card .tome-back-extra {
-  max-width: 18rem;
-  font-style: italic;
-  color: color-mix(in srgb, var(--gilt-light) 85%, #fff);
-}
-
-hmpt-today-card .tome-back-extra {
-  font-style: normal;
-  font-family: var(--font-caps);
-  letter-spacing: 0.04em;
-}
-
-hmpt-today-card .tome-back-extra:empty {
-  display: none;
-}
-
-hmpt-today-card .tome-back-open {
-  position: relative;
-  margin-block-start: 0.5rem;
-  min-height: 2.75rem;
-  padding: 0 1rem;
-  border: 0;
-  background: none;
-  color: var(--gilt-light);
-  font-family: var(--font-caps);
-  font-size: 1.05rem;
-  text-decoration: underline;
-  text-decoration-color: color-mix(in srgb, var(--gilt) 60%, transparent);
-  text-underline-offset: 0.25em;
-  cursor: pointer;
 }
 
 /* — the choreography — */
@@ -2516,8 +2475,7 @@ hmpt-today-card[data-reveal='landed'] .tome-number {
 /* Closing (≈4.4s), the reverse, as unhurried. 0–0.8s the camera draws back to the open book;
    0.8–1.7s the halves close up onto the spine, back cover toward you, as the camera comes in a
    little; it stands a breath (1.7–2.4s); 2.4–3.2s it tips over onto its other side and settles;
-   2.4–4.4s the camera follows it over and pushes in on the back cover, then the seal is pressed and the note
-   appears. */
+   2.4–4.4s the camera follows it over and pushes in on the back cover. Then the scroll (below). */
 hmpt-today-card[data-closing] .tome-cover {
   animation: cover-close var(--closing-time) linear both;
 }
@@ -2637,35 +2595,9 @@ hmpt-today-card[data-closing] .tome-boards {
   }
 }
 
-hmpt-today-card[data-closing] .tome-back-seal {
-  animation: seal-press 460ms cubic-bezier(0.2, 1.4, 0.4, 1) 3750ms both;
-}
-
-hmpt-today-card[data-closing] .tome-back-face > :not(.tome-back-seal) {
-  animation: note-appear 600ms ease-out 3950ms both;
-}
-
-@keyframes seal-press {
-  from {
-    opacity: 0;
-    transform: rotate(-14deg) scale(1.8);
-  }
-  to {
-    opacity: 1;
-    transform: rotate(-14deg) scale(1);
-  }
-}
-
-@keyframes note-appear {
-  from {
-    opacity: 0;
-    transform: translateY(0.4rem);
-  }
-}
-
 /* — after the day is read: closing it again after a look inside, and reopening it —
-   The same closing, quicker; reopening plays it rewound. The seal is already pressed and the
-   note already written: they simply ride along on the back board. */
+   The same closing, quicker; reopening plays it rewound. The scroll rides along on the back
+   board as it is. */
 hmpt-today-card {
   --closing-time: 4400ms;
 }
@@ -2676,11 +2608,6 @@ hmpt-today-card:is([data-closing='again'], [data-closing='reopen']) {
 
 hmpt-today-card[data-closing='reopen'] :is(.tome, .tome-cover, .tome-inner, .tome-solid-right, .tome-back, .tome-camera, .tome-boards) {
   animation-direction: reverse;
-}
-
-hmpt-today-card:is([data-closing='again'], [data-closing='reopen']) .tome-back-seal,
-hmpt-today-card:is([data-closing='again'], [data-closing='reopen']) .tome-back-face > :not(.tome-back-seal) {
-  animation: none;
 }
 
 /* — the bookmark ribbon: a strip of red silk with a swallowtail — */
@@ -2757,4 +2684,642 @@ hmpt-welcome .welcome-languages {
 hmpt-welcome .welcome-languages .choice span {
   min-height: 2.4rem;
   font-size: 0.95rem;
+}
+
+/* — the scroll on the back cover —
+   Written by the librarian, sealed in the day's wax: oxblood short of the goal, vermilion at
+   it, gold beyond it or for a book finished. Sized in em from the board's width, so the whole
+   scene scales with the card. Its states (`data-state`) are scroll-scene.ts's: `playing` is
+   rolled, blank and unsealed (the ceremony animates from there), `open` lies unrolled with
+   the seal at its foot, `rolled` has the seal at its middle, the ribbon round it. The scroll
+   and the wax are things on the table: the same by day as by lamplight, a touch dimmer. */
+
+hmpt-today-card {
+  --scroll-hi: #f8edd0;
+  --scroll-mid: #ead6a6;
+  --scroll-lo: #b8955c;
+  --scroll-ink: #34200f;
+  --silk-hi: #b23a30;
+  --silk-lo: #5d100c;
+  --wax-size: 4.1em;
+  --wax-hi: #f58a45;
+  --wax-mid: #c4481a;
+  --wax-lo: #5e1a05;
+  --wax-emboss: rgb(255 205 160 / 0.5);
+}
+
+@media (prefers-color-scheme: dark) {
+  hmpt-today-card {
+    --scroll-hi: #ecdcb6;
+    --scroll-mid: #d6bd88;
+  }
+}
+
+hmpt-today-card[data-wax='short'] {
+  --wax-size: 3.7em;
+  --wax-hi: #b03a30;
+  --wax-mid: #701610;
+  --wax-lo: #300504;
+  --wax-emboss: rgb(255 140 120 / 0.38);
+}
+
+hmpt-today-card:is([data-wax='beyond'], [data-wax='book']) {
+  --wax-size: 4.5em;
+  --wax-hi: #fdeaa8;
+  --wax-mid: #d49c30;
+  --wax-lo: #6e460b;
+  --wax-emboss: rgb(255 248 210 / 0.65);
+}
+
+hmpt-today-card .scroll {
+  position: relative;
+  /* 18em wide: most of the board, rolled edges and all */
+  font-size: min(1.15rem, 5cqi);
+  width: 18em;
+  height: 23.4em;
+  color: var(--scroll-ink);
+  text-align: start;
+}
+
+hmpt-today-card .scroll-body {
+  position: absolute;
+  inset: 0;
+}
+
+/* The sheet, 21em tall between its two rolled edges; rolled, everything meets at 11.7em. */
+hmpt-today-card .scroll-sheet {
+  position: absolute;
+  inset: 1.2em 0 auto;
+  height: 21em;
+  background:
+    radial-gradient(90% 60% at 30% 25%, rgb(255 255 255 / 0.35), transparent 70%),
+    radial-gradient(140% 100% at 50% 50%, transparent 55%, rgb(120 80 30 / 0.28)),
+    linear-gradient(180deg, var(--scroll-mid), var(--scroll-hi) 8%, var(--scroll-hi) 92%, var(--scroll-mid));
+  cursor: pointer;
+}
+
+hmpt-today-card .scroll-sheet::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--grain-paper);
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+hmpt-today-card .scroll-rod {
+  position: absolute;
+  left: -0.45em;
+  right: -0.45em;
+  z-index: 2;
+  height: 1.2em;
+  border-radius: 0.6em;
+  background: linear-gradient(180deg, var(--scroll-lo), var(--scroll-mid) 35%, var(--scroll-hi) 50%, var(--scroll-mid) 70%, #7d5f33);
+  box-shadow: 0 2px 4px rgb(0 0 0 / 0.35);
+}
+
+hmpt-today-card .scroll-rod-top {
+  top: 0.6em;
+}
+
+hmpt-today-card .scroll-rod-bottom {
+  top: 21.6em;
+}
+
+hmpt-today-card .scroll-roll {
+  position: absolute;
+  left: -0.5em;
+  right: -0.5em;
+  top: 10.1em;
+  z-index: 3;
+  height: 3.2em;
+  border-radius: 0.9em / 1.6em;
+  background:
+    linear-gradient(90deg, rgb(90 60 25 / 0.45), transparent 4%, transparent 96%, rgb(90 60 25 / 0.45)),
+    linear-gradient(180deg, #8a6a3e, var(--scroll-mid) 25%, var(--scroll-hi) 45%, var(--scroll-mid) 70%, #6e5230);
+  box-shadow: 0 5px 10px rgb(0 0 0 / 0.4);
+}
+
+hmpt-today-card .scroll-band {
+  position: absolute;
+  left: calc(50% - 0.8em);
+  top: -0.3em;
+  bottom: -0.3em;
+  width: 1.6em;
+  background: linear-gradient(90deg, var(--silk-lo), var(--silk-hi) 45%, #d0594a 55%, var(--silk-lo));
+  box-shadow: 0 0 3px rgb(0 0 0 / 0.4);
+  transform: scaleY(0);
+}
+
+/* The handwriting. */
+hmpt-today-card .scroll-writing {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  gap: 0.3em;
+  padding: 1.2em 1.3em 0;
+}
+
+hmpt-today-card .scroll-date {
+  font-family: var(--font-caps);
+  font-size: 0.85em;
+  letter-spacing: 0.06em;
+  opacity: 0.8;
+}
+
+hmpt-today-card .scroll-head {
+  margin-bottom: 0.1em;
+  font-family: var(--font-display);
+  font-size: 1.65em;
+  line-height: 1.1;
+}
+
+hmpt-today-card :is(.scroll-line, .scroll-sign) {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 1em;
+  line-height: 1.28;
+}
+
+hmpt-today-card .scroll-sign {
+  text-align: end;
+}
+
+hmpt-today-card .scroll-word {
+  white-space: nowrap;
+}
+
+hmpt-today-card .scroll-ch {
+  transition: opacity 200ms ease-out;
+}
+
+hmpt-today-card .scroll-quill {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 2;
+  width: 3em;
+  height: 3em;
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    transform 70ms linear,
+    opacity 250ms;
+}
+
+hmpt-today-card .scroll-quill svg {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  filter: drop-shadow(1px 3px 2px rgb(0 0 0 / 0.3));
+}
+
+hmpt-today-card .scroll-read-on {
+  position: absolute;
+  right: 1em;
+  bottom: 1.2em;
+  z-index: 1;
+  padding: 0.65em 0.9em;
+  border: 1px solid var(--leather-deep);
+  border-radius: var(--radius);
+  background: linear-gradient(180deg, var(--leather-light), var(--leather) 60%, var(--leather-deep));
+  color: var(--gilt-light);
+  font-family: var(--font-family);
+  font-size: 0.95em;
+  font-weight: 600;
+  cursor: pointer;
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity 400ms 300ms,
+    visibility 0s 700ms;
+}
+
+hmpt-today-card .scroll[data-state='open'] .scroll-read-on {
+  opacity: 1;
+  visibility: visible;
+  transition: opacity 400ms 300ms;
+}
+
+/* The seal, and all that happens around it. Its spot is the rolled scroll's middle. */
+hmpt-today-card .scroll-spot {
+  position: absolute;
+  left: 5em;
+  top: 7.7em;
+  z-index: 4;
+  display: grid;
+  place-items: center;
+  width: 8em;
+  height: 8em;
+}
+
+hmpt-today-card .scroll-tails {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+}
+
+hmpt-today-card .scroll-tails > i {
+  position: absolute;
+  top: 0;
+  width: 1.3em;
+  height: 5.2em;
+  transform-origin: 50% 0;
+  background: linear-gradient(90deg, var(--silk-lo), var(--silk-hi) 45%, #d0594a 55%, var(--silk-lo));
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 82%, 0 100%);
+  filter: drop-shadow(0 2px 2px rgb(0 0 0 / 0.35));
+}
+
+hmpt-today-card .scroll-tails > i:first-child {
+  left: -1.2em;
+  transform: rotate(14deg);
+}
+
+hmpt-today-card .scroll-tails > i:last-child {
+  left: -0.1em;
+  transform: rotate(-12deg);
+}
+
+hmpt-today-card .wax-rays {
+  position: absolute;
+  inset: -0.5em;
+  border-radius: 50%;
+  opacity: 0;
+  background: repeating-conic-gradient(from 0deg, rgb(240 213 144 / 0.32) 0deg 6deg, transparent 6deg 22.5deg);
+  mask: radial-gradient(circle, transparent 26%, #000 30%, #000 50%, transparent 68%);
+  animation: wax-spin 40s linear infinite;
+}
+
+hmpt-today-card .wax-ripple {
+  position: absolute;
+  inset: 0;
+  width: var(--wax-size);
+  height: var(--wax-size);
+  margin: auto;
+  border: 2px solid var(--wax-hi);
+  border-radius: 50%;
+  opacity: 0;
+  pointer-events: none;
+}
+
+hmpt-today-card .wax-puddle {
+  position: relative;
+  z-index: 2;
+  width: var(--wax-size);
+  height: var(--wax-size);
+}
+
+/* The wax squeezed out from under the stamp: a ragged rim behind the seal. */
+hmpt-today-card .wax-puddle::before {
+  content: '';
+  position: absolute;
+  inset: -9%;
+  z-index: -1;
+  border-radius: 58% 42% 55% 45% / 44% 58% 42% 56%;
+  background: radial-gradient(circle at 40% 35%, var(--wax-mid), var(--wax-lo) 80%);
+  box-shadow: 0 2px 5px rgb(0 0 0 / 0.45);
+  transform: rotate(20deg);
+}
+
+hmpt-today-card .wax-seal {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border-radius: 47% 53% 50% 50% / 52% 46% 54% 48%;
+  background: radial-gradient(circle at 36% 30%, var(--wax-hi), var(--wax-mid) 55%, var(--wax-lo));
+  box-shadow:
+    0 3px 7px rgb(0 0 0 / 0.5),
+    inset 0 -3px 7px rgb(0 0 0 / 0.35),
+    inset 0 2px 3px var(--wax-emboss);
+  transform: rotate(-12deg);
+}
+
+hmpt-today-card .wax-face {
+  display: grid;
+  place-items: center;
+  width: 70%;
+  height: 70%;
+  border: 2px solid color-mix(in srgb, var(--wax-lo) 70%, transparent);
+  border-radius: 50%;
+  box-shadow:
+    inset 0 1px 0 var(--wax-emboss),
+    0 1px 0 var(--wax-emboss);
+  color: var(--wax-lo);
+}
+
+hmpt-today-card .wax-mark {
+  display: none;
+  width: 62%;
+  height: 62%;
+  overflow: visible;
+  filter: drop-shadow(0 1px 0 var(--wax-emboss));
+}
+
+hmpt-today-card .wax-mark path {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+hmpt-today-card .wax-mark :is(polygon, text) {
+  fill: currentColor;
+}
+
+hmpt-today-card .wax-mark text {
+  font-family: var(--font-caps);
+  font-size: 15px;
+  letter-spacing: 0.04em;
+}
+
+hmpt-today-card[data-wax='short'] .wax-mark-short,
+hmpt-today-card[data-wax='met'] .wax-mark-met,
+hmpt-today-card[data-wax='beyond'] .wax-mark-beyond,
+hmpt-today-card[data-wax='book'] .wax-mark-book {
+  display: block;
+}
+
+hmpt-today-card .wax-sheen {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(105deg, transparent 35%, rgb(255 252 230 / 0.8) 50%, transparent 65%);
+  mix-blend-mode: soft-light;
+  transform: translateX(-130%);
+}
+
+/* The brass stamp: a turned-wood knob, a neck, and a brass foot as wide as the seal. */
+hmpt-today-card .wax-stamp {
+  position: absolute;
+  left: 50%;
+  bottom: calc(50% - var(--wax-size) / 2);
+  z-index: 5;
+  display: grid;
+  justify-items: center;
+  width: calc(var(--wax-size) * 0.95);
+  margin-left: calc(var(--wax-size) * -0.475);
+  opacity: 0;
+  pointer-events: none;
+}
+
+hmpt-today-card .wax-stamp > i:nth-child(1) {
+  width: 2.2em;
+  height: 2.2em;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #a0673a, #5b331a 60%, #2a160a);
+  box-shadow: 0 2px 3px rgb(0 0 0 / 0.4);
+}
+
+hmpt-today-card .wax-stamp > i:nth-child(2) {
+  width: 1em;
+  height: 2.8em;
+  margin-top: -0.3em;
+  border-radius: 0.3em;
+  background: linear-gradient(90deg, #3a2010, #8a5a32 45%, #3a2010);
+}
+
+hmpt-today-card .wax-stamp > i:nth-child(3) {
+  width: 100%;
+  height: calc(var(--wax-size) * 1.02);
+  margin-top: -0.2em;
+  border-radius: 0.4em 0.4em 45% 45% / 0.4em 0.4em 14% 14%;
+  background: linear-gradient(90deg, #6e4a12, #e5c15e 40%, #fff1b8 50%, #b88a2a 65%, #5e3e0c);
+  box-shadow: 0 4px 8px rgb(0 0 0 / 0.45);
+}
+
+hmpt-today-card .wax-leaves {
+  position: absolute;
+  inset: 0;
+  z-index: 6;
+  pointer-events: none;
+}
+
+hmpt-today-card .wax-leaves > span {
+  position: absolute;
+  left: 50%;
+  top: 45%;
+  font-size: 1.1em;
+  animation: wax-leaf-fly 1500ms cubic-bezier(0.2, 0.7, 0.4, 1) both;
+}
+
+hmpt-today-card .wax-leaves > .wax-leaf-drift {
+  animation: wax-leaf-drift 3200ms ease-in-out both;
+}
+
+hmpt-today-card .scroll-seal {
+  position: absolute;
+  inset: 1.6em;
+  z-index: 7;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  cursor: pointer;
+}
+
+hmpt-today-card .scroll-seal:focus-visible,
+hmpt-today-card .scroll-read-on:focus-visible {
+  outline: none;
+  box-shadow: var(--focus);
+}
+
+/* The candle, in the wax it is about to pour. Its wick is the pivot it tips on. */
+hmpt-today-card .candle {
+  position: absolute;
+  left: 4.45em;
+  top: 16.1em;
+  z-index: 8;
+  width: 1.5em;
+  opacity: 0;
+  transform: translateY(18em);
+  pointer-events: none;
+}
+
+hmpt-today-card .candle-tilt {
+  position: relative;
+  display: block;
+  transform-origin: 50% 0;
+}
+
+hmpt-today-card .candle-flame {
+  position: absolute;
+  left: 50%;
+  bottom: 100%;
+  width: 0.9em;
+  height: 1.6em;
+  margin-left: -0.45em;
+  transform-origin: 50% 100%;
+}
+
+hmpt-today-card .candle-flame::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50% 50% 50% 50% / 65% 65% 35% 35%;
+  background: radial-gradient(circle at 50% 75%, #fffbe6, #ffd36b 35%, #ff8a1e 70%, rgb(255 90 20 / 0));
+  box-shadow:
+    0 0 18px 8px rgb(255 190 90 / 0.45),
+    0 0 50px 20px rgb(255 160 60 / 0.18);
+  transform-origin: 50% 100%;
+  animation: wax-flicker 180ms ease-in-out infinite alternate;
+}
+
+hmpt-today-card .candle-wick {
+  position: absolute;
+  left: 50%;
+  top: -0.35em;
+  width: 2px;
+  height: 0.45em;
+  margin-left: -1px;
+  background: #1c1209;
+}
+
+hmpt-today-card .candle-body {
+  position: relative;
+  display: block;
+  width: 1.5em;
+  height: 7.5em;
+  border-radius: 0.25em 0.25em 0.15em 0.15em;
+  background: linear-gradient(90deg, var(--wax-lo), var(--wax-mid) 30%, var(--wax-hi) 48%, var(--wax-mid) 70%, var(--wax-lo));
+  box-shadow: 0 4px 10px rgb(0 0 0 / 0.45);
+}
+
+/* wax run down the side */
+hmpt-today-card .candle-body::before,
+hmpt-today-card .candle-body::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  border-radius: 0 0 0.3em 0.3em;
+}
+
+hmpt-today-card .candle-body::before {
+  left: 0.15em;
+  width: 0.45em;
+  height: 2.2em;
+  background: linear-gradient(90deg, var(--wax-mid), var(--wax-hi));
+}
+
+hmpt-today-card .candle-body::after {
+  right: 0.2em;
+  width: 0.35em;
+  height: 1.2em;
+  background: var(--wax-mid);
+}
+
+hmpt-today-card .wax-drip {
+  position: absolute;
+  left: 5em;
+  top: 16.05em;
+  z-index: 7;
+  width: 0.5em;
+  height: 0.65em;
+  border-radius: 50% 50% 50% 50% / 40% 40% 60% 60%;
+  background: radial-gradient(circle at 40% 35%, var(--wax-hi), var(--wax-mid));
+  opacity: 0;
+  pointer-events: none;
+}
+
+hmpt-today-card .scroll-hint {
+  font-size: 0.95rem;
+  font-style: italic;
+  color: color-mix(in srgb, var(--gilt-light) 75%, transparent);
+}
+
+/* The states at rest. */
+hmpt-today-card .scroll[data-state='playing'] .scroll-body,
+hmpt-today-card .scroll[data-state='playing'] .scroll-tails,
+hmpt-today-card .scroll[data-state='playing'] .wax-face,
+hmpt-today-card .scroll[data-state='playing'] .scroll-ch:not(.scroll-ch-on) {
+  opacity: 0;
+}
+
+hmpt-today-card .scroll[data-state='playing'] .wax-puddle {
+  transform: scale(0);
+}
+
+hmpt-today-card .scroll:is([data-state='playing'], [data-state='rolled']) .scroll-sheet {
+  clip-path: inset(50% 0% 50% 0%);
+}
+
+hmpt-today-card .scroll:is([data-state='playing'], [data-state='rolled']) .scroll-rod-top {
+  transform: translateY(10.5em);
+}
+
+hmpt-today-card .scroll:is([data-state='playing'], [data-state='rolled']) .scroll-rod-bottom {
+  transform: translateY(-10.5em);
+}
+
+hmpt-today-card .scroll[data-state='open'] .scroll-roll {
+  opacity: 0;
+}
+
+hmpt-today-card .scroll[data-state='rolled'] .scroll-band {
+  transform: scaleY(1);
+}
+
+hmpt-today-card .scroll:is([data-state='playing'], [data-state='open']) .scroll-spot {
+  transform: translate(-5.1em, 7.9em);
+}
+
+hmpt-today-card .scroll[data-state='rolled'] .scroll-sheet {
+  cursor: default;
+}
+
+@keyframes wax-spin {
+  to {
+    rotate: 360deg;
+  }
+}
+
+@keyframes wax-flicker {
+  from {
+    transform: scale(1, 1) rotate(-2deg);
+  }
+  to {
+    transform: scale(0.94, 1.06) rotate(2deg);
+  }
+}
+
+@keyframes wax-leaf-fly {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.4);
+  }
+  15% {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+    transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) rotate(var(--spin)) scale(1);
+  }
+}
+
+@keyframes wax-leaf-drift {
+  from {
+    opacity: 0;
+    transform: translate(-3em, -5.5em) rotate(-20deg);
+  }
+  15% {
+    opacity: 1;
+  }
+  40% {
+    transform: translate(1.5em, -2em) rotate(25deg);
+  }
+  70% {
+    opacity: 1;
+    transform: translate(-1em, 1.5em) rotate(-15deg);
+  }
+  to {
+    opacity: 0;
+    transform: translate(1.2em, 4.5em) rotate(30deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  hmpt-today-card .wax-rays,
+  hmpt-today-card .candle-flame::before {
+    animation: none;
+  }
 }

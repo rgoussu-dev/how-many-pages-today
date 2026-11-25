@@ -5,18 +5,31 @@ import { inMemoryDeps, type InMemoryDeps } from './testing';
 
 const at = (day: number, hour = 9, minute = 0) => new Date(2026, 10, day, hour, minute);
 
+type App = ReturnType<typeof createReadingApp>;
+
+/** A book with a bookmark on the nightstand: no reading can be logged without one. */
+const onTheNightstand = (app: App, bookmark = 100) => app.bookshelf.startReading({ title: 'Middlemarch', bookmark });
+
+/** Reads on from wherever the bookmark is: the day's goal, or `pages`. */
+async function readPages(app: App, pages?: number) {
+  const today = await app.challenge.open();
+  const from = app.view.current()?.shelf.current?.bookmark ?? 0;
+  return app.challenge.complete({ stoppedAt: from + (pages ?? today.pages) });
+}
+
 describe('the daily challenge', () => {
   let deps: InMemoryDeps;
   let app: ReturnType<typeof createReadingApp>;
   let snapshot: ReadingSnapshot | null;
   let events: ReadingEvent[];
 
-  beforeEach(() => {
+  beforeEach(async () => {
     deps = inMemoryDeps(at(24), [0.35]);
     app = createReadingApp(deps);
     snapshot = null;
     events = [];
     app.view.subscribe((s) => (snapshot = s));
+    await onTheNightstand(app);
     app.view.onEvent((e) => events.push(e));
   });
 
@@ -42,8 +55,7 @@ describe('the daily challenge', () => {
   });
 
   it('validates the day, starts a streak and unlocks the first achievement', async () => {
-    await app.challenge.open();
-    const result = await app.challenge.complete();
+    const result = await readPages(app);
     expect(result.ok).toBe(true);
     expect(snapshot?.stats).toMatchObject({ currentStreak: 1, totalPages: 40, completedCount: 1 });
     expect(events.map((e) => e.type)).toEqual(['challenge-completed', 'achievement-unlocked']);
@@ -51,15 +63,15 @@ describe('the daily challenge', () => {
   });
 
   it('refuses to validate twice: a day read stays read', async () => {
-    await app.challenge.complete();
-    expect(await app.challenge.complete()).toEqual({ ok: false, error: 'already-completed' });
+    await readPages(app);
+    expect(await readPages(app)).toEqual({ ok: false, error: 'already-completed' });
     expect(snapshot?.stats.currentStreak).toBe(1);
   });
 
   it('builds a streak over consecutive days and unlocks Kindling on the third', async () => {
     for (const day of [22, 23, 24]) {
       deps.clock.set(at(day));
-      await app.challenge.complete();
+      await readPages(app);
     }
     expect(snapshot?.stats.currentStreak).toBe(3);
     expect(events.filter((e) => e.type === 'achievement-unlocked').map((e) => e.achievement.id)).toContain('streak-3');
@@ -67,9 +79,9 @@ describe('the daily challenge', () => {
 
   it('unlocks time-of-day achievements from the validation time', async () => {
     deps.clock.set(at(24, 7, 30));
-    await app.challenge.complete();
+    await readPages(app);
     deps.clock.set(at(25, 22, 15));
-    await app.challenge.complete();
+    await readPages(app);
     const unlocked = snapshot?.achievements.filter((a) => a.unlockedOn).map((a) => a.id);
     expect(unlocked).toEqual(expect.arrayContaining(['early-bird', 'night-owl']));
   });
@@ -84,7 +96,7 @@ describe('the daily challenge', () => {
   });
 
   it('never redraws a card already read', async () => {
-    await app.challenge.complete();
+    await readPages(app);
     const result = await app.range.update({ min: 100, max: 200, step: 50 });
     expect(result.ok && result.value.todayRedrawn).toBe(false);
     expect(snapshot?.today.pages).toBe(40);
@@ -171,27 +183,35 @@ describe('the bookmark', () => {
     expect(app.view.current()?.readTo).toBe(40);
   });
 
-  it('moves on by the pages logged, and by pages added later', async () => {
+  it('moves to the page the reading stopped at, and on again when reading on', async () => {
     const deps = inMemoryDeps(at(24), [0.35]);
     const app = createReadingApp(deps);
     await app.bookshelf.startReading({ title: 'Middlemarch', bookmark: 112 });
-    await app.challenge.complete({ pagesRead: 30 });
+    await app.challenge.complete({ stoppedAt: 142 });
     expect(app.view.current()?.shelf.current?.bookmark).toBe(142);
+    expect(app.view.current()?.today).toMatchObject({ pagesRead: 30, stoppedAt: 142 });
     expect(app.view.current()?.readTo).toBeNull(); // the day is read
-    await app.challenge.addPages(8);
+    await app.challenge.readOn({ stoppedAt: 150 });
     expect(app.view.current()?.shelf.current?.bookmark).toBe(150);
+    expect(app.view.current()?.today).toMatchObject({ pagesRead: 38, stoppedAt: 150 });
 
     deps.clock.set(at(25)); // a new card: 40 pages again, from page 150
     await app.challenge.open();
     expect(app.view.current()?.readTo).toBe(190);
   });
 
-  it('stops at the last page', async () => {
+  it('leads no further than the last page — and reaching it finishes the book', async () => {
     const app = createReadingApp(inMemoryDeps(at(24), [0.35]));
     await app.bookshelf.startReading({ title: 'Piranesi', bookmark: 230, totalPages: 245 });
     expect(app.view.current()?.readTo).toBe(245);
-    await app.challenge.complete();
-    expect(app.view.current()?.shelf.current?.bookmark).toBe(245);
+    expect(await app.challenge.complete({ stoppedAt: 245 })).toMatchObject({
+      ok: true,
+      value: { pagesRead: 15, finishedBook: true, goalMet: true },
+    });
+    expect(app.view.current()?.shelf).toEqual({
+      current: null,
+      finished: [{ title: 'Piranesi', startedOn: '2026-11-24', finishedOn: '2026-11-24' }],
+    });
   });
 
   it('can be moved by hand, and the book given or stripped of a length', async () => {
@@ -215,20 +235,20 @@ describe('the bookmark', () => {
     expect(app.view.current()?.shelf.current).toEqual({ title: 'Middlemarch', startedOn: '2026-11-24', bookmark: 200 });
   });
 
-  it('is placed in a book from before bookmarks existed, which until then stays unmarked', async () => {
+  it('must be placed in a book from before bookmarks existed before its reading is logged', async () => {
     const deps = inMemoryDeps(at(24), [0.35]);
     deps.shelves.shelf = { current: { title: 'Middlemarch', startedOn: '2026-11-01' }, finished: [] };
     const app = createReadingApp(deps);
-    await app.challenge.complete();
-    expect(app.view.current()?.shelf.current).toEqual({ title: 'Middlemarch', startedOn: '2026-11-01' });
+    expect(await app.challenge.complete({ stoppedAt: 340 })).toEqual({ ok: false, error: 'no-bookmark' });
     await app.bookshelf.updateBook({ bookmark: 300 });
-    expect(app.view.current()?.shelf.current?.bookmark).toBe(300);
+    expect(await app.challenge.complete({ stoppedAt: 340 })).toMatchObject({ ok: true, value: { pagesRead: 40 } });
+    expect(app.view.current()?.shelf.current?.bookmark).toBe(340);
   });
 
-  it('goes on the shelf with the book', async () => {
+  it('goes on the shelf with a book of unknown length, when the reader says it was the last page', async () => {
     const app = createReadingApp(inMemoryDeps(at(24), [0.35]));
-    await app.bookshelf.startReading({ title: 'Piranesi', bookmark: 230, totalPages: 245 });
-    await app.challenge.complete({ pagesRead: 15, finishedBook: true });
+    await app.bookshelf.startReading({ title: 'Piranesi', bookmark: 230 });
+    await app.challenge.complete({ stoppedAt: 245, finishedBook: true });
     expect(app.view.current()?.shelf).toEqual({
       current: null,
       finished: [{ title: 'Piranesi', startedOn: '2026-11-24', finishedOn: '2026-11-24' }],
@@ -260,39 +280,44 @@ describe('the language', () => {
   });
 });
 
-describe('logging what was actually read', () => {
-  const unlocked = (app: ReturnType<typeof createReadingApp>) =>
-    app.view.current()?.achievements.filter((a) => a.unlockedOn).map((a) => a.id) ?? [];
+describe('logging where the reading stopped', () => {
+  const unlocked = (app: App) => app.view.current()?.achievements.filter((a) => a.unlockedOn).map((a) => a.id) ?? [];
 
-  it('logs the goal with one tap', async () => {
-    const app = createReadingApp(inMemoryDeps(at(24), [0.35]));
-    const result = await app.challenge.complete();
-    expect(result).toMatchObject({ ok: true, value: { pagesRead: 40, goalMet: true, finishedBook: false } });
+  async function reader(bookmark = 100, totalPages?: number) {
+    const app = createReadingApp(inMemoryDeps(at(24), [0.35])); // goal: 40
+    await app.bookshelf.startReading({ title: 'Piranesi', bookmark, ...(totalPages ? { totalPages } : {}) });
+    return app;
+  }
+
+  it('counts the pages from the bookmark to the page reached', async () => {
+    const app = await reader();
+    expect(await app.challenge.complete({ stoppedAt: 140 })).toMatchObject({
+      ok: true,
+      value: { pagesRead: 40, stoppedAt: 140, goalMet: true, finishedBook: false },
+    });
   });
 
-  it('logs more than the goal, and rewards it', async () => {
-    const app = createReadingApp(inMemoryDeps(at(24), [0.35])); // goal: 40
-    await app.challenge.complete({ pagesRead: 85 });
+  it('counts more than the goal, and rewards it', async () => {
+    const app = await reader();
+    await app.challenge.complete({ stoppedAt: 185 });
     expect(app.view.current()?.stats).toMatchObject({ totalPages: 85, extraPages: 45, currentStreak: 1 });
     expect(unlocked(app)).toEqual(expect.arrayContaining(['beyond-goal', 'double-goal']));
     expect(unlocked(app)).not.toContain('extra-100');
   });
 
-  it('logs fewer pages: the streak holds, the goal is not met, and that is encouraged', async () => {
-    const app = createReadingApp(inMemoryDeps(at(24), [0.35]));
-    await app.challenge.complete({ pagesRead: 12 });
+  it('counts fewer pages: the streak holds, the goal is not met, and that is encouraged', async () => {
+    const app = await reader();
+    await app.challenge.complete({ stoppedAt: 112 });
     expect(app.view.current()?.today).toMatchObject({ status: 'completed', pagesRead: 12, goalMet: false });
     expect(app.view.current()?.stats).toMatchObject({ totalPages: 12, currentStreak: 1 });
     expect(unlocked(app)).toContain('little-by-little');
   });
 
   it('meets the goal by finishing a book, even short of the pages', async () => {
-    const deps = inMemoryDeps(at(24), [0.35]);
-    const app = createReadingApp(deps);
-    await app.bookshelf.startReading({ title: 'Piranesi' });
+    const app = await reader(200, 218);
     const events: ReadingEvent[] = [];
     app.view.onEvent((e) => events.push(e));
-    await app.challenge.complete({ pagesRead: 18, finishedBook: true });
+    await app.challenge.complete({ stoppedAt: 218 });
     expect(app.view.current()?.today).toMatchObject({ pagesRead: 18, goalMet: true, finishedBook: true });
     expect(app.view.current()?.shelf.finished.map((b) => b.title)).toEqual(['Piranesi']);
     expect(events.map((e) => e.type).slice(0, 2)).toEqual(['challenge-completed', 'book-finished']);
@@ -300,31 +325,40 @@ describe('logging what was actually read', () => {
     expect(unlocked(app)).not.toContain('little-by-little');
   });
 
-  it('finishes an unnamed book from the card, or names it there', async () => {
+  it('logs nothing without a bookmark to read on from', async () => {
     const app = createReadingApp(inMemoryDeps(at(24)));
-    await app.challenge.complete({ finishedBook: true, bookTitle: 'Jane Eyre' });
-    expect(app.view.current()?.shelf.finished).toEqual([{ title: 'Jane Eyre', finishedOn: '2026-11-24' }]);
+    expect(await app.challenge.complete({ stoppedAt: 40 })).toEqual({ ok: false, error: 'no-bookmark' });
+    expect(app.view.current()?.today.status ?? 'pending').toBe('pending');
   });
 
-  it('adds pages later the same day — only ever upward', async () => {
-    const app = createReadingApp(inMemoryDeps(at(24), [0.35]));
-    expect(await app.challenge.addPages(10)).toEqual({ ok: false, error: 'not-completed' });
-    await app.challenge.complete({ pagesRead: 30 });
-    expect(await app.challenge.addPages(0)).toEqual({ ok: false, error: 'invalid-pages' });
-    const result = await app.challenge.addPages(25);
-    expect(result).toMatchObject({ ok: true, value: { pagesRead: 55, goalMet: true } });
+  it('reads on later the same day — only ever forward', async () => {
+    const app = await reader();
+    expect(await app.challenge.readOn({ stoppedAt: 110 })).toEqual({ ok: false, error: 'not-completed' });
+    await app.challenge.complete({ stoppedAt: 130 });
+    expect(await app.challenge.readOn({ stoppedAt: 130 })).toEqual({ ok: false, error: 'not-past-bookmark' });
+    const result = await app.challenge.readOn({ stoppedAt: 155 });
+    expect(result).toMatchObject({ ok: true, value: { pagesRead: 55, stoppedAt: 155, goalMet: true } });
     expect(app.view.current()?.stats.totalPages).toBe(55);
     expect(unlocked(app)).toContain('beyond-goal');
   });
 
-  it('rejects impossible counts', async () => {
-    const app = createReadingApp(inMemoryDeps(at(24)));
-    expect(await app.challenge.complete({ pagesRead: 0 })).toEqual({ ok: false, error: 'invalid-pages' });
-    expect(await app.challenge.complete({ pagesRead: 12.5 })).toEqual({ ok: false, error: 'invalid-pages' });
-    expect(await app.challenge.complete({ finishedBook: true, bookTitle: 'x'.repeat(200) })).toEqual({
-      ok: false,
-      error: 'invalid-title',
-    });
+  it('finishes the book when reading on reaches its last page', async () => {
+    const app = await reader(100, 160);
+    await app.challenge.complete({ stoppedAt: 110 });
+    expect(app.view.current()?.today.goalMet).toBe(false);
+    await app.challenge.readOn({ stoppedAt: 160 });
+    expect(app.view.current()?.today).toMatchObject({ pagesRead: 60, finishedBook: true, goalMet: true });
+    expect(app.view.current()?.shelf.current).toBeNull();
+  });
+
+  it('rejects impossible pages', async () => {
+    const app = await reader(100, 300);
+    expect(await app.challenge.complete({ stoppedAt: 100 })).toEqual({ ok: false, error: 'not-past-bookmark' });
+    expect(await app.challenge.complete({ stoppedAt: 60 })).toEqual({ ok: false, error: 'not-past-bookmark' });
+    expect(await app.challenge.complete({ stoppedAt: 120.5 })).toEqual({ ok: false, error: 'invalid-page' });
+    expect(await app.challenge.complete({ stoppedAt: 301 })).toEqual({ ok: false, error: 'past-the-end' });
+    const long = await reader(0);
+    expect(await long.challenge.complete({ stoppedAt: 2001 })).toEqual({ ok: false, error: 'too-many-pages' });
   });
 
   it('counts days logged before page counts existed as their goal, met', async () => {
@@ -351,6 +385,7 @@ describe('reminders', () => {
   it('notifies once, after the reminder time, only while the day is unread', async () => {
     const deps = inMemoryDeps(at(24, 19, 0), [0.35]);
     const app = createReadingApp(deps);
+    await onTheNightstand(app);
     const configured = await app.reminder.configure({ enabled: true, time: '20:00' });
     expect(configured).toMatchObject({ ok: true, value: { delivery: 'background' } });
 
@@ -361,7 +396,7 @@ describe('reminders', () => {
     expect(await app.reminderCheck.run()).toBe('already-notified');
 
     deps.clock.set(at(25, 20, 30));
-    await app.challenge.complete();
+    await readPages(app);
     expect(await app.reminderCheck.run()).toBe('already-read');
     expect(deps.notifier.sent).toHaveLength(1);
   });
@@ -412,7 +447,8 @@ describe('the overview port', () => {
   it('looks back over what the app recorded', async () => {
     const deps = inMemoryDeps(at(24), [0.35]);
     const app = createReadingApp(deps);
-    await app.challenge.complete({ pagesRead: 55, finishedBook: true, bookTitle: 'Kindred' });
+    await app.bookshelf.startReading({ title: 'Kindred' });
+    await app.challenge.complete({ stoppedAt: 55, finishedBook: true });
     const month = await app.overview.month(2026, 11);
     expect(month.totals).toMatchObject({ pagesRead: 55, daysRead: 1, booksFinished: 1 });
     expect(month.books.map((b) => b.title)).toEqual(['Kindred']);

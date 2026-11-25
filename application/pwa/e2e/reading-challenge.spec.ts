@@ -6,6 +6,24 @@ const pagesOnCard = async (page: Page) => Number(await card(page).locator('[data
 
 const welcome = (page: Page) => page.locator('hmpt-welcome');
 
+/** With no bookmark yet, today's page asks for the book on the nightstand first. */
+async function putOnNightstand(page: Page, title: string, bookmark = 0, totalPages?: number) {
+  const book = card(page);
+  await book.getByLabel('The book you are reading').fill(title);
+  await book.getByLabel('Your bookmark is at page').fill(String(bookmark));
+  if (totalPages !== undefined) await book.getByLabel(/Pages in the book/).fill(String(totalPages));
+  await book.getByRole('button', { name: 'Put it on the nightstand' }).click();
+  await expect(book.locator('[name="stoppedAt"]')).toBeVisible();
+}
+
+/** Writes the page the reading stopped at (or keeps the one the card offers), and seals the day. */
+async function sealAt(page: Page, stoppedAt?: number, lastPage = false) {
+  const book = card(page);
+  if (stoppedAt !== undefined) await book.locator('[name="stoppedAt"]').fill(String(stoppedAt));
+  if (lastPage) await book.getByText('That was the last page').click();
+  await book.getByRole('button', { name: 'Seal the day' }).click();
+}
+
 /** Words the phrasebook could not find, logged by the app — there must be none, in any language. */
 const missingPhrases = new WeakMap<Page, string[]>();
 
@@ -42,12 +60,23 @@ test('deals a card from the default range, with an illustration', async ({ page 
   await expect(card(page).locator('[data-caption]')).toHaveText((await plate.getAttribute('aria-label')) ?? '');
 });
 
-test('validating the day seals the card, lights the streak, earns a badge, and survives a reload', async ({ page }) => {
+test('writing the page reached seals the card on a scroll, lights the streak, earns a badge, and survives a reload', async ({ page }) => {
   const pages = await pagesOnCard(page);
-  await card(page).getByRole('button', { name: /^I read/ }).click();
+  await expect(card(page).locator('[data-book-ask]')).toHaveText(
+    'First, the book on your nightstand — and the page your bookmark is at.',
+  );
+  await putOnNightstand(page, 'Persuasion');
+  // The card offers the page the day leads to: the bookmark plus the goal.
+  await expect(card(page).locator('[name="stoppedAt"]')).toHaveValue(String(pages));
+  await sealAt(page);
 
   await expect(card(page)).toHaveAttribute('data-done', '');
-  await expect(page.locator('hmpt-celebration [data-toast]')).toContainText(/read|Achievement/);
+  await expect(card(page)).toHaveAttribute('data-wax', 'met');
+  await expect(card(page).locator('[data-scroll]')).toHaveAttribute('data-state', 'open');
+  await expect(card(page).locator('[data-head]')).toHaveText('To the page');
+  await expect(card(page).locator('[data-read]')).toHaveText(`${pages} pages, exactly as dealt.`);
+  await expect(card(page).locator('[data-back-bookmark]')).toHaveText(`Bookmark at page ${pages}.`);
+  await expect(page.locator('hmpt-celebration [data-toast]')).toContainText('Achievement unlocked');
   const summary = page.locator('section[data-route="today"] hmpt-streak-summary');
   await expect(summary.locator('[data-streak]')).toHaveText('1');
   await expect(summary.locator('[data-pages]')).toHaveText(String(pages));
@@ -55,17 +84,27 @@ test('validating the day seals the card, lights the streak, earns a badge, and s
   await page.reload();
   await expect(card(page)).toHaveAttribute('data-done', '');
   expect(await pagesOnCard(page)).toBe(pages);
+  await expect(card(page).locator('.tome-inner')).toHaveJSProperty('inert', true); // a day read stays read
 
   await tab(page, 'Progress').click();
   // the first badge is always earned; a 100-page draw would also earn the marathon
   await expect(page.locator('hmpt-achievement-list .badge[data-earned] strong')).toContainText(['First chapter']);
   await expect(page.locator('hmpt-history-calendar li[data-state="completed"]')).toHaveCount(1);
+});
 
-  // a day read stays read: no way back, no second validation
-  await tab(page, 'Today').click();
-  await expect(card(page).getByRole('button', { name: /^I read/ })).toBeHidden();
-  await expect(card(page).locator('.tome-done')).toHaveText('Read, and sealed.');
-  await expect(card(page).locator('[data-read]')).toHaveText(`${pages} pages, exactly as dealt.`);
+test('the scroll rolls up when tapped, and unrolls from its seal', async ({ page }) => {
+  await putOnNightstand(page, 'Persuasion');
+  await sealAt(page);
+  const scroll = card(page).locator('[data-scroll]');
+  await expect(scroll).toHaveAttribute('data-state', 'open');
+  await expect(card(page).locator('[data-scroll-hint]')).toHaveText('Tap the scroll to roll it up.');
+  await card(page).locator('[data-sheet]').click({ position: { x: 40, y: 40 } });
+  await expect(scroll).toHaveAttribute('data-state', 'rolled');
+  await expect(card(page).locator('[data-scroll-hint]')).toHaveText('Tap the seal to unroll it.');
+  await card(page).getByRole('button', { name: 'Unroll the scroll' }).click();
+  await expect(scroll).toHaveAttribute('data-state', 'open');
+  await card(page).getByRole('button', { name: 'Roll up the scroll' }).click();
+  await expect(scroll).toHaveAttribute('data-state', 'rolled');
 });
 
 test('works offline once installed', async ({ page, context }) => {
@@ -116,28 +155,28 @@ test('the profile stays on the device and greets the reader', async ({ page }) =
   await expect(page.locator('hmpt-greeting h1')).toContainText('Ada');
 });
 
-test('logging fewer pages keeps the streak, earns encouragement, and more can be added later', async ({ page }) => {
+test('fewer pages keep the streak in red wax, and reading on reseals the day in gold', async ({ page }) => {
   const goal = await pagesOnCard(page);
-  await card(page).getByText('Read more, or fewer?').click();
-  await card(page).getByLabel('Pages actually read').fill('3');
-  await card(page).getByRole('button', { name: 'Log my reading' }).click();
+  await putOnNightstand(page, 'Persuasion', 10);
+  await sealAt(page, 13);
 
-  await expect(card(page)).toHaveAttribute('data-done', '');
+  await expect(card(page)).toHaveAttribute('data-wax', 'short');
+  await expect(card(page).locator('[data-head]')).toHaveText('A short day, honestly kept');
   await expect(card(page).locator('[data-read]')).toHaveText(`3 of ${goal} pages. Every page counts.`);
   const summary = page.locator('section[data-route="today"] hmpt-streak-summary');
   await expect(summary.locator('[data-streak]')).toHaveText('1');
   await expect(summary.locator('[data-pages]')).toHaveText('3');
 
-  // The book closed on the day: the back cover carries the note; open it to add more.
-  await expect(card(page).locator('[data-message]')).not.toBeEmpty();
-  await card(page).getByRole('button', { name: 'Open the book' }).click();
-  await card(page).getByText('Read some more today?').click();
-  await card(page).getByLabel('Pages to add').fill(String(goal + 10));
-  await card(page).getByRole('button', { name: 'Add pages' }).click();
-  await expect(card(page).locator('[data-read-page]')).toHaveText(`${goal + 13} of ${goal} pages — 13 pages beyond the goal.`);
-  await card(page).getByRole('button', { name: 'Close the book' }).click();
-  await expect(card(page).locator('[data-read]')).toBeVisible();
+  // "I read some more" reopens the book onto today's page, which asks how far.
+  await card(page).getByRole('button', { name: 'I read some more' }).click();
+  await expect(card(page).locator('[data-log-label]')).toHaveText('I read on to page');
+  await sealAt(page, 13);
+  await expect(card(page).locator('[data-error="log"]')).toHaveText('Your bookmark is already at page 13: a later page, please.');
+  await sealAt(page, 23 + goal);
+  await expect(card(page)).toHaveAttribute('data-wax', 'beyond');
+  await expect(card(page).locator('[data-head]')).toHaveText('Beyond the page');
   await expect(card(page).locator('[data-read]')).toHaveText(`${goal + 13} of ${goal} pages — 13 pages beyond the goal.`);
+  await expect(card(page).locator('.tome-inner')).toHaveJSProperty('inert', true); // closed and sealed again
 
   await tab(page, 'Progress').click();
   const earned = page.locator('hmpt-achievement-list .badge[data-earned] strong');
@@ -146,13 +185,13 @@ test('logging fewer pages keeps the streak, earns encouragement, and more can be
   await expect(page.locator('hmpt-history-calendar li[data-beyond]')).toHaveCount(1);
 });
 
-test('a book can be finished from the card, named there, and short pages still meet the goal', async ({ page }) => {
-  await card(page).getByText('Read more, or fewer?').click();
-  await card(page).getByLabel('Pages actually read').fill('2');
-  await card(page).getByText('I finished my book').click();
-  await card(page).getByLabel(/Which book/).fill('Piranesi');
-  await card(page).getByRole('button', { name: 'Log my reading' }).click();
+test('the last page of a book of unknown length finishes it: a gold seal, Finis, and short pages still meet the goal', async ({ page }) => {
+  await putOnNightstand(page, 'Piranesi', 240);
+  await sealAt(page, 242, true);
+  await expect(card(page)).toHaveAttribute('data-wax', 'book');
+  await expect(card(page).locator('[data-head]')).toHaveText('Finis');
   await expect(card(page).locator('[data-read]')).toHaveText('2 pages — and a book finished. Bravo.');
+  await expect(card(page).locator('[data-message]')).toContainText('“Piranesi” — finished.');
 
   await tab(page, 'Progress').click();
   await expect(page.locator('hmpt-bookshelf .spine')).toHaveAttribute('aria-label', /^Piranesi, finished /);
@@ -248,11 +287,8 @@ test('the calendar fallback downloads a daily recurring event with an alarm', as
 });
 
 test('the overview looks back over the month and the year', async ({ page }) => {
-  await card(page).getByText('Read more, or fewer?').click();
-  await card(page).getByLabel('Pages actually read').fill('55');
-  await card(page).getByText('I finished my book').click();
-  await card(page).getByLabel(/Which book/).fill('Kindred');
-  await card(page).getByRole('button', { name: 'Log my reading' }).click();
+  await putOnNightstand(page, 'Kindred');
+  await sealAt(page, 55, true);
   await expect(card(page)).toHaveAttribute('data-done', '');
 
   await tab(page, 'Overview').click();
@@ -375,6 +411,8 @@ test('welcome: where the browser offers to install, the librarian hands over the
 
 test.describe('with motion', () => {
   test.use({ contextOptions: { reducedMotion: 'no-preference' } });
+  // The opening, the closing and the scroll's ceremony play out in full: give them time.
+  test.slow();
 
   test('welcome: the day’s book waits closed for a tap, opens through the days before, and closes on its back cover', async ({ page }) => {
     const book = card(page);
@@ -399,26 +437,37 @@ test.describe('with motion', () => {
     await expect(book.locator('[data-folio]')).toHaveText(`— ${goal} —`);
     await expect(book.locator('.tome-inner')).toHaveJSProperty('inert', false);
 
-    // Reading the pages: pull back, turn today's page, turn the book over onto its back.
-    await book.getByRole('button', { name: /^I read/ }).click();
+    // No bookmark yet: the page asks for the book first. Then reading: pull back, turn today's
+    // page, turn the book over onto its back — and the scroll is written and sealed.
+    await putOnNightstand(page, 'Persuasion');
+    await sealAt(page);
     await expect(book).toHaveAttribute('data-closing', '');
     await expect(book.locator('[data-cover-back] .past-verso')).toHaveCount(1); // the left half, closing up
+    await expect(book.locator('[data-scroll]')).toHaveAttribute('data-state', 'playing');
     await expect(book).not.toHaveAttribute('data-closing', { timeout: 9000 });
     await expect(book.locator('.tome-back-face')).toBeVisible();
+    await expect(book.locator('.candle')).toBeVisible({ timeout: 9000 }); // the candle comes up to pour
+    await expect(book.locator('[data-scroll]')).toHaveAttribute('data-state', 'open', { timeout: 12000 });
     await expect(book.locator('[data-message]')).not.toBeEmpty();
     await expect(book.locator('.tome-inner')).toHaveJSProperty('inert', true);
 
+    // Rolled up on a tap, unrolled from the seal.
+    await book.locator('[data-sheet]').click({ position: { x: 40, y: 40 } });
+    await expect(book.locator('[data-scroll]')).toHaveAttribute('data-state', 'rolled');
+    await book.getByRole('button', { name: 'Unroll the scroll' }).click();
+    await expect(book.locator('[data-scroll]')).toHaveAttribute('data-state', 'open');
+
     // Reopening it later: the closing rewound, onto today's page; closing it again, replayed.
-    await book.getByRole('button', { name: 'Open the book' }).click();
+    await book.getByRole('button', { name: 'I read some more' }).click();
     await expect(book).toHaveAttribute('data-closing', 'reopen');
     await expect(book).not.toHaveAttribute('data-closing', { timeout: 6000 });
     await expect(book.locator('.tome-inner')).toHaveJSProperty('inert', false);
-    await expect(book.getByRole('button', { name: 'Close the book' })).toBeFocused();
+    await expect(book.locator('[name="stoppedAt"]')).toBeFocused();
     await book.getByRole('button', { name: 'Close the book' }).click();
     await expect(book).toHaveAttribute('data-closing', 'again');
     await expect(book).not.toHaveAttribute('data-closing', { timeout: 6000 });
     await expect(book.locator('.tome-back-face')).toBeVisible();
-    await expect(book.getByRole('button', { name: 'Open the book' })).toBeFocused();
+    await expect(book.getByRole('button', { name: 'Roll up the scroll' })).toBeFocused();
 
     await page.reload();
     await expect(book.locator('[data-pages]')).toHaveText(goal ?? '');
@@ -426,6 +475,21 @@ test.describe('with motion', () => {
     await expect(book).not.toHaveAttribute('data-reveal'); // opened once a day
     await expect(book).not.toHaveAttribute('data-closing'); // closed once, when read
     await expect(book.locator('.tome-back-face')).toBeVisible(); // and stays closed
+    await expect(book.locator('[data-scroll]')).toHaveAttribute('data-state', 'open'); // the scroll lies open, sealed
+  });
+
+  test('a tap skips the ceremony straight to the sealed scroll', { tag: '@fresh' }, async ({ page }) => {
+    const book = card(page);
+    await welcome(page).getByRole('button', { name: 'I know my way' }).click();
+    await book.getByRole('button', { name: 'Open today’s card' }).click();
+    await expect(book).not.toHaveAttribute('data-reveal', { timeout: 9000 });
+    await putOnNightstand(page, 'Persuasion');
+    await sealAt(page);
+    await expect(book).not.toHaveAttribute('data-closing', { timeout: 9000 });
+    await expect(book.locator('[data-scroll-hint]')).toHaveText('Tap to skip ahead');
+    await book.locator('.tome-back-face').click({ position: { x: 30, y: 30 } });
+    await expect(book.locator('[data-scroll]')).toHaveAttribute('data-state', 'open');
+    await expect(book.locator('[data-read]')).not.toBeEmpty();
   });
 
   test('the open book shows the two days before today', { tag: '@fresh' }, async ({ page }) => {
@@ -475,9 +539,14 @@ test.describe('in French', () => {
         .replace(/^./, (c) => c.toUpperCase()),
     );
     await expect(card(page).locator('[data-caption]')).toHaveText(/^(Des|Une|Un) /); // the plate, described in French
-    await card(page).getByRole('button', { name: `J’ai lu mes ${pages} pages` }).click();
-    await expect(card(page).locator('.tome-done')).toHaveText('Lu, et scellé\u202f!');
+    await card(page).getByLabel('Le livre que vous lisez').fill('Les Misérables');
+    await card(page).getByRole('button', { name: 'Sur la table de chevet\u202f!' }).click();
+    await expect(card(page).locator('[data-log-label]')).toHaveText('J’ai lu jusqu’à la page');
+    await expect(card(page).locator('[name="stoppedAt"]')).toHaveValue(String(pages));
+    await card(page).getByRole('button', { name: 'Sceller la journée' }).click();
+    await expect(card(page).locator('[data-head]')).toHaveText('Pile à la page');
     await expect(card(page).locator('[data-read]')).toHaveText(`${pages} pages, pile comme prévu.`);
+    await expect(card(page).locator('[data-sign]')).toHaveText('Le bibliothécaire');
 
     await tab(page, 'Progrès').click();
     await expect(page.locator('h1:visible')).toHaveText('Votre bibliothèque');
@@ -501,7 +570,7 @@ test('the reading room speaks the language the reader picks, and the device’s 
 
   await page.reload();
   await tab(page, 'Aujourd’hui').click(); // the choice is kept
-  await expect(card(page).getByRole('button', { name: /^J’ai lu/ })).toBeVisible();
+  await expect(card(page).getByRole('button', { name: 'Sur la table de chevet\u202f!' })).toBeVisible();
 
   await tab(page, 'Vous').click();
   await form.getByText('Comme cet appareil (English)').click();
@@ -540,10 +609,14 @@ test('welcome: the book on the nightstand keeps its bookmark, and every day says
   const goal = await pagesOnCard(page);
   await expect(card(page).locator('[data-until]')).toHaveText(`up to page ${112 + goal}`);
 
-  // Reading moves the bookmark on by the pages logged.
-  await card(page).getByText('Read more, or fewer?').click();
-  await card(page).getByLabel('Pages actually read').fill('30');
-  await card(page).getByRole('button', { name: 'Log my reading' }).click();
+  // The page offered is the one the day leads to; one before the bookmark is refused.
+  await expect(card(page).locator('[name="stoppedAt"]')).toHaveValue(String(112 + goal));
+  await sealAt(page, 100);
+  await expect(card(page).locator('[data-error="log"]')).toHaveText('Your bookmark is already at page 112: a later page, please.');
+  await sealAt(page, 1000);
+  await expect(card(page).locator('[data-error="log"]')).toHaveText('This book ends at page 880.');
+  // Reading moves the bookmark to the page reached.
+  await sealAt(page, 142);
   await expect(card(page).locator('[data-back-bookmark]')).toHaveText('Bookmark at page 142 of 880.');
   // Turned over onto its back, the book shows its bookmark at the other edge, at the new page.
   await expect(bookmark).toHaveAttribute('side', 'right');
@@ -555,18 +628,17 @@ test('welcome: the book on the nightstand keeps its bookmark, and every day says
   await expect(shelf.locator('[data-bookmark-text]')).toHaveText('Page 142 of 880');
   await expect(shelf.locator('[data-progress]')).toHaveAttribute('aria-valuenow', '16');
 
-  // Pages read later the same day move it too.
+  // Reading on later the same day moves it too.
   await tab(page, 'Today').click();
-  await card(page).getByRole('button', { name: 'Open the book' }).click();
+  await card(page).getByRole('button', { name: 'I read some more' }).click();
   await expect(bookmark).not.toHaveAttribute('side');
-  await card(page).getByText('Read some more today?').click();
-  await card(page).getByLabel('Pages to add').fill('8');
-  await card(page).getByRole('button', { name: 'Add pages' }).click();
-  await expect(card(page).locator('[data-bookmark-line]')).toHaveText('Bookmark at page 150 of 880.');
+  await expect(card(page).locator('[data-until]')).toHaveText('Bookmark at page 142 of 880.');
+  await sealAt(page, 150);
+  await expect(card(page).locator('[data-back-bookmark]')).toHaveText('Bookmark at page 150 of 880.');
   await expect(bookmark.locator('.ds-bookmark-mark')).toHaveText('p. 150');
 });
 
-test('the bookmark can be moved by hand, and the last page offers to shelve the book', async ({ page }) => {
+test('the bookmark can be moved by hand, and reaching the last page shelves the book', async ({ page }) => {
   await tab(page, 'Progress').click();
   const shelf = page.locator('hmpt-bookshelf');
   await shelf.getByLabel('What are you reading?').fill('Piranesi');
@@ -586,14 +658,9 @@ test('the bookmark can be moved by hand, and the last page offers to shelve the 
 
   await tab(page, 'Today').click();
   await expect(card(page).locator('[data-until]')).toHaveText(`to the end of the book — page ${240 + goal}`);
-  await card(page).getByRole('button', { name: /^I read/ }).click();
-  await card(page).getByRole('button', { name: 'Open the book' }).click();
-  await expect(card(page).locator('[data-last-page]')).toContainText('The last page of “Piranesi”. Finished?');
-  await card(page).getByRole('button', { name: 'Put it on the shelf' }).click();
-  await expect(card(page).locator('[data-last-page]')).toBeHidden();
+  await expect(card(page).locator('[data-last-field]')).toBeHidden(); // its length is known: the last page says it all
+  await sealAt(page);
+  await expect(card(page)).toHaveAttribute('data-wax', 'book');
+  await expect(card(page).locator('[data-head]')).toHaveText('Finis');
   await expect(card(page).locator('[data-bookmark]')).toBeHidden(); // it went to the shelf with the book
-
-  await tab(page, 'Progress').click();
-  await expect(shelf.locator('.spine')).toHaveAttribute('aria-label', /^Piranesi, finished /);
-  await expect(shelf.locator('[data-nightstand]')).toBeHidden();
 });
