@@ -1,4 +1,4 @@
-import type { AchievementId, ChallengeError, FieldError, ReminderError } from '@hmpt/domain-contract';
+import { PAGES_READ_LIMITS, type AchievementId, type ChallengeError, type FieldError, type ReminderError } from '@hmpt/domain-contract';
 import type { Messages } from './en';
 
 /*
@@ -43,13 +43,6 @@ const ACHIEVEMENTS: Record<AchievementId, { readonly title: string; readonly des
   weekend: { title: 'Week-end au coin du feu', description: 'Lisez le samedi et le dimanche d’un même week-end.' },
   comeback: { title: 'Le grand retour', description: 'Reprenez la lecture après au moins deux jours sans.' },
   introductions: { title: 'Faisons connaissance', description: 'Remplissez votre carte de lecture.' },
-};
-
-const CHALLENGE_ERRORS: Record<ChallengeError, string> = {
-  'already-completed': 'C’est déjà scellé pour aujourd’hui !',
-  'not-completed': 'Notez d’abord votre lecture.',
-  'invalid-pages': 'Des pages entières, s’il vous plaît — et au moins une !',
-  'invalid-title': 'Ce titre est un brin trop long.',
 };
 
 const REMINDER_ERRORS: Record<ReminderError, string> = {
@@ -126,7 +119,7 @@ export const fr: Messages = {
   tour: {
     card: {
       title: 'Votre carte du jour',
-      text: 'Chaque jour, je pose un livre fermé sur la table. Touchez-le : il s’ouvre sur la page du jour, avec une image, un nombre de pages — et, si un livre attend sur votre table de chevet, la page jusqu’où aller. Lisez, appuyez sur le bouton : je referme le livre, je scelle la journée et j’avance votre marque-page. Plus de pages, moins, ou un livre de fini ? Dites-le-moi sous « Plus ou moins de pages ? ». Chaque page compte !',
+      text: 'Chaque jour, je pose un livre fermé sur la table. Touchez-le : il s’ouvre sur la page du jour, avec une image, un nombre de pages et la page jusqu’où aller depuis votre marque-page. Lisez, notez la page où vous en êtes : je referme le livre, j’écris la journée sur un parchemin et je la scelle à la cire — rouge pour une petite journée, orange pour l’objectif, or au-delà. Chaque page compte !',
     },
     candle: {
       title: 'Gardez la flamme',
@@ -164,23 +157,23 @@ export const fr: Messages = {
     unit: (value: number) => (value <= 1 ? 'page' : 'pages'),
     upTo: (page: number) => `jusqu’à la page ${n(page)}`,
     toTheEnd: (page: number) => `jusqu’au bout du livre — page ${n(page)}`,
-    placeBookmark: 'Glissez-y un marque-page',
-    readThem: (value: number) => (value === 1 ? 'J’ai lu ma page' : `J’ai lu mes ${n(value)} pages`),
-    readMore: 'Plus ou moins de pages ?',
-    pagesRead: 'Pages vraiment lues',
-    finishedBook: 'J’ai fini mon livre !',
-    whichBook: 'Lequel ?',
-    logReading: 'Noter ma lecture',
-    readSomeMore: 'Encore quelques pages ?',
-    pagesToAdd: 'Pages en plus',
-    addPages: 'Ajouter',
+    stoppedAt: 'J’ai lu jusqu’à la page',
+    readOnTo: 'J’ai poursuivi jusqu’à la page',
+    lastPageCheck: 'C’était la dernière page',
+    seal: 'Sceller la journée',
+    book: {
+      ask: 'D’abord, le livre de votre table de chevet — et la page de votre marque-page.',
+      askBookmark: (title: string) => `Où en est votre marque-page dans « ${title} » ?`,
+      title: 'Le livre que vous lisez',
+      bookmark: 'Votre marque-page est à la page',
+      total: 'Nombre de pages du livre',
+      put: 'Sur la table de chevet !',
+    },
     closeBook: 'Refermer le livre',
     openCover: 'Ouvrir la carte du jour',
     coverEyebrow: 'La carte du jour',
     tapToOpen: 'Touchez pour ouvrir',
     sealedGroup: 'Aujourd’hui : lu et scellé',
-    sealed: 'Lu, et scellé !',
-    openBook: 'Rouvrir le livre',
     bookmarkAt: (page: number, total: number | null) =>
       total === null ? `Marque-page glissé page ${n(page)}.` : `Marque-page glissé page ${n(page)} sur ${n(total)}.`,
     bookmarkTag: (page: number) => (page > 0 ? `p. ${n(page)}` : ''),
@@ -188,8 +181,6 @@ export const fr: Messages = {
       page > 0
         ? `Marque-page de « ${title} », glissé page ${n(page)}`
         : `Marque-page de « ${title} », glissé au tout début`,
-    lastPage: (title: string) => `Dernière page de « ${title} » ! Alors, terminé ?`,
-    shelveIt: 'Hop, sur l’étagère !',
     hints: [
       'Un coin douillet, et en avant : les pages ne vont pas se lire toutes seules.',
       'Un plaid, une tasse de thé, et ces quelques pages.',
@@ -200,7 +191,35 @@ export const fr: Messages = {
     ],
     hintDone: (streak: number) =>
       streak > 1 ? `${days(streak)} d’affilée ! Une nouvelle carte vous attend demain.` : 'Une nouvelle carte vous attend demain.',
-    errors: CHALLENGE_ERRORS,
+    errors: (error: ChallengeError, bookmark: number, total: number | null) => {
+      switch (error) {
+        case 'already-completed':
+          return 'C’est déjà scellé pour aujourd’hui !';
+        case 'not-completed':
+          return 'Scellez d’abord la journée.';
+        case 'no-bookmark':
+          return 'Dites-moi d’abord où est votre marque-page.';
+        case 'invalid-page':
+          return 'Quelle page ? Un nombre entier, s’il vous plaît.';
+        case 'not-past-bookmark':
+          return `Votre marque-page est déjà page ${n(bookmark)} : une page plus loin, voyons !`;
+        case 'past-the-end':
+          return total === null ? 'Cette page dépasse la fin de tous les livres !' : `Ce livre s’arrête à la page ${n(total)}.`;
+        case 'too-many-pages':
+          return `Plus de ${n(PAGES_READ_LIMITS.highest)} pages d’une traite ? Vérifiez la page.`;
+      }
+    },
+    scroll: {
+      heads: { met: 'Pile à la page', beyond: 'Au-delà de la page', short: 'Une petite journée, et c’est très bien', book: 'Finis' },
+      finis: 'Finis',
+      signature: 'Le bibliothécaire',
+      readOn: 'J’ai lu encore un peu',
+      rollUp: 'Rouler le parchemin',
+      unroll: 'Dérouler le parchemin',
+      skip: 'Touchez pour passer',
+      openHint: 'Touchez le parchemin pour le rouler.',
+      rolledHint: 'Touchez le sceau pour le dérouler.',
+    },
     summary: {
       book: (read: number) => `${pages(read)} — et un livre de fini. Bravo !`,
       beyond: (read: number, goal: number) => `${pages(read)} sur ${n(goal)} — ${pages(read - goal)} de rab !`,
@@ -426,11 +445,6 @@ export const fr: Messages = {
   },
 
   celebration: {
-    beyond: (extra: number) => `✨ ${pages(extra)} de rab. Splendide !`,
-    short: (read: number) => `🐢 ${pagesRead(read)}. Chaque page compte — la bougie brille toujours.`,
-    streak: (streak: number) => `🕯️ ${days(streak)} d’affilée. Bravo !`,
-    read: (read: number) => `${pagesRead(read)}. Bien joué !`,
-    added: (added: number, total: number) => `📖 ${count(added, 'page')} de plus — ${n(total)} aujourd’hui !`,
     shelved: (title: string, number: number) => `📕 « ${title} » rejoint votre étagère — c’est le livre n° ${n(number)} !`,
     shelvedUntitled: (number: number) => `📕 Un livre de plus sur l’étagère — le n° ${n(number)} !`,
     achievement: (icon: string, title: string) => `${icon} Nouvel ex-libris : ${title}`,
@@ -503,7 +517,7 @@ export const fr: Messages = {
       eyebrow: 'Et maintenant…',
       heading: 'Votre première carte vous attend',
       speech: (name: string | null, goal: number, readTo: number | null, bookplate: string) =>
-        `« Le livre du jour est sur la table${name ? `, ${name}` : ''}. Touchez-le, il s’ouvrira sur votre page — ${pages(goal)} aujourd’hui${readTo === null ? '' : `, jusqu’à la page ${n(readTo)}`}. Lisez-les, appuyez sur le bouton, et je refermerai le livre en scellant la journée à la cire.${bookplate} Prenez votre temps : la lampe est allumée. »`,
+        `« Le livre du jour est sur la table${name ? `, ${name}` : ''}. Touchez-le, il s’ouvrira sur votre page — ${pages(goal)} aujourd’hui${readTo === null ? '' : `, jusqu’à la page ${n(readTo)}`}. Lisez-les, notez la page où vous en êtes, et je refermerai le livre pour écrire la journée sur un parchemin scellé à la cire.${bookplate} Prenez votre temps : la lampe est allumée. »`,
       oneBookplate: (title: string) => ` Oh, et vous avez déjà gagné votre premier ex-libris : « ${title} » !`,
       bookplates: (value: number) => ` Oh, et vous avez déjà gagné ${n(value)} ex-libris !`,
       begin: 'Tourner la première page',

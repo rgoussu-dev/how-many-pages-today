@@ -5,6 +5,10 @@ The driving adapters: port-bound custom elements — `hmpt-today-card`, `hmpt-gr
 `hmpt-language-form`, `hmpt-range-form`, `hmpt-reminder-form`, `hmpt-celebration`, `hmpt-welcome` (the first-visit walkthrough), `hmpt-welcome-replay` — plus `readingContexts`, the typed
 context keys they request, and `defineReadingElements()`.
 
+`scroll-scene.ts` is the today card's closing ceremony: the scroll written, sealed in the day's
+wax by a candle and a stamp, and rolled or unrolled on a tap. Choreography only — the words
+are the card's.
+
 `src/i18n/` holds the phrasebooks — `en.ts` (the reference; its type is `Messages`) and
 `fr.ts` — and `speech()`, which pairs one with the locale's dates and numbers. The shell
 uses `localize()` and `speech()` for its own words.

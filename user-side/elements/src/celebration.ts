@@ -5,13 +5,17 @@ import { PortBoundElement } from './port-bound';
 
 const CONFETTI = ['🍂', '🍁', '✨', '📖', '🍂', '🔖'];
 const TOAST_MS = 4200;
+/** How long after the day is sealed a finished book is taken to be that day's. */
+const SEALING_MS = 3000;
 
 /**
  * `<hmpt-celebration>` — listens to domain events and makes a small fuss: a flurry of
- * autumn leaves for a completed card or a finished book, a toast for each achievement.
+ * autumn leaves for a book finished from the shelf, a toast for each book shelved and each
+ * achievement. The day's reading has its own ceremony, on the card.
  */
 export class Celebration extends PortBoundElement {
   #queue: string[] = [];
+  #sealedAt = -Infinity;
   #showing = false;
 
   protected markup(): string {
@@ -33,25 +37,15 @@ export class Celebration extends PortBoundElement {
   #on(event: ReadingEvent, t: Messages): void {
     const say = t.celebration;
     switch (event.type) {
-      case 'challenge-completed': {
-        const { pages, pagesRead = pages, goalMet } = event.challenge;
-        this.#burst();
-        this.#toast(
-          pagesRead > pages
-            ? say.beyond(pagesRead - pages)
-            : goalMet === false
-              ? say.short(pagesRead)
-              : event.streak > 1
-                ? say.streak(event.streak)
-                : say.read(pagesRead),
-        );
-        break;
-      }
+      // The day's reading is celebrated on the card itself: a scroll, written and sealed.
+      case 'challenge-completed':
       case 'pages-added':
-        this.#toast(say.added(event.added, event.challenge.pagesRead ?? event.challenge.pages));
+        this.#sealedAt = performance.now();
         break;
       case 'book-finished':
-        this.#burst();
+        // Finished along with the day's reading, the book gets its gold seal on the card;
+        // finished from the shelf, it gets the leaves.
+        if (performance.now() - this.#sealedAt > SEALING_MS) this.#burst();
         this.#toast(
           event.book.title ? say.shelved(event.book.title, event.booksRead) : say.shelvedUntitled(event.booksRead),
         );

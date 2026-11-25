@@ -32,13 +32,15 @@ export interface DailyChallenge {
   readonly completedAt?: string;
   /** Pages actually read that day — more or fewer than the goal. Present once completed. */
   readonly pagesRead?: number;
+  /** The page the day's reading stopped at, in the book then in hand. Absent on days logged as a count. */
+  readonly stoppedAt?: number;
   /** A book was finished that day. */
   readonly finishedBook?: boolean;
   /** At least the goal was read, or a book was finished. Present once completed. */
   readonly goalMet?: boolean;
 }
 
-/** Limits on a single log entry. */
+/** Limits on the pages read in one sitting. */
 export const PAGES_READ_LIMITS = { lowest: 1, highest: 2000 } as const;
 
 export const AVATARS = ['📚', '🦉', '🐛', '🦊', '🐢', '🐈', '🌙', '☕', '🌿', '🚀', '🧙', '🎩'] as const;
@@ -58,8 +60,9 @@ export interface BookInHand {
   readonly title: string;
   readonly startedOn: DayKey;
   /**
-   * The page the reader has reached: 0 before the first page. Moves on with every page
-   * logged. Absent on books put on the nightstand before the app kept a bookmark.
+   * The page the reader has reached: 0 before the first page. Moves to the page each day's
+   * reading stops at. Absent on books put on the nightstand before the app kept a bookmark —
+   * the day's card asks for one before the reading can be logged.
    */
   readonly bookmark?: number;
   /** How many pages the book has, when the reader said. */

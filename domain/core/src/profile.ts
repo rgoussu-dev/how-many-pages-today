@@ -1,5 +1,5 @@
 import { err, ok, type Result } from '@hmpt/kernel';
-import { BOOK_PAGE_LIMITS, PAGES_READ_LIMITS, type FieldError, type ProfileInput } from '@hmpt/domain-contract';
+import { BOOK_PAGE_LIMITS, type FieldError, type ProfileInput } from '@hmpt/domain-contract';
 
 const LIMITS = { displayName: 40, avatar: 16, favouriteGenre: 60 } as const;
 export const TITLE_LIMIT = 120;
@@ -30,13 +30,6 @@ export function validateTitle(title: string): Result<string, FieldError[]> {
 export function validateOptionalTitle(title: string | undefined): Result<string | null, FieldError[]> {
   if (title === undefined || title.trim().length === 0) return ok(null);
   return validateTitle(title);
-}
-
-export function validatePagesRead(pages: number, field = 'pagesRead'): Result<number, FieldError[]> {
-  const { lowest, highest } = PAGES_READ_LIMITS;
-  if (!Number.isInteger(pages)) return err([{ field, problem: 'not-whole' }]);
-  if (pages < lowest || pages > highest) return err([{ field, problem: 'out-of-range', min: lowest, max: highest }]);
-  return ok(pages);
 }
 
 /** A page of a book — where a bookmark sits (0: not yet begun), or how many pages it has (from 1). */

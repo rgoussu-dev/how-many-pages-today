@@ -21,15 +21,26 @@ import type { ReadingEvent } from './events';
  * keys and never see the implementation.
  */
 
-export type ChallengeError = 'already-completed' | 'not-completed' | 'invalid-pages' | 'invalid-title';
+export type ChallengeError =
+  | 'already-completed'
+  | 'not-completed'
+  /** No book in hand, or one without a bookmark: there is no page to read on from. */
+  | 'no-bookmark'
+  /** Not a whole page number. */
+  | 'invalid-page'
+  /** At or before the bookmark: no page was read. */
+  | 'not-past-bookmark'
+  /** Past the book's last page. */
+  | 'past-the-end'
+  /** More pages in one sitting than `PAGES_READ_LIMITS` allows. */
+  | 'too-many-pages';
 
+/** Where the reading stopped, in the book in hand. The pages read are the pages from its bookmark. */
 export interface ReadingLog {
-  /** Pages actually read; the day's goal when omitted. */
-  readonly pagesRead?: number;
-  /** Finish a book along with the day's reading (the one in hand, or `bookTitle`). */
+  /** The page the reader stopped at: past the bookmark, at most the book's last page. */
+  readonly stoppedAt: number;
+  /** That was the book's last page. Implied when `stoppedAt` is its known last page. */
   readonly finishedBook?: boolean;
-  /** Optional title for the finished book; defaults to the book in hand. */
-  readonly bookTitle?: string;
 }
 
 export interface DailyChallengePort {
@@ -37,10 +48,10 @@ export interface DailyChallengePort {
   open(): Promise<DailyChallenge>;
   /** The reader has opened today's card. Idempotent; the first opening is kept. */
   unveil(): Promise<DailyChallenge>;
-  /** Logs today's reading. Final — a day read stays read. */
-  complete(log?: ReadingLog): Promise<Result<DailyChallenge, ChallengeError>>;
-  /** Adds pages read later the same day. Only ever upward. */
-  addPages(pages: number): Promise<Result<DailyChallenge, ChallengeError>>;
+  /** Logs today's reading, up to the page the reader stopped at. Final — a day read stays read. */
+  complete(log: ReadingLog): Promise<Result<DailyChallenge, ChallengeError>>;
+  /** Logs reading on, later the same day, to a page further still. Only ever upward. */
+  readOn(log: ReadingLog): Promise<Result<DailyChallenge, ChallengeError>>;
 }
 
 /** What is wrong with a field — a closed union the UI words in the reader's language. */

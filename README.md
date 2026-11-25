@@ -1,8 +1,9 @@
 # How Many Pages Today
 
 An offline-first PWA that deals you one reading challenge a day: a card, bound like an old
-leather book, with an illustrated plate and a number of pages in gold. Read them, press the
-button, and the card is sealed with wax. Keep the candle burning.
+leather book, with an illustrated plate and a number of pages in gold. Read them, write the
+page you stopped at, and the librarian writes the day on a scroll and seals it in wax — red,
+orange or gold. Keep the candle burning.
 
 The room it lives in is an old library on an autumn afternoon — parchment, leather and gilt,
 dusty shelves, lamplight, pillows and a blanket — and, after dusk, the same room by lamplight.
@@ -19,26 +20,40 @@ dusty shelves, lamplight, pillows and a blanket — and, after dusk, the same ro
   today's page — a printed page with a running head, the illustration as a captioned plate,
   the number in ink, a folio at its foot. Once the reading is logged, the reverse: the camera
   pulls back, the book closes up onto its spine, tips over onto its other side, and the camera
-  pushes in on its back cover — sealed in wax, with a warm note from the librarian (by chance,
-  but the same all day: a goal met, gone beyond, a short day, a book finished) and the streak
-  or any bookplate earned. "Open the book" plays the closing rewound — up off the back cover, onto the spine, open, and in to today's page — to add pages read later; "Close the book" plays it again (both a little quicker, the seal not pressed twice).
-  Instant with reduced motion.
-- **Log what you actually read.** One tap logs the day's goal; or enter the real count —
-  more or fewer pages. Any reading keeps the streak alive (every page counts); the goal is
-  met at the goal or beyond, or by finishing a book. A day read stays read — there is no
-  undo — but you can always add pages read later the same day.
+  pushes in on its back cover. There a scroll unrolls and the librarian writes the day on it,
+  letter by letter, with a quill: how it went, the pages read, a warm note (by chance, but the
+  same all day: a goal met, gone beyond, a short day, a book finished), the bookmark, and the
+  streak or any bookplate earned. A candle in the day's wax rises from below the cover, tips,
+  and pours the seal, and a brass stamp presses it — **oxblood** for a short day (a candle
+  flame in the wax, one leaf drifting by), **vermilion** for the goal (the open-book emblem, a
+  puff of leaves), **gold** beyond it (a star, gilt rays, silk ribbons, a flurry), and gold
+  stamped *Finis* for a book finished. A tap skips the ceremony. The scroll stays open until
+  it is tapped, then rolls up with the ribbon round its middle under the seal; the seal
+  unrolls it. "I read some more" plays the closing rewound — up off the back cover, onto the
+  spine, open, and in to today's page — to write how much further you read; the day is then
+  written and sealed again, in a new wax if it moved up. "Close the book" plays it again
+  without reading on. Instant with reduced motion.
+- **Write the page you stopped at.** The card offers the page the day leads to; change it
+  to wherever you really stopped. The pages read are the pages from your bookmark, and the
+  page itself never says how many (the scroll does). Any reading keeps the streak alive
+  (every page counts); the goal is met at the goal or beyond, or by finishing a book —
+  reaching its last page finishes it (for a book of unknown length, tick "That was the last
+  page"). A day read stays read — there is no undo — but you can always read on later the
+  same day.
 - **Gamified.** Current and best streak (a candle), pages read, books read, a ten-rank reader
   level, twenty-three achievements as bookplates — including ones for reading beyond the
   goal, twice the goal, 100 bonus pages all told, a 200-page day, a short day logged
   honestly, and finishing a book on the day — a six-week ledger (short days half-bound,
-  days beyond the goal starred), and a flurry of autumn leaves when you finish.
-- **Your shelf.** Put a book on the nightstand, or not: a book can be marked finished from
-  the shelf or from the day's card, with or without a title. Each keeps when it was started
-  and finished.
+  days beyond the goal starred), and the sealed scroll.
+- **Your shelf.** A book on the nightstand, with its bookmark, is what the day's reading is
+  logged against: with none, the day's page asks for one first (its title, the page the
+  bookmark is at, its length if you know it). A book is finished from the day's card by
+  reaching its last page, or from the shelf (with or without a title). Each keeps when it was
+  started and finished.
 - **A bookmark.** Say which page you are at when you put a book on the nightstand (and, if
   you like, how many pages it has). The day's card then tells you the page to read up to —
-  your bookmark plus the day's goal, stopping at the last page — and every page you log moves
-  the bookmark on. The bookmark is a real one: a slim card painted with its own autumn
+  your bookmark plus the day's goal, stopping at the last page — and the bookmark moves to
+  the page you write. The bookmark is a real one: a slim card painted with its own autumn
   forest in red, orange and gold (at dusk, in a golden mist, or under a harvest moon), the
   page inked on a label, a silk tassel on a cord. It runs the length of the day's page along
   its left and sticks out of the top of the book — closed, open, and at the other edge once
