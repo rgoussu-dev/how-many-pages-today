@@ -16,6 +16,8 @@
   --font-family: 'Garamond Text', 'EB Garamond', Garamond, 'Iowan Old Style', Georgia, serif;
   --font-display: 'Fell', 'Garamond Text', Georgia, serif;
   --font-caps: 'Fell SC', 'Fell', 'Garamond Text', Georgia, serif;
+  --font-gothic: 'Gotisch', 'Fell', Georgia, serif;
+  --font-initial: 'Fraktur Initial', 'Gotisch', Georgia, serif;
   --font-size-base: 1.125rem;
 
   /* paper & ink — an autumn afternoon */

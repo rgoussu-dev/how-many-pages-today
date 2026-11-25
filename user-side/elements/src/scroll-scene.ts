@@ -1,11 +1,13 @@
 /**
- * The scroll on the back cover of the day's book: written in ink, sealed with wax, rolled
- * up and unrolled on a tap. Pure choreography — the words are the card's, already in place.
+ * The charter on the back cover of the day's book: written in iron-gall ink under a red
+ * rubric, its initial illuminated, sealed in the day's wax on two cords, rolled up and
+ * unrolled on a tap. Pure choreography — the words are the card's, already in place.
  *
  * It rests in one of three states (`data-state` on the scroll): `playing` (rolled, blank and
- * unsealed — the ceremony animates from there), `open` (unrolled, sealed at its foot), and
- * `rolled` (rolled up, the ribbon round its middle under the seal). Every animation it starts
- * fills forwards until the scene settles into a state, whose CSS matches where they ended.
+ * unsealed — the ceremony animates from there), `open` (unrolled, the seal hanging at its
+ * foot), and `rolled` (rolled up, the cords wound round its middle under the seal). Every
+ * animation it starts fills forwards until the scene settles into a state, whose CSS matches
+ * where they ended.
  */
 
 export type ScrollState = 'playing' | 'open' | 'rolled';
@@ -16,16 +18,28 @@ export type Wax = 'short' | 'met' | 'beyond' | 'book';
 const EASE = 'cubic-bezier(0.45, 0, 0.25, 1)';
 const ROLLED = 'inset(50% 0% 50% 0%)';
 const UNROLLED = 'inset(0% 0% 0% 0%)';
-/** Where the seal sits on the open scroll, from where it sits on the rolled one: its foot, on the left. */
+/** Where the seal hangs on the open charter, from where it sits on the rolled one: its foot, on the left. */
 const AT_THE_FOOT = 'translate(-5.1em, 7.9em)';
-const RODS_MEET = '10.5em';
-const LEAVES = ['🍂', '🍁', '🍂', '✨'];
+const ENDS_MEET = '10.5em';
+const SVG = 'http://www.w3.org/2000/svg';
 
 const wait = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 const reducedMotion = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
+const isGold = (wax: Wax) => wax === 'beyond' || wax === 'book';
 
 /** Thrown inside a ceremony overtaken by another (or skipped): it simply stops. */
 const OVERTAKEN = Symbol('overtaken');
+
+/** A seeded random, so the same day always spreads its wax, and shapes its hand, the same way. */
+export function seeded(seed: number): () => number {
+  let s = seed | 0;
+  return () => {
+    s = (s + 0x6d2b79f5) | 0;
+    let t = Math.imul(s ^ (s >>> 15), 1 | s);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
 
 export class ScrollScene {
   #run = 0;
@@ -33,51 +47,63 @@ export class ScrollScene {
 
   constructor(root: HTMLElement) {
     this.#root = root;
+    this.#part('[data-quill]').replaceChildren(quill());
   }
 
   get state(): ScrollState {
     return (this.#root.dataset.state as ScrollState | undefined) ?? 'open';
   }
 
-  /** Lays the scroll down in a state at once, every animation dropped. */
+  /** The pool the wax spreads into: wobbled, the same for the same seed. */
+  shape(seed: number): void {
+    this.#part('[data-blob]').setAttribute('d', blob(50, seed));
+  }
+
+  /** Lays the charter down in a state at once, every animation dropped. */
   settle(state: ScrollState): void {
     this.#run++;
     this.#drop();
-    this.#part('[data-leaves]').replaceChildren();
+    this.#part('[data-motes]').replaceChildren();
     this.#part('[data-quill]').style.opacity = '0';
     for (const c of this.#root.querySelectorAll('.scroll-ch')) c.classList.add('scroll-ch-on');
+    this.#part('[data-initial]').classList.add('scroll-painted');
+    this.#part('[data-paraph]').classList.add('scroll-drawn');
     this.#root.dataset.state = state;
     this.#root.dispatchEvent(new CustomEvent('scroll-state', { bubbles: true }));
   }
 
   /** Blank and rolled, before the ceremony: nothing shows on the back cover while the book turns. */
-  hold(): void {
+  hold(seed: number): void {
     this.settle('playing');
-    for (const line of this.#lines()) splitIntoLetters(line);
+    this.#part('[data-initial]').classList.remove('scroll-painted', 'scroll-gilding');
+    this.#part('[data-paraph]').classList.remove('scroll-drawn');
+    const random = seeded(seed);
+    for (const line of this.#lines()) splitIntoLetters(line, random);
   }
 
-  /** The whole ceremony: unrolled, written, poured, pressed. Ends open. */
-  async play(wax: Wax): Promise<void> {
-    if (this.state !== 'playing') this.hold();
+  /** The whole ceremony: unrolled, written, illuminated, poured, pressed. Ends open. */
+  async play(wax: Wax, seed: number): Promise<void> {
+    if (this.state !== 'playing') this.hold(seed);
     if (reducedMotion()) return this.settle('open');
     const run = ++this.#run;
     const go = () => {
       if (run !== this.#run) throw OVERTAKEN;
     };
     try {
-      await this.#animate(this.#root.querySelector('.scroll-body')!, [
+      await this.#animate(this.#part('.scroll-body'), [
         { opacity: 0, transform: 'translateY(-1.2em) scale(0.97)' },
         { opacity: 1, transform: 'none' },
-      ], { duration: 500, easing: 'ease-out' });
+      ], { duration: 550, easing: 'ease-out' });
       go();
-      await this.#unroll(false, 1000);
+      await this.#unroll(false, 1150);
       go();
       await wait(200);
       await this.#write(go);
+      await this.#illuminate(wax, go);
       await wait(250);
       go();
       await this.#pour(go);
-      await wait(300);
+      await wait(350);
       go();
       await this.#press(wax, go);
       go();
@@ -87,14 +113,14 @@ export class ScrollScene {
     }
   }
 
-  /** Rolls the open scroll up, or unrolls the rolled one. */
+  /** Rolls the open charter up, or unrolls the rolled one. */
   async toggle(): Promise<void> {
     const from = this.state;
     if (from === 'playing') return;
     const to = from === 'open' ? 'rolled' : 'open';
     if (reducedMotion()) return this.settle(to);
     const run = ++this.#run;
-    await (from === 'open' ? this.#rollUp(800) : this.#unroll(true, 800));
+    await (from === 'open' ? this.#rollUp(850) : this.#unroll(true, 850));
     if (run === this.#run) this.settle(to);
   }
 
@@ -104,15 +130,15 @@ export class ScrollScene {
     const o = { duration: ms, easing: EASE };
     return Promise.all([
       this.#animate(this.#part('[data-sheet]'), [{ clipPath: ROLLED }, { clipPath: UNROLLED }], o),
-      this.#animate(this.#part('.scroll-rod-top'), [{ transform: `translateY(${RODS_MEET})` }, { transform: 'none' }], o),
-      this.#animate(this.#part('.scroll-rod-bottom'), [{ transform: `translateY(-${RODS_MEET})` }, { transform: 'none' }], o),
+      this.#animate(this.#part('.scroll-curl-top'), [{ transform: `translateY(${ENDS_MEET})` }, { transform: 'none' }], o),
+      this.#animate(this.#part('.scroll-curl-bottom'), [{ transform: `translateY(-${ENDS_MEET})` }, { transform: 'none' }], o),
       this.#animate(this.#part('.scroll-roll'), [{ opacity: 1 }, { opacity: 0, offset: 0.15 }, { opacity: 0 }], { duration: ms }),
       sealed
         ? Promise.all([
-            this.#animate(this.#part('.scroll-band'), [{ transform: 'scaleY(1)' }, { transform: 'scaleY(0)' }], { duration: ms * 0.2 }),
+            this.#animate(this.#part('.scroll-wind'), [{ transform: 'scaleY(1)' }, { transform: 'scaleY(0)' }], { duration: ms * 0.2 }),
             this.#animate(this.#part('[data-spot]'), [{ transform: 'none' }, { transform: AT_THE_FOOT }], o),
           ])
-        : this.#animate(this.#part('.scroll-tails'), [{ opacity: 0 }, { opacity: 1 }], { duration: ms * 0.4, delay: ms * 0.6 }),
+        : this.#animate(this.#part('.scroll-cords'), [{ opacity: 0 }, { opacity: 1 }], { duration: ms * 0.4, delay: ms * 0.6 }),
     ]);
   }
 
@@ -120,11 +146,11 @@ export class ScrollScene {
     const o = { duration: ms, easing: EASE };
     return Promise.all([
       this.#animate(this.#part('[data-sheet]'), [{ clipPath: UNROLLED }, { clipPath: ROLLED }], o),
-      this.#animate(this.#part('.scroll-rod-top'), [{ transform: 'none' }, { transform: `translateY(${RODS_MEET})` }], o),
-      this.#animate(this.#part('.scroll-rod-bottom'), [{ transform: 'none' }, { transform: `translateY(-${RODS_MEET})` }], o),
+      this.#animate(this.#part('.scroll-curl-top'), [{ transform: 'none' }, { transform: `translateY(${ENDS_MEET})` }], o),
+      this.#animate(this.#part('.scroll-curl-bottom'), [{ transform: 'none' }, { transform: `translateY(-${ENDS_MEET})` }], o),
       this.#animate(this.#part('.scroll-roll'), [{ opacity: 0 }, { opacity: 0, offset: 0.85 }, { opacity: 1 }], { duration: ms }),
       this.#animate(this.#part('[data-spot]'), [{ transform: AT_THE_FOOT }, { transform: 'none' }], o),
-      this.#animate(this.#part('.scroll-band'), [{ transform: 'scaleY(0)' }, { transform: 'scaleY(1)' }], {
+      this.#animate(this.#part('.scroll-wind'), [{ transform: 'scaleY(0)' }, { transform: 'scaleY(1)' }], {
         duration: ms * 0.25,
         delay: ms * 0.85,
         easing: 'ease-out',
@@ -132,29 +158,50 @@ export class ScrollScene {
     ]);
   }
 
-  /** The librarian writes the day, letter by letter, the quill following the ink. */
+  /** The librarian writes the day, letter by letter, the quill following the ink; then the paraph. */
   async #write(go: () => void): Promise<void> {
-    const quill = this.#part('[data-quill]');
+    const pen = this.#part('[data-quill]');
     const letters = [...this.#root.querySelectorAll<HTMLElement>('.scroll-ch')];
-    if (letters.length === 0) return;
-    const per = Math.max(8, Math.min(24, 2800 / letters.length));
-    quill.style.opacity = '1';
+    const per = Math.max(9, Math.min(26, 3000 / Math.max(1, letters.length)));
+    pen.style.opacity = '1';
     let line: Element | null = null;
     for (const letter of letters) {
       go();
-      const its = letter.closest('[data-line]');
-      if (line && its !== line) await wait(170);
+      const its = letter.closest('p');
+      if (line && its !== line) await wait(190);
       line = its;
       letter.classList.add('scroll-ch-on');
       const x = letter.offsetLeft + letter.offsetWidth;
       const y = letter.offsetTop + letter.offsetHeight;
-      quill.style.transform = `translate(${x - 2}px, ${y - quill.offsetHeight + Math.sin(x / 6) * 2}px)`;
+      pen.style.transform = `translate(${x - 2}px, ${y - pen.offsetHeight + Math.sin(x / 5) * 2.5}px)`;
       await wait(per);
     }
-    quill.style.opacity = '0';
+    const paraph = this.#part('[data-paraph]');
+    paraph.classList.add('scroll-drawn');
+    void this.#animate(paraph.querySelector('path')!, [{ strokeDashoffset: 160 }, { strokeDashoffset: 0 }], {
+      duration: 520,
+      easing: 'ease-in-out',
+    });
+    await wait(560);
+    pen.style.opacity = '0';
   }
 
-  /** A candle in the day's wax rises from below, tips, lets three drops fall, and sinks away. */
+  /** The rubricator's turn: the initial, painted — and gilded on a fine day. */
+  async #illuminate(wax: Wax, go: () => void): Promise<void> {
+    const initial = this.#part('[data-initial]');
+    initial.classList.add('scroll-painted');
+    await this.#animate(initial, [
+      { opacity: 0, filter: 'blur(1.5px)' },
+      { opacity: 1, filter: 'blur(0px)' },
+    ], { duration: 650, easing: 'ease-out' });
+    go();
+    if (isGold(wax)) {
+      initial.classList.add('scroll-gilding');
+      await wait(700);
+    }
+  }
+
+  /** A taper cast in the day's wax rises from below, tips, lets four drops fall, and sinks away. */
   async #pour(go: () => void): Promise<void> {
     const candle = this.#part('.candle');
     const tilt = this.#part('.candle-tilt');
@@ -164,108 +211,111 @@ export class ScrollScene {
     void this.#animate(candle, [
       { opacity: 1, transform: 'translateY(18em)' },
       { opacity: 1, transform: 'none' },
-    ], { duration: 850, easing: 'cubic-bezier(0.2, 0.8, 0.3, 1)' });
-    await wait(850);
+    ], { duration: 1000, easing: 'cubic-bezier(0.2, 0.8, 0.3, 1)' });
+    await wait(1000);
     go();
     const tip = (from: number, to: number, duration: number) =>
       Promise.all([
         this.#animate(tilt, [{ transform: `rotate(${from}deg)` }, { transform: `rotate(${to}deg)` }], { duration, easing: EASE }),
-        // the flame stands upright, whichever way the candle leans
+        // the flame stands upright, whichever way the taper leans
         this.#animate(flame, [{ transform: `rotate(${-from}deg)` }, { transform: `rotate(${-to}deg)` }], { duration, easing: EASE }),
       ]);
-    await tip(0, -112, 550);
+    await tip(0, -108, 650);
     go();
     let size = 0;
-    for (const next of [0.35, 0.6, 0.85]) {
+    for (const next of [0.32, 0.56, 0.8, 0.9]) {
+      await wait(size === 0 ? 250 : 120);
       await this.#animate(drip, [
-        { opacity: 1, transform: 'translate(0, 0) scale(0.6)' },
-        { opacity: 1, transform: 'translate(-1.3em, 3.4em) scale(1)' },
-      ], { duration: 330, easing: 'cubic-bezier(0.5, 0, 1, 0.6)', fill: 'none' });
+        { opacity: 1, transform: 'translate(0, 0) scale(0.5, 0.6)' },
+        { opacity: 1, transform: 'translate(-0.45em, 1.2em) scale(0.8, 1.25)', offset: 0.35 },
+        { opacity: 1, transform: 'translate(-1.4em, 3.6em) scale(0.9, 1.1)' },
+      ], { duration: 360, easing: 'cubic-bezier(0.5, 0, 1, 0.6)', fill: 'none' });
       go();
       void this.#animate(puddle, [
         { transform: `scale(${size})` },
-        { transform: `scale(${next * 1.12})` },
+        { transform: `scale(${next * 1.08})` },
         { transform: `scale(${next})` },
-      ], { duration: 240, easing: 'ease-out' });
+      ], { duration: 320, easing: 'ease-out' });
       size = next;
-      await wait(140);
-      go();
     }
-    await tip(-112, 0, 450);
+    await wait(200);
+    go();
+    await tip(-108, 0, 550);
     go();
     void this.#animate(candle, [
       { opacity: 1, transform: 'none' },
-      { opacity: 1, transform: 'translateY(18em)' },
-    ], { duration: 750, easing: 'cubic-bezier(0.6, 0, 0.8, 0.4)' });
+      { opacity: 0, transform: 'translateY(14em)' },
+    ], { duration: 850, easing: 'cubic-bezier(0.6, 0, 0.8, 0.4)' });
   }
 
-  /** The brass stamp comes down, the wax spreads, and the day's mark is in it. */
+  /** The bronze matrix comes down, its shadow tightening as it lands, and lifts off the impression. */
   async #press(wax: Wax, go: () => void): Promise<void> {
-    const gold = wax === 'beyond' || wax === 'book';
-    void this.#animate(this.#part('.wax-stamp'), [
-      { opacity: 0, transform: 'translateY(-9em)' },
-      { opacity: 1, transform: 'translateY(-7em)', offset: 0.12 },
-      { opacity: 1, transform: 'none', offset: 0.4 },
-      { opacity: 1, transform: 'none', offset: 0.6 },
-      { opacity: 1, transform: 'translateY(-7em)', offset: 0.88 },
-      { opacity: 0, transform: 'translateY(-9em)' },
-    ], { duration: 1150, easing: EASE, fill: 'none' });
-    await wait(460);
+    const high = (x: number, y: number, scale: number, shadow: string, opacity = 1) => ({
+      opacity,
+      transform: `translate(${x}em, ${y}em) scale(${scale})`,
+      filter: `drop-shadow(${shadow})`,
+    });
+    const down = { opacity: 1, transform: 'none', filter: 'drop-shadow(0.08em 0.12em 0.1em rgb(0 0 0 / 0.6))' };
+    void this.#animate(this.#part('.wax-matrix'), [
+      high(1.6, -2.6, 1.5, '1.6em 2.4em 0.9em rgb(0 0 0 / 0.25)', 0),
+      { ...high(0.9, -1.5, 1.3, '1em 1.6em 0.7em rgb(0 0 0 / 0.32)'), offset: 0.2 },
+      { ...down, offset: 0.45 },
+      { ...down, offset: 0.62 },
+      { ...high(0.8, -1.4, 1.25, '1em 1.5em 0.7em rgb(0 0 0 / 0.3)'), offset: 0.85 },
+      high(1.4, -2.4, 1.45, '1.5em 2.3em 0.9em rgb(0 0 0 / 0.2)', 0),
+    ], { duration: 1500, easing: EASE, fill: 'none' });
+    await wait(680);
     go();
     void this.#animate(this.#part('[data-puddle]'), [
-      { transform: 'scale(0.85)' },
-      { transform: 'scale(1.12, 0.9)' },
+      { transform: 'scale(0.9)' },
+      { transform: 'scale(1.05)' },
       { transform: 'scale(1)' },
-    ], { duration: 380, easing: 'ease-out' });
-    const [ripple, second] = this.#root.querySelectorAll<HTMLElement>('.wax-ripple');
-    const spread = [{ opacity: 0.7, transform: 'scale(0.9)' }, { opacity: 0, transform: 'scale(2.3)' }];
-    if (wax !== 'short' && ripple) void this.#animate(ripple, spread, { duration: 800, easing: 'ease-out', fill: 'none' });
-    if (gold && second) void this.#animate(second, spread, { duration: 950, delay: 160, easing: 'ease-out', fill: 'none' });
-    await wait(280);
+    ], { duration: 320, easing: 'ease-out' });
+    await wait(260);
     go();
-    void this.#animate(this.#part('.wax-face'), [
-      { opacity: 0, transform: 'scale(1.12)' },
-      { opacity: 1, transform: 'none' },
-    ], { duration: 450, easing: 'ease-out' });
-    this.#leaves(wax);
-    if (gold) {
-      void this.#animate(this.#part('.wax-rays'), [
-        { opacity: 0, transform: 'scale(0.6)' },
-        { opacity: 1, transform: 'scale(1)', offset: 0.4 },
-        { opacity: 1, transform: 'scale(1)', offset: 0.75 },
-        { opacity: 0, transform: 'scale(1.1)' },
-      ], { duration: 2400, easing: 'ease-out', fill: 'none' });
-      void this.#animate(this.#part('.wax-sheen'), [
-        { transform: 'translateX(-130%)' },
-        { transform: 'translateX(130%)' },
-      ], { duration: 1100, delay: 450, easing: 'ease-in-out', fill: 'none' });
+    void this.#animate(this.#part('[data-impression]'), [{ opacity: 0 }, { opacity: 1 }], { duration: 260, easing: 'ease-out' });
+    await wait(500);
+    go();
+    if (isGold(wax)) {
+      this.#sweep();
+      this.#dust();
+      await wait(1800);
+    } else {
+      await wait(600);
     }
-    await wait(1400);
   }
 
-  /** A single leaf drifting by for a short day; a puff for the goal; a flurry beyond it. */
-  #leaves(wax: Wax): void {
-    const box = this.#part('[data-leaves]');
-    box.replaceChildren();
-    if (wax === 'short') {
-      const leaf = document.createElement('span');
-      leaf.className = 'wax-leaf-drift';
-      leaf.textContent = '🍂';
-      box.append(leaf);
-      return;
-    }
-    const count = wax === 'met' ? 8 : 20;
-    for (let i = 0; i < count; i++) {
-      const leaf = document.createElement('span');
-      leaf.textContent = wax === 'met' ? (i % 2 ? '🍂' : '🍁') : (LEAVES[i % LEAVES.length] ?? '🍂');
-      const angle = (i / count) * Math.PI * 2 + Math.random() * 0.3;
-      const distance = wax === 'met' ? 3.8 + Math.random() * 1.9 : 5.3 + Math.random() * 4.4;
-      leaf.style.setProperty('--dx', `${Math.cos(angle) * distance}em`);
-      leaf.style.setProperty('--dy', `${Math.sin(angle) * distance * 0.75 + 1.5}em`);
-      leaf.style.setProperty('--spin', `${Math.random() * 540 - 270}deg`);
-      leaf.style.animationDelay = `${Math.random() * 120}ms`;
-      box.append(leaf);
-    }
+  /** The candlelight slides across the gold relief, the way metal takes it. */
+  #sweep(): void {
+    const lights = [...this.#root.querySelectorAll('[data-sweep]')];
+    const start = performance.now();
+    const frame = (now: number) => {
+      const t = Math.min(1, (now - start) / 1700);
+      const azimuth = 225 + Math.sin(t * Math.PI * 2) * 55 * (1 - t);
+      const elevation = 40 + Math.sin(t * Math.PI) * 18;
+      for (const light of lights) {
+        light.setAttribute('azimuth', azimuth.toFixed(1));
+        light.setAttribute('elevation', elevation.toFixed(1));
+      }
+      if (t < 1) requestAnimationFrame(frame);
+    };
+    requestAnimationFrame(frame);
+  }
+
+  /** Dust, rising gold in the candlelight. */
+  #dust(): void {
+    const random = seeded(99);
+    this.#part('[data-motes]').replaceChildren(
+      ...Array.from({ length: 16 }, (_, i) => {
+        const mote = document.createElement('span');
+        mote.style.setProperty('--s', `${(0.12 + random() * 0.16).toFixed(2)}em`);
+        mote.style.setProperty('--dx', `${((random() - 0.5) * 7).toFixed(2)}em`);
+        mote.style.setProperty('--dy', `${(-3 - random() * 5).toFixed(2)}em`);
+        mote.style.animationDelay = `${Math.round(i * 70 + random() * 200)}ms`;
+        mote.style.animationDuration = `${Math.round(2200 + random() * 1200)}ms`;
+        return mote;
+      }),
+    );
   }
 
   // — plumbing ———————————————————————————————————————————————————————————————————————
@@ -274,7 +324,7 @@ export class ScrollScene {
     return element.animate(frames, { fill: 'forwards', ...options }).finished.catch(() => undefined);
   }
 
-  /** Drops the animations this scene started; the CSS's own (the flame, the rays) run on. */
+  /** Drops the animations this scene started; the CSS's own (the flame, the dust) run on. */
   #drop(): void {
     for (const animation of this.#root.getAnimations({ subtree: true })) {
       if (animation instanceof CSSAnimation || animation instanceof CSSTransition) continue;
@@ -283,21 +333,22 @@ export class ScrollScene {
   }
 
   #lines(): HTMLElement[] {
-    return [...this.#root.querySelectorAll<HTMLElement>('[data-line]')].filter((line) => !line.hidden);
+    return [...this.#root.querySelectorAll<HTMLElement>('[data-line]')].filter((line) => !line.closest('[hidden]'));
   }
 
-  #part(selector: string): HTMLElement {
-    const found = this.#root.querySelector<HTMLElement>(selector);
+  #part<E extends Element = HTMLElement>(selector: string): E {
+    const found = this.#root.querySelector<E>(selector);
     if (!found) throw new Error(`scroll: missing ${selector}`);
     return found;
   }
 }
 
 /**
- * Splits a line's text into one span per letter, words kept whole so the line still wraps
- * where it would. The text itself is unchanged: `textContent` reads the same.
+ * Splits a line into one span per letter, each a little uneven in weight and height as a
+ * hand writes, words kept whole so the line still wraps where it would. `textContent` reads
+ * the same.
  */
-function splitIntoLetters(line: HTMLElement): void {
+function splitIntoLetters(line: HTMLElement, random: () => number): void {
   const text = line.textContent ?? '';
   const parts: Node[] = [];
   text.split(' ').forEach((word, i) => {
@@ -308,9 +359,64 @@ function splitIntoLetters(line: HTMLElement): void {
       const letter = document.createElement('span');
       letter.className = 'scroll-ch';
       letter.textContent = ch;
+      letter.style.setProperty('--a', (0.8 + random() * 0.2).toFixed(2));
+      letter.style.setProperty('--j', `translateY(${((random() - 0.5) * 0.07).toFixed(3)}em) rotate(${((random() - 0.5) * 2.4).toFixed(1)}deg)`);
       whole.append(letter);
     }
     parts.push(whole);
   });
   line.replaceChildren(...parts);
+}
+
+/** The outline of a pool of wax: a circle, wobbled, smoothed into curves. */
+function blob(radius: number, seed: number): string {
+  const random = seeded(seed);
+  const phase = [random() * 6.28, random() * 6.28, random() * 6.28] as const;
+  const n = 30;
+  const points = Array.from({ length: n }, (_, i) => {
+    const t = (i / n) * Math.PI * 2;
+    const k = 1 + 0.055 * Math.sin(3 * t + phase[0]) + 0.035 * Math.sin(5 * t + phase[1]) + 0.022 * Math.sin(9 * t + phase[2]);
+    return [Math.cos(t) * radius * k, Math.sin(t) * radius * k] as const;
+  });
+  const at = (i: number) => points[(i + n) % n]!;
+  const f = (v: number) => v.toFixed(2);
+  let d = `M${f(at(0)[0])},${f(at(0)[1])}`;
+  for (let i = 0; i < n; i++) {
+    const [p0, p1, p2, p3] = [at(i - 1), at(i), at(i + 1), at(i + 2)];
+    d += `C${f(p1[0] + (p2[0] - p0[0]) / 6)},${f(p1[1] + (p2[1] - p0[1]) / 6)} `;
+    d += `${f(p2[0] - (p3[0] - p1[0]) / 6)},${f(p2[1] - (p3[1] - p1[1]) / 6)} ${f(p2[0])},${f(p2[1])}`;
+  }
+  return `${d}Z`;
+}
+
+/** A goose quill: a horn shaft, a vane of fine barbs, an inked nib. */
+function quill(): SVGSVGElement {
+  const random = seeded(11);
+  const svg = document.createElementNS(SVG, 'svg');
+  svg.setAttribute('viewBox', '0 0 64 64');
+  const path = (d: string, attributes: Record<string, string>) => {
+    const p = document.createElementNS(SVG, 'path');
+    p.setAttribute('d', d);
+    for (const [name, value] of Object.entries(attributes)) p.setAttribute(name, value);
+    svg.append(p);
+  };
+  path('M22 41 C30 26 44 12 62 2 C54 18 42 32 26 44 Z', { fill: '#efe7d4', opacity: '0.85' });
+  for (let i = 0; i < 46; i++) {
+    const t = 0.3 + (i / 46) * 0.68;
+    const x = 6 + t * 54;
+    const y = 58 - t * 54;
+    const length = 4 + Math.sin(t * Math.PI) * 9 + random() * 1.5;
+    const side = i % 2 ? 1 : -1;
+    const dx = side > 0 ? length * 0.85 : -length * 0.25;
+    const dy = side > 0 ? length * 0.35 : -length * 0.9;
+    path(`M${x.toFixed(1)} ${y.toFixed(1)} q${(dx * 0.5).toFixed(1)} ${(dy * 0.4).toFixed(1)} ${dx.toFixed(1)} ${dy.toFixed(1)}`, {
+      stroke: side > 0 ? '#e9e1cf' : '#d6ccb6',
+      'stroke-opacity': (0.55 + random() * 0.4).toFixed(2),
+      'stroke-width': '0.9',
+      fill: 'none',
+    });
+  }
+  path('M4 61 C20 45 40 22 62 2', { stroke: '#c9b48a', 'stroke-width': '1.6', fill: 'none' });
+  path('M2 63 L7 57', { stroke: '#1d120a', 'stroke-width': '2.4', 'stroke-linecap': 'round' });
+  return svg;
 }

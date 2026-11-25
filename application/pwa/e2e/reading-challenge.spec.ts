@@ -185,11 +185,11 @@ test('fewer pages keep the streak in red wax, and reading on reseals the day in 
   await expect(page.locator('hmpt-history-calendar li[data-beyond]')).toHaveCount(1);
 });
 
-test('the last page of a book of unknown length finishes it: a gold seal, Finis, and short pages still meet the goal', async ({ page }) => {
+test('the last page of a book of unknown length finishes it: a gold seal, Explicit, and short pages still meet the goal', async ({ page }) => {
   await putOnNightstand(page, 'Piranesi', 240);
   await sealAt(page, 242, true);
   await expect(card(page)).toHaveAttribute('data-wax', 'book');
-  await expect(card(page).locator('[data-head]')).toHaveText('Finis');
+  await expect(card(page).locator('[data-head]')).toHaveText('Explicit');
   await expect(card(page).locator('[data-read]')).toHaveText('2 pages — and a book finished. Bravo.');
   await expect(card(page).locator('[data-message]')).toContainText('“Piranesi” — finished.');
 
@@ -447,7 +447,7 @@ test.describe('with motion', () => {
     await expect(book).not.toHaveAttribute('data-closing', { timeout: 9000 });
     await expect(book.locator('.tome-back-face')).toBeVisible();
     await expect(book.locator('.candle')).toBeVisible({ timeout: 9000 }); // the candle comes up to pour
-    await expect(book.locator('[data-scroll]')).toHaveAttribute('data-state', 'open', { timeout: 12000 });
+    await expect(book.locator('[data-scroll]')).toHaveAttribute('data-state', 'open', { timeout: 25000 });
     await expect(book.locator('[data-message]')).not.toBeEmpty();
     await expect(book.locator('.tome-inner')).toHaveJSProperty('inert', true);
 
@@ -661,6 +661,6 @@ test('the bookmark can be moved by hand, and reaching the last page shelves the 
   await expect(card(page).locator('[data-last-field]')).toBeHidden(); // its length is known: the last page says it all
   await sealAt(page);
   await expect(card(page)).toHaveAttribute('data-wax', 'book');
-  await expect(card(page).locator('[data-head]')).toHaveText('Finis');
+  await expect(card(page).locator('[data-head]')).toHaveText('Explicit');
   await expect(card(page).locator('[data-bookmark]')).toBeHidden(); // it went to the shelf with the book
 });

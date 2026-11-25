@@ -210,8 +210,9 @@ export const fr: Messages = {
       }
     },
     scroll: {
-      heads: { met: 'Pile à la page', beyond: 'Au-delà de la page', short: 'Une petite journée, et c’est très bien', book: 'Finis' },
-      finis: 'Finis',
+      heads: { met: 'Pile à la page', beyond: 'Au-delà de la page', short: 'Une petite journée, et c’est très bien', book: 'Explicit' },
+      /** Round the rim of the seal, in the Latin of old seals: “the seal of the reader of this day”. */
+      legend: '+ SIGILLVM · LECTORIS · HVIVS · DIEI ·',
       signature: 'Le bibliothécaire',
       readOn: 'J’ai lu encore un peu',
       rollUp: 'Rouler le parchemin',

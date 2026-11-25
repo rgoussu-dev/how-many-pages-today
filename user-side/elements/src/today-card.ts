@@ -60,7 +60,7 @@ function backCoverExtra(streak: number, achievements: ReadingSnapshot['achieveme
  * of them turns over, and lands on today's page. There the reader writes the page they
  * stopped at (with no bookmark yet, the page first asks for the book and where it is marked).
  * Logged, the camera pulls back again, today's page turns, the book is turned over onto its
- * back cover, and a scroll is written, sealed in the day's wax and left open on it.
+ * back cover, and a charter is written there, sealed in the day's wax and left open.
  *
  * Each half of the book is a panel hinged at the spine (x = 0 of the card): the left half is
  * the front board with a page on its inside; the right half is the real page, the leaves on
@@ -174,47 +174,162 @@ export class TodayCard extends PortBoundElement {
         <div class="tome-back" data-back>
           <span class="tome-board" aria-hidden="true"><i class="tome-board-under"></i><i class="tome-board-fore"></i><i class="tome-board-head"></i><i class="tome-board-tail"></i><i class="tome-board-arc tome-board-arc-0"></i><i class="tome-board-arc tome-board-arc-1"></i><i class="tome-board-arc tome-board-arc-2"></i><i class="tome-board-arc tome-board-arc-3"></i><i class="tome-board-arc tome-board-arc-4"></i><i class="tome-board-arc tome-board-arc-5"></i></span>
           <div class="tome-back-face" role="group" data-t-label="card.sealedGroup">
-            <!-- The scroll: written by the librarian, sealed in the day's wax. -->
+            <!-- The charter: written by the librarian, sealed in the day's wax, hanging on two cords. -->
             <div class="scroll" data-scroll data-state="open">
+              <svg class="scroll-defs" aria-hidden="true" focusable="false">
+                <defs>
+                  <!-- Parchment edges: the skin's outline, never quite straight. -->
+                  <filter id="hmpt-rough-edge" x="-4%" y="-4%" width="108%" height="108%">
+                    <feTurbulence type="fractalNoise" baseFrequency="0.045" numOctaves="3" seed="7" result="t"/>
+                    <feDisplacementMap in="SourceGraphic" in2="t" scale="7" xChannelSelector="R" yChannelSelector="G"/>
+                  </filter>
+                  <filter id="hmpt-rough-edge-fine" x="-4%" y="-20%" width="108%" height="140%">
+                    <feTurbulence type="fractalNoise" baseFrequency="0.09" numOctaves="2" seed="3" result="t"/>
+                    <feDisplacementMap in="SourceGraphic" in2="t" scale="3" xChannelSelector="R" yChannelSelector="G"/>
+                  </filter>
+                  <!-- Iron-gall ink, soaking a little into the skin. -->
+                  <filter id="hmpt-ink" x="-5%" y="-20%" width="110%" height="140%">
+                    <feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="1" seed="2" result="t"/>
+                    <feDisplacementMap in="SourceGraphic" in2="t" scale="1.1" xChannelSelector="R" yChannelSelector="G"/>
+                  </filter>
+                  <!-- Wax, lit from the upper left: a domed pool, a sunken field, raised relief. -->
+                  <filter id="hmpt-wax-dome" x="-15%" y="-15%" width="130%" height="130%" color-interpolation-filters="sRGB">
+                    <feGaussianBlur in="SourceAlpha" stdDeviation="3.2" result="b"/>
+                    <feDiffuseLighting in="b" surfaceScale="7" diffuseConstant="1.1" lighting-color="#fff" result="d"><feDistantLight azimuth="225" elevation="48"/></feDiffuseLighting>
+                    <feSpecularLighting in="b" surfaceScale="7" specularConstant="0.75" specularExponent="26" lighting-color="#fff4e0" result="s"><feDistantLight azimuth="225" elevation="48"/></feSpecularLighting>
+                    <feComposite in="SourceGraphic" in2="d" operator="arithmetic" k1="1.12" result="lit"/>
+                    <feComposite in="s" in2="SourceAlpha" operator="in" result="sp"/>
+                    <feComposite in="lit" in2="sp" operator="arithmetic" k2="1" k3="0.6" result="o"/>
+                    <feComposite in="o" in2="SourceAlpha" operator="in"/>
+                  </filter>
+                  <filter id="hmpt-wax-sunk" x="-10%" y="-10%" width="120%" height="120%" color-interpolation-filters="sRGB">
+                    <feGaussianBlur in="SourceAlpha" stdDeviation="1.4" result="b"/>
+                    <feDiffuseLighting in="b" surfaceScale="3" diffuseConstant="1.15" lighting-color="#fff" result="d"><feDistantLight azimuth="45" elevation="50"/></feDiffuseLighting>
+                    <feComposite in="SourceGraphic" in2="d" operator="arithmetic" k1="1.05" result="o"/>
+                    <feComposite in="o" in2="SourceAlpha" operator="in"/>
+                  </filter>
+                  <filter id="hmpt-wax-raised" x="-10%" y="-10%" width="120%" height="120%" color-interpolation-filters="sRGB">
+                    <feGaussianBlur in="SourceAlpha" stdDeviation="0.7" result="b"/>
+                    <feDiffuseLighting in="b" surfaceScale="2.2" diffuseConstant="1.1" lighting-color="#fff" result="d"><feDistantLight azimuth="225" elevation="42"/></feDiffuseLighting>
+                    <feSpecularLighting in="b" surfaceScale="2.2" specularConstant="0.8" specularExponent="24" lighting-color="#fff4e0" result="s"><feDistantLight azimuth="225" elevation="42"/></feSpecularLighting>
+                    <feComposite in="SourceGraphic" in2="d" operator="arithmetic" k1="1.12" result="lit"/>
+                    <feComposite in="s" in2="SourceAlpha" operator="in" result="sp"/>
+                    <feComposite in="lit" in2="sp" operator="arithmetic" k2="1" k3="0.7" result="o"/>
+                    <feComposite in="o" in2="SourceAlpha" operator="in"/>
+                  </filter>
+                  <!-- Gold wax takes the light like metal; the light slides across it once pressed. -->
+                  <filter id="hmpt-wax-raised-gold" x="-10%" y="-10%" width="120%" height="120%" color-interpolation-filters="sRGB">
+                    <feGaussianBlur in="SourceAlpha" stdDeviation="0.7" result="b"/>
+                    <feDiffuseLighting in="b" surfaceScale="2.4" diffuseConstant="1.05" lighting-color="#fff" result="d"><feDistantLight data-sweep azimuth="225" elevation="40"/></feDiffuseLighting>
+                    <feSpecularLighting in="b" surfaceScale="2.4" specularConstant="1.3" specularExponent="34" lighting-color="#fff2c0" result="s"><feDistantLight data-sweep azimuth="225" elevation="40"/></feSpecularLighting>
+                    <feComposite in="SourceGraphic" in2="d" operator="arithmetic" k1="1.1" result="lit"/>
+                    <feComposite in="s" in2="SourceAlpha" operator="in" result="sp"/>
+                    <feComposite in="lit" in2="sp" operator="arithmetic" k2="1" k3="1" result="o"/>
+                    <feComposite in="o" in2="SourceAlpha" operator="in"/>
+                  </filter>
+                  <filter id="hmpt-metal" x="-10%" y="-10%" width="120%" height="120%" color-interpolation-filters="sRGB">
+                    <feGaussianBlur in="SourceAlpha" stdDeviation="1.6" result="b"/>
+                    <feSpecularLighting in="b" surfaceScale="4" specularConstant="1.1" specularExponent="18" lighting-color="#ffe9b8" result="s"><feDistantLight azimuth="225" elevation="45"/></feSpecularLighting>
+                    <feComposite in="s" in2="SourceAlpha" operator="in" result="sp"/>
+                    <feComposite in="SourceGraphic" in2="sp" operator="arithmetic" k2="1" k3="0.8"/>
+                  </filter>
+                  <filter id="hmpt-soft"><feGaussianBlur stdDeviation="0.9"/></filter>
+                  <radialGradient id="hmpt-bronze" cx="40%" cy="35%" r="70%">
+                    <stop offset="0" stop-color="#d8ad66"/><stop offset="0.45" stop-color="#9b6a2b"/><stop offset="1" stop-color="#432808"/>
+                  </radialGradient>
+                  <radialGradient id="hmpt-flame" cx="50%" cy="78%" r="62%">
+                    <stop offset="0" stop-color="#fffbe8"/><stop offset="0.3" stop-color="#ffe39a"/><stop offset="0.62" stop-color="#ffab3a"/><stop offset="1" stop-color="#ff6a10" stop-opacity="0"/>
+                  </radialGradient>
+                  <radialGradient id="hmpt-flame-core" cx="50%" cy="85%" r="60%">
+                    <stop offset="0" stop-color="#3f58c8" stop-opacity="0.7"/><stop offset="0.5" stop-color="#6a5aa0" stop-opacity="0.25"/><stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+                  </radialGradient>
+                  <!-- The taper: shaded as a cylinder in the day's wax, glowing where the flame lights it from within. -->
+                  <linearGradient id="hmpt-taper" x1="0" x2="1">
+                    <stop offset="0" class="taper-lo"/><stop offset="0.28" class="taper-mid"/><stop offset="0.46" class="taper-hi"/><stop offset="0.7" class="taper-mid"/><stop offset="1" class="taper-lo"/>
+                  </linearGradient>
+                  <linearGradient id="hmpt-taper-glow" x1="0" x2="0" y1="0" y2="1">
+                    <stop offset="0" stop-color="#ffd28a" stop-opacity="0.55"/><stop offset="0.16" stop-color="#ffb060" stop-opacity="0.12"/><stop offset="0.3" stop-color="#ffb060" stop-opacity="0"/>
+                  </linearGradient>
+                  <path id="hmpt-legend-arc" d="M 0 -28.4 A 28.4 28.4 0 1 1 -0.01 -28.4"/>
+                </defs>
+              </svg>
               <div class="scroll-body">
-                <i class="scroll-rod scroll-rod-top" aria-hidden="true"></i>
+                <i class="scroll-curl scroll-curl-top" aria-hidden="true"></i>
                 <div class="scroll-sheet" data-sheet>
+                  <div class="scroll-vellum" aria-hidden="true"></div>
                   <div class="scroll-writing" role="status">
                     <p class="scroll-date" data-line data-scroll-date></p>
-                    <p class="scroll-head" data-line data-head></p>
+                    <p class="scroll-head" data-head><span class="scroll-initial" data-initial><b data-initial-letter></b></span><span data-line data-head-rest></span></p>
                     <p class="scroll-line" data-line data-read></p>
                     <p class="scroll-line" data-line data-message></p>
                     <p class="scroll-line" data-line data-back-bookmark hidden></p>
                     <p class="scroll-line" data-line data-extra hidden></p>
-                    <p class="scroll-sign" data-line data-sign data-t="card.scroll.signature"></p>
-                    <span class="scroll-quill" data-quill aria-hidden="true"><svg viewBox="0 0 64 64"><path d="M14 50C22 30 38 12 61 3 53 22 37 40 14 50Z" fill="#fbf4e2" stroke="#6b4a26" stroke-width="1.5"/><path d="M5 59 52 12" stroke="#6b4a26" stroke-width="2" stroke-linecap="round"/><path d="M3 61 8 56" stroke="#1c1209" stroke-width="2.5" stroke-linecap="round"/></svg></span>
+                    <p class="scroll-sign"><span data-line data-sign data-t="card.scroll.signature"></span>
+                      <svg class="scroll-paraph" data-paraph viewBox="0 0 80 14" aria-hidden="true"><path d="M2 9 C14 2 20 13 30 7 C38 2 44 12 54 6 C60 3 68 4 78 2 M60 9 C66 6 72 8 77 6"/></svg>
+                    </p>
+                    <span class="scroll-quill" data-quill aria-hidden="true"></span>
                   </div>
-                  <button type="button" class="scroll-read-on" data-read-on data-t="card.scroll.readOn"></button>
+                  <button type="button" class="scroll-read-on" data-read-on><span class="scroll-hand" aria-hidden="true">☞</span><span data-t="card.scroll.readOn"></span></button>
                 </div>
-                <i class="scroll-rod scroll-rod-bottom" aria-hidden="true"></i>
-                <span class="scroll-roll" aria-hidden="true"><i class="scroll-band"></i></span>
+                <i class="scroll-curl scroll-curl-bottom" aria-hidden="true"></i>
+                <span class="scroll-roll" aria-hidden="true"><span class="scroll-wind"><i></i><i></i></span></span>
               </div>
               <div class="scroll-spot" data-spot>
-                <span class="scroll-tails" aria-hidden="true"><i></i><i></i></span>
-                <span class="wax-rays" aria-hidden="true"></span>
-                <span class="wax-ripple" aria-hidden="true"></span><span class="wax-ripple" aria-hidden="true"></span>
-                <span class="wax-puddle" data-puddle aria-hidden="true">
-                  <span class="wax-seal">
-                    <span class="wax-face">
-                      <svg class="wax-mark wax-mark-short" viewBox="0 0 48 48"><path d="M24 5c3 6 9 10 9 18a9 9 0 0 1-18 0c0-5 3-8 5-11 1 3 2 4 4 5-1-4 0-8 0-12zM18 38h12M20 43h8"/></svg>
-                      <svg class="wax-mark wax-mark-met" viewBox="0 0 64 44"><path d="M32 8C26 4 18 3 6 4v32c12-1 20 0 26 4 6-4 14-5 26-4V4C46 3 38 4 32 8zM32 8v32"/></svg>
-                      <svg class="wax-mark wax-mark-beyond" viewBox="0 0 48 48"><polygon points="24,4 29.6,17.6 44,18.6 33,28 36.4,42.4 24,34.6 11.6,42.4 15,28 4,18.6 18.4,17.6"/></svg>
-                      <svg class="wax-mark wax-mark-book" viewBox="0 0 48 48"><text x="24" y="29" text-anchor="middle" data-finis></text></svg>
-                    </span>
-                    <span class="wax-sheen"></span>
-                  </span>
+                <span class="scroll-cords" aria-hidden="true"><i></i><i></i></span>
+                <span class="wax-seal" aria-hidden="true">
+                  <svg viewBox="-60 -60 120 120">
+                    <g class="wax-puddle" data-puddle><path class="wax" data-blob filter="url(#hmpt-wax-dome)"/></g>
+                    <g class="wax-impression" data-impression>
+                      <circle class="wax" r="35" filter="url(#hmpt-wax-sunk)"/>
+                      <g class="wax-relief">
+                        <circle class="wax-line" r="33.6" stroke-width="2.2"/>
+                        <circle class="wax-line" r="23.2" stroke-width="1.3"/>
+                        <text class="wax-legend"><textPath href="#hmpt-legend-arc" textLength="176" lengthAdjust="spacing" data-legend></textPath></text>
+                        <path class="wax" d="M0 -7 C-5 -11 -12 -11.5 -18 -9.5 V10 C-12 8 -5 8.5 0 12 C5 8.5 12 8 18 10 V-9.5 C12 -11.5 5 -11 0 -7z"/>
+                      </g>
+                      <path class="wax-engraving" d="M0 -7 V12 M-14 -5 C-10 -6 -6 -5.5 -3 -4 M-14 -1 C-10 -2 -6 -1.5 -3 0 M-14 3 C-10 2 -6 2.5 -3 4 M14 -5 C10 -6 6 -5.5 3 -4 M14 -1 C10 -2 6 -1.5 3 0 M14 3 C10 2 6 2.5 3 4"/>
+                    </g>
+                  </svg>
                 </span>
-                <span class="wax-stamp" aria-hidden="true"><i></i><i></i><i></i></span>
-                <span class="wax-leaves" data-leaves aria-hidden="true"></span>
+                <span class="wax-matrix" aria-hidden="true">
+                  <svg viewBox="-60 -60 120 120">
+                    <circle r="46" fill="url(#hmpt-bronze)" filter="url(#hmpt-metal)"/>
+                    <circle r="40" fill="none" stroke="#5a3a12" stroke-opacity="0.5" stroke-width="1.5"/>
+                    <circle cx="-14" cy="18" r="7" fill="#4e7a5c" opacity="0.35" filter="url(#hmpt-soft)"/>
+                    <circle cx="20" cy="-10" r="5" fill="#4e7a5c" opacity="0.3" filter="url(#hmpt-soft)"/>
+                    <path d="M-15 4 C-15 -24 15 -24 15 4" fill="none" stroke="#7d5420" stroke-width="7" stroke-linecap="round" filter="url(#hmpt-metal)"/>
+                    <path d="M-15 4 C-15 -24 15 -24 15 4" fill="none" stroke="#e4c07a" stroke-opacity="0.45" stroke-width="1.6" stroke-linecap="round" transform="translate(-1.2 -1.2)"/>
+                  </svg>
+                </span>
+                <span class="wax-motes" data-motes aria-hidden="true"></span>
                 <button type="button" class="scroll-seal" data-seal></button>
               </div>
-              <span class="wax-drip" aria-hidden="true"></span>
-              <span class="candle" aria-hidden="true"><span class="candle-tilt"><i class="candle-flame"></i><i class="candle-wick"></i><i class="candle-body"></i></span></span>
+              <span class="wax-drip" aria-hidden="true">
+                <svg viewBox="-10 -14 20 28"><path class="wax" d="M0 -13 C5 -4 8 2 8 6 A8 8 0 0 1 -8 6 C-8 2 -5 -4 0 -13z"/><ellipse cx="-2.6" cy="4" rx="2" ry="3.2" fill="#fff" opacity="0.35"/></svg>
+              </span>
+              <span class="candle" aria-hidden="true">
+                <span class="candle-tilt">
+                  <span class="candle-flame">
+                    <span class="candle-halo"></span>
+                    <svg viewBox="-24 -60 48 68">
+                      <g class="candle-lick">
+                        <path d="M0 -56 C9 -38 13 -20 9 -6 C6 3 -6 3 -9 -6 C-13 -20 -9 -38 0 -56z" fill="url(#hmpt-flame)" filter="url(#hmpt-soft)"/>
+                        <path d="M0 -26 C4 -18 5 -10 3.6 -5 C2.4 -1.5 -2.4 -1.5 -3.6 -5 C-5 -10 -4 -18 0 -26z" fill="url(#hmpt-flame-core)" filter="url(#hmpt-soft)"/>
+                      </g>
+                      <path d="M0 6 C0.5 2 -1.6 -1 0.6 -4.5" fill="none" stroke="#140c06" stroke-width="1.8" stroke-linecap="round"/>
+                      <circle cx="0.6" cy="-4.8" r="1.3" fill="#ff7a1a" filter="url(#hmpt-soft)"/>
+                    </svg>
+                  </span>
+                  <svg class="candle-body" viewBox="0 0 34 168" preserveAspectRatio="none">
+                    <path d="M4 8 C6 3 10 6 13 4 C16 1 19 5 22 3 C25 2 28 5 30 8 L31.5 168 H2.5 Z" fill="url(#hmpt-taper)"/>
+                    <path d="M4 8 C6 3 10 6 13 4 C16 1 19 5 22 3 C25 2 28 5 30 8 L31.5 168 H2.5 Z" fill="url(#hmpt-taper-glow)"/>
+                    <path d="M6 6 C5 18 7 26 6.5 34 C6.2 39 9.5 39 9.3 34 C9 25 10 16 9.5 6z" fill="url(#hmpt-taper)" opacity="0.95"/>
+                    <path d="M24 5 C24.5 12 23.5 17 24 22 C24.2 25.5 26.8 25.5 27 22 C27.3 16 26.5 10 27 6z" fill="url(#hmpt-taper)" opacity="0.95"/>
+                    <path d="M15 4 C15.5 8 14.8 11 15.2 14 C15.4 16 17.4 16 17.5 14 C17.7 10 17.2 7 17.5 4z" fill="url(#hmpt-taper)" opacity="0.9"/>
+                    <path d="M7 8 C7 60 8 110 7.5 166" stroke="#fff" stroke-opacity="0.12" stroke-width="1.5" fill="none"/>
+                  </svg>
+                </span>
+              </span>
             </div>
             <p class="scroll-hint" data-scroll-hint></p>
           </div>
@@ -413,13 +528,13 @@ export class TodayCard extends PortBoundElement {
    * The day is logged (or logged again, reading on): the book closes and turns over, and
    * the scroll is written and sealed on its back cover.
    */
-  #seal(wax: Wax, kind: 'first' | 'again'): void {
+  #seal(wax: Wax, seed: number, kind: 'first' | 'again'): void {
     this.removeAttribute('data-peek');
     this.#skipCeremony = false;
-    this.#scroll.hold();
+    this.#scroll.hold(seed);
     this.#turn(kind, () => {
       if (this.#skipCeremony) this.#scroll.settle('open');
-      else void this.#scroll.play(wax);
+      else void this.#scroll.play(wax, seed);
     });
   }
 
@@ -504,13 +619,17 @@ export class TodayCard extends PortBoundElement {
       if (line.textContent !== text) line.textContent = text;
     };
     write('[data-scroll-date]', words.longDate(today.day));
-    write('[data-head]', t.card.scroll.heads[wax]);
+    // The heading is a rubric, its first letter the illuminated initial.
+    const [initial = '', ...rest] = Array.from(t.card.scroll.heads[wax]);
+    write('[data-initial-letter]', initial);
+    write('[data-head-rest]', rest.join(''));
     write('[data-read]', readingSummary(today, t));
     write('[data-message]', backCoverNote(today, shelf.finished.at(-1)?.title ?? null, t));
     const book = shelf.current;
     write('[data-back-bookmark]', book?.bookmark ? t.card.bookmarkAt(book.bookmark, book.totalPages ?? null) : '');
     write('[data-extra]', backCoverExtra(stats.currentStreak, achievements, today.day, t));
-    this.$('[data-finis]').textContent = t.card.scroll.finis;
+    this.$('[data-legend]').textContent = t.card.scroll.legend;
+    this.#scroll.shape(hashOf(today.day));
     this.#syncScroll();
   }
 
@@ -559,8 +678,9 @@ export class TodayCard extends PortBoundElement {
     this.$('[data-read-page]').textContent = readingSummary(today, t);
     this.#renderScroll(snapshot, words);
     const sameDay = seen?.day === today.day;
-    if (sameDay && !seen.done) this.#seal(waxOf(today), 'first');
-    else if (sameDay && seen.read !== read) this.#seal(waxOf(today), 'again');
+    const seed = hashOf(`${today.day}|${read}`);
+    if (sameDay && !seen.done) this.#seal(waxOf(today), seed, 'first');
+    else if (sameDay && seen.read !== read) this.#seal(waxOf(today), seed, 'again');
     this.#syncInert();
   }
 }
