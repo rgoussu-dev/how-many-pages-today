@@ -203,8 +203,9 @@ export const en = {
       }
     },
     scroll: {
-      heads: { met: 'To the page', beyond: 'Beyond the page', short: 'A short day, honestly kept', book: 'Finis' },
-      finis: 'Finis',
+      heads: { met: 'To the page', beyond: 'Beyond the page', short: 'A short day, honestly kept', book: 'Explicit' },
+      /** Round the rim of the seal, in the Latin of old seals: “the seal of the reader of this day”. */
+      legend: '+ SIGILLVM · LECTORIS · HVIVS · DIEI ·',
       signature: 'The librarian',
       readOn: 'I read some more',
       rollUp: 'Roll up the scroll',

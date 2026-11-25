@@ -3,6 +3,8 @@
  * origin and precached, so the library keeps its look offline.
  *  - EB Garamond: the text face, after Claude Garamont's 16th-century types.
  *  - IM Fell English: the 17th-century Fell types, for display, numerals and small caps.
+ *  - Grenze Gotisch: a blackletter, for the rubrics the librarian writes on the day's scroll.
+ *  - UnifrakturMaguntia: a fraktur, for the scroll's illuminated initial — one letter a day.
  */
 @font-face {
   font-family: 'Garamond Text';
@@ -42,4 +44,28 @@
   font-weight: 400;
   font-display: swap;
   src: url('@fontsource/im-fell-english-sc/files/im-fell-english-sc-latin-400-normal.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Gotisch';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('@fontsource/grenze-gotisch/files/grenze-gotisch-latin-400-normal.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Gotisch';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url('@fontsource/grenze-gotisch/files/grenze-gotisch-latin-500-normal.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Fraktur Initial';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('@fontsource/unifrakturmaguntia/files/unifrakturmaguntia-latin-400-normal.woff2') format('woff2');
 }

@@ -20,19 +20,22 @@ dusty shelves, lamplight, pillows and a blanket — and, after dusk, the same ro
   today's page — a printed page with a running head, the illustration as a captioned plate,
   the number in ink, a folio at its foot. Once the reading is logged, the reverse: the camera
   pulls back, the book closes up onto its spine, tips over onto its other side, and the camera
-  pushes in on its back cover. There a scroll unrolls and the librarian writes the day on it,
-  letter by letter, with a quill: how it went, the pages read, a warm note (by chance, but the
-  same all day: a goal met, gone beyond, a short day, a book finished), the bookmark, and the
-  streak or any bookplate earned. A candle in the day's wax rises from below the cover, tips,
-  and pours the seal, and a brass stamp presses it — **oxblood** for a short day (a candle
-  flame in the wax, one leaf drifting by), **vermilion** for the goal (the open-book emblem, a
-  puff of leaves), **gold** beyond it (a star, gilt rays, silk ribbons, a flurry), and gold
-  stamped *Finis* for a book finished. A tap skips the ceremony. The scroll stays open until
-  it is tapped, then rolls up with the ribbon round its middle under the seal; the seal
-  unrolls it. "I read some more" plays the closing rewound — up off the back cover, onto the
-  spine, open, and in to today's page — to write how much further you read; the day is then
-  written and sealed again, in a new wax if it moved up. "Close the book" plays it again
-  without reading on. Instant with reduced motion.
+  pushes in on its back cover. There a charter unrolls — parchment with ragged edges and
+  curled ends — and the librarian writes the day on it with a quill, in iron-gall ink under a
+  red blackletter rubric: how it went, the pages read, a warm note (by chance, but the same all
+  day: a goal met, gone beyond, a short day, a book finished), the bookmark, and the streak or
+  any bookplate earned, signed with a paraph. The rubric's initial is illuminated as finely as
+  the day deserves: plain red for a short day, lapis with red penwork for the goal, gold leaf on
+  lapis beyond it; a book finished is headed *Explicit*. A taper cast in the day's wax rises
+  from below, tips and lets its drops fall on two cords, and a bronze matrix presses the seal —
+  an open book in relief, *+ SIGILLVM · LECTORIS · HVIVS · DIEI ·* round its rim — in
+  **oxblood** on linen cords for a short day, **vermilion** on red silk for the goal, **gold** on
+  red and gold beyond it (the light slides across the relief, and dust rises in the
+  candlelight). A tap skips the ceremony. The charter stays open until it is tapped, then rolls
+  up with the cords wound round its middle under the seal; the seal unrolls it. "I read some
+  more" plays the closing rewound — up off the back cover, onto the spine, open, and in to
+  today's page — to write how much further you read; the day is then written and sealed
+  again, in a new wax if it moved up. "Close the book" plays it again without reading on. Instant with reduced motion.
 - **Write the page you stopped at.** The card offers the page the day leads to; change it
   to wherever you really stopped. The pages read are the pages from your bookmark, and the
   page itself never says how many (the scroll does). Any reading keeps the streak alive
@@ -68,7 +71,8 @@ dusty shelves, lamplight, pillows and a blanket — and, after dusk, the same ro
   books finished, with their dates. Every value is also in a table view.
 - **A profile that never leaves the phone.** Name, avatar, favourite genre — stored in the
   browser's IndexedDB. There is no server.
-- **Typography.** EB Garamond and IM Fell English, free fonts under the SIL Open Font
+- **Typography.** EB Garamond and IM Fell English — and, on the day's charter, Grenze Gotisch
+  for the rubrics and UnifrakturMaguntia for the initial — free fonts under the SIL Open Font
   License, bundled as latin subsets and precached — the look survives offline. Their
   licences ship with the site under `/licenses/`.
 - **Daily reminder.** A notification at a fixed hour until you have read; plus a one-tap
