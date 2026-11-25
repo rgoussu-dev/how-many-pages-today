@@ -553,7 +553,7 @@ hmpt-ds-bookmark .ds-bookmark-mark {
   box-shadow: 0 1px 2px rgb(30 15 5 / 0.35);
   color: #3a2210;
   font-family: var(--font-display);
-  font-size: 0.74rem;
+  font-size: calc(var(--bookmark-width) * 0.32); /* the label's words grow with the card */
   line-height: 1.1;
   text-align: center;
   white-space: nowrap;
@@ -561,7 +561,7 @@ hmpt-ds-bookmark .ds-bookmark-mark {
 }
 
 hmpt-ds-bookmark .ds-bookmark-mark[data-long] {
-  font-size: 0.6rem;
+  font-size: calc(var(--bookmark-width) * 0.26);
   letter-spacing: -0.02em;
 }
 

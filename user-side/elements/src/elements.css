@@ -287,9 +287,9 @@ hmpt-today-card [data-until] {
    head as the book stands on its spine, and stays under the leaves until they riffle over.
    Closing, it slips out; once the book lies on its back it is tucked in at the other edge. */
 hmpt-today-card {
-  --bookmark-width: 2.6rem;
+  --bookmark-width: 3.3rem;
   /* how far the card stands out above the book */
-  --bookmark-out: 3.1rem;
+  --bookmark-out: 3.9rem;
   --bookmark-inset: 0.7rem;
 }
 
@@ -2771,6 +2771,7 @@ hmpt-today-card .scroll-sheet {
 hmpt-today-card .scroll-vellum {
   position: absolute;
   inset: 0;
+  will-change: transform; /* its own layer: the skin is drawn once, not on every frame of a roll */
   filter: url(#hmpt-rough-edge);
   background:
     radial-gradient(1.2em 0.9em at 82% 18%, rgb(140 90 40 / 0.18), transparent 70%),
@@ -2793,22 +2794,24 @@ hmpt-today-card .scroll-vellum::after {
   border-inline: 1px solid rgb(120 80 40 / 0.16);
 }
 
-/* The curled ends: a cylinder of the same skin, the spiral of the roll showing at each end. */
+/* The curled ends: a cylinder of the same skin, shaded round, the spiral of the roll showing
+   at each end. Each is drawn in its own layer, so moving it costs nothing. */
 hmpt-today-card :is(.scroll-curl, .scroll-roll) {
   position: absolute;
   z-index: 2;
   filter: url(#hmpt-rough-edge-fine);
   background:
     var(--grain-paper),
-    linear-gradient(180deg, #8b6b3c, var(--vellum-warm) 22%, var(--vellum) 45%, var(--vellum-warm) 68%, #7a5a2e);
-  box-shadow: 0 0.2em 0.35em rgb(0 0 0 / 0.35);
+    linear-gradient(180deg, #5e4322 0%, #9c7c4a 10%, var(--vellum-warm) 24%, #f7ecd0 37%, var(--vellum) 50%, var(--vellum-warm) 67%, #9a7a48 85%, #4e3618 100%);
+  will-change: transform, opacity;
 }
 
 hmpt-today-card .scroll-curl {
-  left: -0.3em;
-  right: -0.3em;
+  left: -0.2em;
+  right: -0.2em;
   height: 1.3em;
-  border-radius: 0.65em;
+  border-radius: 0.3em / 0.65em;
+  box-shadow: 0 0.2em 0.3em -0.05em rgb(0 0 0 / 0.4);
 }
 
 hmpt-today-card .scroll-curl-top {
@@ -2819,16 +2822,19 @@ hmpt-today-card .scroll-curl-bottom {
   top: 21.55em;
 }
 
+/* the ends: narrow ellipses, the layers of skin wound round inside */
 hmpt-today-card :is(.scroll-curl, .scroll-roll)::before,
 hmpt-today-card :is(.scroll-curl, .scroll-roll)::after {
   content: '';
   position: absolute;
   top: 0;
   bottom: 0;
-  width: 0.75em;
+  width: 0.42em;
   border-radius: 50%;
-  background: repeating-radial-gradient(circle at 50% 50%, #d9c391 0 0.09em, #8f6f3e 0.09em 0.13em);
-  box-shadow: inset 0 0 0.15em rgb(60 35 10 / 0.6);
+  background:
+    linear-gradient(90deg, rgb(60 35 10 / 0.4), transparent 70%),
+    repeating-radial-gradient(ellipse closest-side at 50% 50%, #ead8ab 0 14%, #9c7b4f 14% 20%);
+  box-shadow: inset 0 0 0.12em rgb(50 30 10 / 0.6);
 }
 
 hmpt-today-card :is(.scroll-curl, .scroll-roll)::before {
@@ -2837,22 +2843,43 @@ hmpt-today-card :is(.scroll-curl, .scroll-roll)::before {
 
 hmpt-today-card :is(.scroll-curl, .scroll-roll)::after {
   right: 0;
+  background:
+    linear-gradient(270deg, rgb(60 35 10 / 0.4), transparent 70%),
+    repeating-radial-gradient(ellipse closest-side at 50% 50%, #ead8ab 0 14%, #9c7b4f 14% 20%);
 }
 
 hmpt-today-card .scroll-roll {
-  left: -0.4em;
-  right: -0.4em;
+  left: -0.2em;
+  right: -0.2em;
   top: 10.05em;
   z-index: 3;
   height: 3.3em;
-  border-radius: 1.65em;
-  box-shadow: 0 0.35em 0.7em rgb(0 0 0 / 0.45);
+  border-radius: 0.6em / 1.65em;
+  box-shadow: 0 0.45em 0.6em -0.15em rgb(0 0 0 / 0.5);
 }
 
 hmpt-today-card .scroll-roll::before,
 hmpt-today-card .scroll-roll::after {
-  width: 1.7em;
-  background: repeating-radial-gradient(circle at 50% 50%, #dcc596 0 0.12em, #86663a 0.12em 0.18em);
+  width: 1.05em;
+  background:
+    linear-gradient(90deg, rgb(60 35 10 / 0.45), transparent 65%),
+    repeating-radial-gradient(ellipse closest-side at 50% 50%, #ecdbb0 0 9%, #94744a 9% 13%);
+}
+
+hmpt-today-card .scroll-roll::after {
+  background:
+    linear-gradient(270deg, rgb(60 35 10 / 0.45), transparent 65%),
+    repeating-radial-gradient(ellipse closest-side at 50% 50%, #ecdbb0 0 9%, #94744a 9% 13%);
+}
+
+/* the edge of the outermost turn, running the length of the roll */
+hmpt-today-card .scroll-lip {
+  position: absolute;
+  left: 0.9em;
+  right: 0.9em;
+  top: 63%;
+  height: 0.45em;
+  background: linear-gradient(180deg, rgb(70 45 15 / 0.5) 0 1px, rgb(255 250 235 / 0.35) 1px 3px, transparent 70%);
 }
 
 /* the cords wound round the rolled charter */
@@ -2882,6 +2909,7 @@ hmpt-today-card :is(.scroll-wind, .scroll-cords) > i {
 hmpt-today-card .scroll-writing {
   position: relative;
   z-index: 1;
+  will-change: transform;
   display: grid;
   gap: 0.32em;
   padding: 1.15em 1.35em 0 1.4em;
@@ -3085,6 +3113,7 @@ hmpt-today-card .scroll-spot {
   left: 5em;
   top: 7.7em;
   z-index: 4;
+  will-change: transform; /* the lit wax is drawn once, then carried as it rolls */
   display: grid;
   place-items: center;
   width: 8em;
@@ -3135,6 +3164,7 @@ hmpt-today-card .scroll-cords > i:last-child {
 hmpt-today-card .wax-seal {
   position: relative;
   z-index: 2;
+  will-change: transform; /* the pool grows as a layer: its lighting is not redrawn drop by drop */
   width: var(--wax-size);
   height: var(--wax-size);
 }
@@ -3191,6 +3221,7 @@ hmpt-today-card .wax-matrix {
   margin: calc(var(--wax-size) * -0.51) 0 0 calc(var(--wax-size) * -0.51);
   opacity: 0;
   pointer-events: none;
+  will-change: transform, opacity, filter;
 }
 
 hmpt-today-card .wax-matrix svg {
@@ -3272,12 +3303,14 @@ hmpt-today-card .candle {
   opacity: 0;
   transform: translateY(18em);
   pointer-events: none;
+  will-change: transform, opacity;
 }
 
 hmpt-today-card .candle-tilt {
   position: relative;
   display: block;
   transform-origin: 50% 0;
+  will-change: transform;
 }
 
 hmpt-today-card .candle-body {
@@ -3363,6 +3396,7 @@ hmpt-today-card .wax-drip {
   height: 0.8em;
   opacity: 0;
   pointer-events: none;
+  will-change: transform, opacity;
 }
 
 hmpt-today-card .wax-drip svg {
@@ -3391,7 +3425,7 @@ hmpt-today-card .scroll[data-state='playing'] .scroll-paraph:not(.scroll-drawn) 
   stroke-dashoffset: 160;
 }
 
-hmpt-today-card .scroll[data-state='playing'] .wax-puddle {
+hmpt-today-card .scroll[data-state='playing'] .wax-seal {
   transform: scale(0);
 }
 
@@ -3399,12 +3433,17 @@ hmpt-today-card .scroll:is([data-state='playing'], [data-state='rolled']) .scrol
   clip-path: inset(50% 0% 50% 0%);
 }
 
+/* rolled, the two curled ends lie wound side by side under the roll */
+hmpt-today-card .scroll:is([data-state='playing'], [data-state='rolled']) .scroll-curl {
+  opacity: 0;
+}
+
 hmpt-today-card .scroll:is([data-state='playing'], [data-state='rolled']) .scroll-curl-top {
-  transform: translateY(10.5em);
+  transform: translateY(9.675em) scaleY(1.27);
 }
 
 hmpt-today-card .scroll:is([data-state='playing'], [data-state='rolled']) .scroll-curl-bottom {
-  transform: translateY(-10.5em);
+  transform: translateY(-9.675em) scaleY(1.27);
 }
 
 hmpt-today-card .scroll[data-state='open'] .scroll-roll {
